@@ -1,0 +1,26 @@
+{
+  "name": "spotify-clone",
+  "version": "1.0.0",
+  "description": "Spotify clone project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RaM1cK/spotify-clone.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/RaM1cK/spotify-clone/issues"
+  },
+  "homepage": "https://github.com/RaM1cK/spotify-clone#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3"
+  }
+}
