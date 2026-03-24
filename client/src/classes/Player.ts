@@ -8,7 +8,7 @@ export class Player implements Subject {
     private static uniqueInstance: Player = new Player();
     private observers: Observer[] = [];
     private _state: PlayerState;
-    private _track: Track;
+    private _track: Track | null = null;
 
     public get state(): PlayerState {
         return this._state;
@@ -19,7 +19,7 @@ export class Player implements Subject {
     }
 
     private constructor() {
-        this.state = new StoppedState(this);
+        this._state = new StoppedState(this);
     }
 
     public isPlaying(): boolean {
@@ -30,7 +30,7 @@ export class Player implements Subject {
         return this.state instanceof LoadingState;
     }
 
-    public get track(): Track {
+    public get track(): Track | null {
         return this._track;
     }
 

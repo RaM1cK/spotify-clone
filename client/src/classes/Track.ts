@@ -1,22 +1,31 @@
+type T_Track = {
+    id: string;
+    logoURL: string;
+    name: string;
+    creator: string;
+    url: string;
+    duration: number;
+}
+
 export class Track {
-    private readonly _id: number;
+    private readonly _id: string;
     private _logoURL: string;
     private _name: string;
     private _creator: string;
     private _url: string;
     private readonly _duration: number;
 
-    constructor({id, logoURL, name, creator, url, duration}) {
-        this._id = id;
-        this._logoURL = logoURL;
-        this._name = name;
-        this._creator = creator;
-        this._url = url;
-        this._duration = duration;
+    constructor(track: T_Track) {
+        this._id = track.id;
+        this._logoURL = track.logoURL;
+        this._name = track.name;
+        this._creator = track.creator;
+        this._url = track.url;
+        this._duration = track.duration;
     }
 
 
-    public get id(): number {
+    public get id(): string{
         return this._id;
     }
 
