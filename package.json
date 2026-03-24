@@ -13,14 +13,22 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/RaM1cK/spotify-clone/issues"
   },
   "homepage": "https://github.com/RaM1cK/spotify-clone#readme",
   "dependencies": {
+    "axios": "^1.13.6",
     "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "howler": "^2.2.4",
+    "http": "^0.0.1-security",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/howler": "^2.2.12",
+    "nodemon": "^3.1.14"
   }
 }
