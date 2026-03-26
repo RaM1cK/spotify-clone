@@ -34,7 +34,7 @@ function TrackList({
         return `${m} мин ${s} сек`;
     };
     return (
-        <div className="track-list" style={{width:'100vw'}}>
+        <div className="track-list">
             <div className="header">
                 <span className="count">{tracks.length} {getWordForm(tracks.length)}</span>
                 <span className="time">{getSum()}</span>
@@ -43,7 +43,9 @@ function TrackList({
                 {tracks.map((track, index) => (
                     <TrackItem
                         key={index}
+                        index={index}
                         track={track}
+                        tracks={tracks}
                     />
                 ))}
             </div>

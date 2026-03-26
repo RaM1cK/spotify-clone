@@ -2,10 +2,11 @@ import React, {useEffect} from "react";
 import { Heart, MoreVertical, Play, Pause } from "lucide-react";
 import {Player} from "../../../classes/Player.ts";
 import "./trackitem.css";
-import {TrackUI} from "../../../classes/TrackUI.ts";
+import {TrackUI} from "../../../classes/observers/TrackUI.ts";
 
-function TrackItem({ track }) {
+function TrackItem({ index, track, tracks }) {
     const [isPlaying, setIsPlaying] = React.useState(false);
+    const [isCurrent, setIsCurrent] = React.useState(false);
     const player = React.useRef(Player.getInstance()).current;
 
     const formatTime = (seconds) => {
@@ -19,10 +20,12 @@ function TrackItem({ track }) {
         const observer = new TrackUI(() => {
             if (player.track && track.id === player.track.id) {
                 setIsPlaying(player.isPlaying());
+                setIsCurrent(true);
                 return;
             }
 
             setIsPlaying(false)
+            setIsCurrent(false);
         })
 
         player.attach(observer);
@@ -34,18 +37,13 @@ function TrackItem({ track }) {
 
     const handleClick = () => {
         if (!player.track) {
-            player.load(track);
+            player.setTrackByIndex(index, tracks);
         }
         else {
-            if (player.track && player.track.id !== track.id) {
-                player.stop()
-                player.load(track)
+            if (player.track.id !== track.id) {
+                player.setTrackByIndex(index, tracks)
             } else {
-                if (player.isPlaying()) {
-                    player.pause()
-                } else {
-                    player.play()
-                }
+                player.isPlaying() ? player.pause() : player.play()
             }
         }
     }
@@ -60,7 +58,7 @@ function TrackItem({ track }) {
                             alt={track.name}
                             className="track-item__cover"
                         />
-                        <div className="track-item__play">
+                        <div className={`track-item__play${isCurrent ? "--current" : ""}`}>
                             {isPlaying ? <Pause size={20}/> : <Play size={20}/>}
                         </div>
                     </div>

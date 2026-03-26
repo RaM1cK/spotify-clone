@@ -1,4 +1,4 @@
-import {Observer} from "./Observer";
+import {Observer} from "./observers/Observer";
 
 export interface Subject {
     attach: (observer: Observer) => void

@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from "react-bootstrap";
-import {Pause, Play, SkipForward, SkipBack, Repeat} from "lucide-react";
+import {Pause, Play, SkipForward, SkipBack, Repeat, Repeat1} from "lucide-react";
 import FormRange from "react-bootstrap/cjs/FormRange";
 import classes from '../../css/rangestyle.module.css';
 import { Howl, Howler } from 'howler';
 import {Player as pl} from "../../classes/Player.ts";
 import RangeTrack from "./Track/rangeTrack";
-import {TrackUI} from "../../classes/TrackUI.ts";
-import {PlayerUI} from "../../classes/PlayerUI.ts";
+import {PlayerUI} from "../../classes/observers/PlayerUI.ts";
 
 const Player = ({}) => {
     const soundRef = useRef(null)
@@ -26,29 +25,23 @@ const Player = ({}) => {
 
     useEffect(() => {
         const playerObserver = new PlayerUI(() => {
-            setTrack(player.track);
-            setTrackId(player.track.id)
-        })
-
-        const observer = new TrackUI(() => {
             setPlaying(player.isPlaying());
             setLoading(player.isLoading())
+
+            if (player.track) {
+                setTrack(player.track);
+                setTrackId(player.track.id)
+            }
         })
 
-        player.attach(observer);
         player.attach(playerObserver);
 
         return () => {
             player.detach(playerObserver);
-            player.detach(observer);
         }
     }, [])
 
     const setHowl = (audioSrc) => {
-        if(!audioSrc) {
-            setHidePlayer(true);
-            return
-        }
         setHidePlayer(false);
         setDisabledPlayer(true)
 
@@ -57,19 +50,17 @@ const Player = ({}) => {
                 volume: 0.05,
                 loop: true,
                 onload: () => {
-                    setPlaying(true)
+                    setLoading(false);
                     setDisabledPlayer(false);
                     setDuration(Math.floor(soundRef.current.duration()));
                     setRangeValue(0);
                 },
                 onplay: () => {
-                    player.play()
                     intervalRef.current = setInterval(() => {
                         if (!isDraggingRef.current) setRangeValue(parseInt(soundRef.current.seek()));
                     }, 1000);
                 },
                 onpause: () => {
-                    player.pause()
                     clearIntervalIfExists()
                 },
                 onstop: () => {
@@ -78,9 +69,9 @@ const Player = ({}) => {
                 },
                 onend: () => {
                     if (!soundRef.current.loop()) {
-                        clearIntervalIfExists();
                         player.stop()
                     }
+                    clearIntervalIfExists();
                     setRangeValue(0);
                 }
             }
@@ -97,23 +88,25 @@ const Player = ({}) => {
     useEffect(() => {
         if (track) {
             setHowl(track.url)
-            soundRef.current.play()
         }
 
         return () => {
-            clearIntervalIfExists();
+            clearIntervalIfExists()
             if (soundRef.current) {
                 soundRef.current.stop();
                 soundRef.current.unload();
             }
-        };
+        }
     }, [trackId]);
 
     useEffect(() => {
-        if (soundRef.current && !loading) {
-            playing ? soundRef.current.play() : soundRef.current.pause();
+        if (!soundRef.current || loading) return;
+        if (playing) {
+            soundRef.current.play();
+        } else {
+            soundRef.current.pause();
         }
-    }, [playing])
+    }, [playing, soundRef.current]);
 
     const handleMouseDown = (e) => {
         if (e.button === 0) {
@@ -141,10 +134,23 @@ const Player = ({}) => {
     return (
         <>
             {hidePlayer ? <></> : <div
-                className="w-100 rounded-1 p-2 d-flex flex-row align-self-center"
-                style={{ border: '2px solid purple', backgroundColor: 'black', position: "fixed", bottom: '0'}}
+                className="position-sticky rounded-1 p-2 d-flex"
+                style={{
+                    border: '2px solid purple',
+                    backgroundColor: 'black',
+                    bottom: '0',
+                    width: '100%',
+            }}
             >
                 <Button
+                    onClick={() => {
+                        if (soundRef.current.seek() > 3) {
+                            soundRef.current.stop();
+                            soundRef.current.play()
+                        } else {
+                            player.previous()
+                        }
+                    }}
                     style={{
                         backgroundColor: 'transparent',
                         border: "none"
@@ -160,7 +166,9 @@ const Player = ({}) => {
                         backgroundColor: 'purple',
                         borderColor: 'purple'
                     }}
-                    onClick={() => {setPlaying(!playing)}}
+                    onClick={() => {
+                        player.isPlaying() ? player.pause() : player.play()
+                    }}
                     className="d-flex align-self-center rounded-5"
                 >
                     <div className="d-flex align-self-center">
@@ -168,12 +176,17 @@ const Player = ({}) => {
                     </div>
                 </Button>
                 <Button
+                    onClick={() => {
+                        soundRef.current.stop();
+                        player.next()
+                    }}
                     style={{
                         backgroundColor: 'transparent',
                         border: "none"
                     }}
                 >
                     <SkipForward
+
                         className="d-flex align-self-center"
                         size={20}
                     />
@@ -201,6 +214,8 @@ const Player = ({}) => {
                         onChange={handleChange}
                         onMouseDown={handleMouseDown}
                         onMouseUp={handleMouseUp}
+                        onPointerDown={handleMouseDown}
+                        onPointerUp={handleMouseUp}
                         onKeyDown={(e) => e.preventDefault()}
                     />
                 </div>

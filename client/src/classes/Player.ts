@@ -1,5 +1,5 @@
-import {Track} from "./Track";
-import {Observer} from "./Observer";
+import {Track} from "./models/Track";
+import {Observer} from "./observers/Observer";
 import {Subject} from "./Subject";
 // @ts-ignore
 import {LoadingState, PlayerState, PlayingState, StoppedState} from "./states/PlayerState.ts";
@@ -8,7 +8,10 @@ export class Player implements Subject {
     private static uniqueInstance: Player = new Player();
     private observers: Observer[] = [];
     private _state: PlayerState;
-    private _track: Track | null = null;
+    private indexCurrent: number = 0;
+    private _queue: Track[] | undefined;
+    private _track: Track | undefined;
+    private timeoutPrev: number | undefined;
 
     public get state(): PlayerState {
         return this._state;
@@ -30,8 +33,16 @@ export class Player implements Subject {
         return this.state instanceof LoadingState;
     }
 
-    public get track(): Track | null {
+    public isStopped(): boolean {
+        return this.state instanceof StoppedState;
+    }
+
+    public get track(): Track | undefined {
         return this._track;
+    }
+
+    get queue(): Track[] | undefined {
+        return this._queue ? [...this._queue] : undefined;
     }
 
     public static getInstance() {
@@ -48,7 +59,7 @@ export class Player implements Subject {
 
     public notify(): void {
         console.log(this.state)
-        this.observers.forEach(async (o) => {o.update()})
+        this.observers.forEach((o) => {o.update()})
     }
 
     public play() {
@@ -66,9 +77,42 @@ export class Player implements Subject {
         this.notify()
     }
 
-    public load(track: Track): void {
-        this._track = track;
-        this.state = new LoadingState(this)
+    public load() {
+        this.state = new LoadingState(this);
         this.notify()
+    }
+
+    public setTrackByIndex(indexCurrent: number, queue: Track[] | undefined) {
+        this.stop()
+        this.indexCurrent = indexCurrent;
+        if (queue) {
+            this.load()
+            this._queue = queue;
+            this._track = queue[indexCurrent];
+            this.play()
+        }
+    }
+
+    private setTimeout() {
+        this.timeoutPrev = setTimeout(() => {
+            this.clearTimeout()
+        }, 5000)
+    }
+
+    private clearTimeout() {
+        clearTimeout(this.timeoutPrev)
+        this.timeoutPrev = undefined
+    }
+
+    public next(): void {
+        if (this._queue) {
+            this.setTrackByIndex((++this.indexCurrent) % this._queue.length, this._queue)
+        }
+    }
+
+    public previous(): void {
+        if (this._queue) {
+            this.setTrackByIndex((--this.indexCurrent + this._queue.length) % this._queue.length, this._queue)
+        }
     }
 }
