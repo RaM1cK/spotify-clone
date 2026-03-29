@@ -1,21 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from "react-bootstrap";
-import {Pause, Play, SkipForward, SkipBack, Repeat, Repeat1} from "lucide-react";
+import {Pause, Play, SkipForward, SkipBack, Repeat, Repeat1, LoaderCircle} from "lucide-react";
 import FormRange from "react-bootstrap/cjs/FormRange";
-import classes from '../../css/rangestyle.module.css';
-import { Howl, Howler } from 'howler';
-import {Player as pl} from "../../classes/Player.ts";
-import RangeTrack from "./Track/rangeTrack";
-import {PlayerUI} from "../../classes/observers/PlayerUI.ts";
+import classes from '../../../css/rangestyle.module.css';
+import "./Player.css"
+import {Player as pl} from "../../../classes/Player.ts";
+import RangeTrack from "../Track/rangeTrack";
+import {PlayerUI} from "../../../classes/observers/PlayerUI.ts";
 
-const Player = ({}) => {
-    const soundRef = useRef(null)
+const Player = () => {
     const intervalRef = useRef(null);
     const isDraggingRef = useRef(false);
     const player = useRef(pl.getInstance()).current
 
-    const [track, setTrack] = useState(null);
-    const [trackId, setTrackId] = useState(null);
+    const [track, setTrack] = useState(undefined);
     const [disabledPlayer, setDisabledPlayer] = useState(true);
     const [hidePlayer, setHidePlayer] = useState(true);
     const [playing, setPlaying] = useState(false);
@@ -27,10 +25,24 @@ const Player = ({}) => {
         const playerObserver = new PlayerUI(() => {
             setPlaying(player.isPlaying());
             setLoading(player.isLoading())
-
+            setTrack(player.track);
+            setHidePlayer(player.track === undefined)
+            setDisabledPlayer(player.isLoading())
             if (player.track) {
-                setTrack(player.track);
-                setTrackId(player.track.id)
+                setDuration(player.track.duration);
+            }
+
+            if (player.isPlaying()) {
+                intervalRef.current = setInterval(() => {
+                    if (!isDraggingRef.current) setRangeValue(prev => prev + 1);
+                }, 1000)
+            } else {
+                clearIntervalIfExists()
+            }
+
+            if (player.isStopped() || player.isLoading()) {
+                clearIntervalIfExists()
+                setRangeValue(0)
             }
         })
 
@@ -39,44 +51,7 @@ const Player = ({}) => {
         return () => {
             player.detach(playerObserver);
         }
-    }, [])
-
-    const setHowl = (audioSrc) => {
-        setHidePlayer(false);
-        setDisabledPlayer(true)
-
-        soundRef.current = new Howl({
-                src: [audioSrc],
-                volume: 0.05,
-                loop: true,
-                onload: () => {
-                    setLoading(false);
-                    setDisabledPlayer(false);
-                    setDuration(Math.floor(soundRef.current.duration()));
-                    setRangeValue(0);
-                },
-                onplay: () => {
-                    intervalRef.current = setInterval(() => {
-                        if (!isDraggingRef.current) setRangeValue(parseInt(soundRef.current.seek()));
-                    }, 1000);
-                },
-                onpause: () => {
-                    clearIntervalIfExists()
-                },
-                onstop: () => {
-                    clearIntervalIfExists()
-                    setRangeValue(0);
-                },
-                onend: () => {
-                    if (!soundRef.current.loop()) {
-                        player.stop()
-                    }
-                    clearIntervalIfExists();
-                    setRangeValue(0);
-                }
-            }
-        )
-    }
+    })
 
     const clearIntervalIfExists = () => {
         if (intervalRef.current) {
@@ -85,46 +60,23 @@ const Player = ({}) => {
         }
     };
 
-    useEffect(() => {
-        if (track) {
-            setHowl(track.url)
-        }
-
-        return () => {
-            clearIntervalIfExists()
-            if (soundRef.current) {
-                soundRef.current.stop();
-                soundRef.current.unload();
-            }
-        }
-    }, [trackId]);
-
-    useEffect(() => {
-        if (!soundRef.current || loading) return;
-        if (playing) {
-            soundRef.current.play();
-        } else {
-            soundRef.current.pause();
-        }
-    }, [playing, soundRef.current]);
-
-    const handleMouseDown = (e) => {
-        if (e.button === 0) {
-            isDraggingRef.current = true;
-            clearIntervalIfExists();
-        }
+    const handleMouseDown = () => {
+        isDraggingRef.current = true;
+        clearIntervalIfExists();
     };
 
     const handleMouseUp = (e) => {
-        const newValue = parseInt(e.target.value);
-        soundRef.current.seek(newValue);
-        setRangeValue(newValue);
+        if (isDraggingRef.current) {
+            const newValue = parseInt(e.target.value);
+            player.seek(newValue);
+            setRangeValue(newValue);
 
-        intervalRef.current = setInterval(() => {
-            if (!isDraggingRef.current) setRangeValue(parseInt(soundRef.current.seek()));
-        }, 1000);
+            intervalRef.current = setInterval(() => {
+                if (!isDraggingRef.current) setRangeValue(prev => prev + 1);
+            }, 1000);
 
-        isDraggingRef.current = false;
+            isDraggingRef.current = false;
+        }
     };
 
     const handleChange = (e) => {
@@ -134,22 +86,17 @@ const Player = ({}) => {
     return (
         <>
             {hidePlayer ? <></> : <div
+                id={"playerView"}
                 className="position-sticky rounded-1 p-2 d-flex"
                 style={{
                     border: '2px solid purple',
                     backgroundColor: 'black',
                     bottom: '0',
-                    width: '100%',
             }}
             >
                 <Button
                     onClick={() => {
-                        if (soundRef.current.seek() > 3) {
-                            soundRef.current.stop();
-                            soundRef.current.play()
-                        } else {
-                            player.previous()
-                        }
+                        player.previous()
                     }}
                     style={{
                         backgroundColor: 'transparent',
@@ -172,12 +119,17 @@ const Player = ({}) => {
                     className="d-flex align-self-center rounded-5"
                 >
                     <div className="d-flex align-self-center">
-                        {playing ? <Pause size={20}/> : <Play size={20}/>}
+                        {(() => {
+                            if (loading) {
+                                return <LoaderCircle className="spin" size={20}/>
+                            } else {
+                                return playing ? <Pause size={20}/> : <Play size={20}/>
+                            }
+                        })()}
                     </div>
                 </Button>
                 <Button
                     onClick={() => {
-                        soundRef.current.stop();
                         player.next()
                     }}
                     style={{
@@ -209,14 +161,17 @@ const Player = ({}) => {
 
                     <FormRange
                         className={classes.customRange}
-                        value={rangeValue}
+                        value={rangeValue.toString()}
                         max={duration}
-                        onChange={handleChange}
+                        onInput={handleChange}
                         onMouseDown={handleMouseDown}
                         onMouseUp={handleMouseUp}
-                        onPointerDown={handleMouseDown}
-                        onPointerUp={handleMouseUp}
+                        onTouchStart={handleMouseDown}
+                        onTouchEnd={handleMouseUp}
                         onKeyDown={(e) => e.preventDefault()}
+                        style={{
+                            touchAction: 'none',
+                        }}
                     />
                 </div>
 

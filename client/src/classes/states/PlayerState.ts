@@ -11,6 +11,7 @@ export class PausedState implements PlayerState {
 
     public play(): void {
         this.player.state = new PlayingState(this.player);
+        this.player.howl.play();
     }
 
     public pause(): void {
@@ -19,6 +20,7 @@ export class PausedState implements PlayerState {
 
     public stop(): void {
         this.player.state = new StoppedState(this.player);
+        this.player.howl.stop();
     }
 }
 
@@ -32,10 +34,12 @@ export class PlayingState implements PlayerState {
 
     public pause(): void {
         this.player.state = new PausedState(this.player);
+        this.player.howl.pause();
     }
 
     public stop(): void {
         this.player.state = new StoppedState(this.player);
+        this.player.howl.stop();
     }
 }
 
@@ -46,6 +50,7 @@ export class StoppedState implements PlayerState {
 
     public play(): void {
         this.player.state = new PlayingState(this.player);
+        this.player.howl.play();
     }
 
     public pause(): void {

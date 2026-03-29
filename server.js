@@ -5,6 +5,8 @@ import cors from 'cors';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import socket from './controllers/ChatController.js'
+import {parseFile} from "music-metadata";
+import {inspect} from 'util';
 
 const app = express();
 app.use(cors());
@@ -12,6 +14,15 @@ app.use(express.json());
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// (
+//     async () => {
+//         const metadata = await parseFile(path.join(__dirname, '/music/Jane_Remover_-_Dancing_with_your_eyes_closed_80039450.mp3'));
+//
+//         console.log(inspect(metadata, {showHidden: false, depth: null}));
+//         console.log(metadata.common.picture)
+//     }
+// ) ()
 
 const server = http.createServer(app);
 

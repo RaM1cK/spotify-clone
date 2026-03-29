@@ -3,18 +3,53 @@ import {Observer} from "./observers/Observer";
 import {Subject} from "./Subject";
 // @ts-ignore
 import {LoadingState, PlayerState, PlayingState, StoppedState} from "./states/PlayerState.ts";
+import {Howl} from "howler";
 
 export class Player implements Subject {
     private static uniqueInstance: Player = new Player();
+    private howl: Howl | undefined;
     private observers: Observer[] = [];
     private _state: PlayerState;
     private indexCurrent: number = 0;
-    private _queue: Track[] | undefined;
+    private _queue: Track[] = [];
     private _track: Track | undefined;
-    private timeoutPrev: number | undefined;
 
     public get state(): PlayerState {
         return this._state;
+    }
+
+    private setHowl(track: Track, queue: Track[]): void {
+        if (this.howl) this.howl.unload()
+        this.stop()
+
+        this._queue = queue;
+        this.indexCurrent = queue.findIndex((t) => t.id === track.id)
+        this._track = track;
+        this.load()
+
+        this.howl = new Howl({
+            src: [track.url],
+            volume: 0.05,
+            loop: true,
+            html5: true,
+            onload: () => {
+                this.howl?.play()
+                this.play();
+            },
+            onend: () => {
+                this.stop()
+                if (this.howl?.loop()) {
+                    this.play()
+                }
+            }
+        })
+    }
+
+    public seek(num?: number) {
+        if (this.howl) {
+            if (num !== undefined) this.howl.seek(num);
+            else return Math.floor(this.howl.seek() as number);
+        }
     }
 
     public set state(value: PlayerState) {
@@ -41,8 +76,8 @@ export class Player implements Subject {
         return this._track;
     }
 
-    get queue(): Track[] | undefined {
-        return this._queue ? [...this._queue] : undefined;
+    get queue(): Track[] {
+        return [...this._queue];
     }
 
     public static getInstance() {
@@ -58,8 +93,8 @@ export class Player implements Subject {
     }
 
     public notify(): void {
-        console.log(this.state)
-        this.observers.forEach((o) => {o.update()})
+        console.log(this._state)
+        this.observers.forEach(async (o) => {o.update()})
     }
 
     public play() {
@@ -82,37 +117,32 @@ export class Player implements Subject {
         this.notify()
     }
 
-    public setTrackByIndex(indexCurrent: number, queue: Track[] | undefined) {
-        this.stop()
-        this.indexCurrent = indexCurrent;
-        if (queue) {
-            this.load()
-            this._queue = queue;
-            this._track = queue[indexCurrent];
-            this.play()
-        }
-    }
-
-    private setTimeout() {
-        this.timeoutPrev = setTimeout(() => {
-            this.clearTimeout()
-        }, 5000)
-    }
-
-    private clearTimeout() {
-        clearTimeout(this.timeoutPrev)
-        this.timeoutPrev = undefined
+    public setTrack(track: Track, queue: Track[]) {
+        this.setHowl(track, queue);
     }
 
     public next(): void {
-        if (this._queue) {
-            this.setTrackByIndex((++this.indexCurrent) % this._queue.length, this._queue)
+        if (this.howl) {
+            if (this._queue.length !== 0) {
+                this.indexCurrent = (this.indexCurrent + 1) % this._queue.length
+                // @ts-ignore
+                this.setTrack(this._queue[this.indexCurrent], this._queue)
+            }
         }
     }
 
     public previous(): void {
-        if (this._queue) {
-            this.setTrackByIndex((--this.indexCurrent + this._queue.length) % this._queue.length, this._queue)
+        if (this.howl) {
+            if (this.howl.seek() > 3) {
+                this.stop();
+                this.play()
+            } else {
+                if (this._queue.length !== 0) {
+                    this.indexCurrent = (this.indexCurrent + this._queue.length - 1) % this._queue.length
+                    // @ts-ignore
+                    this.setTrack(this._queue[this.indexCurrent], this._queue)
+                }
+            }
         }
     }
 }

@@ -4,7 +4,7 @@ import {Player} from "../../../classes/Player.ts";
 import "./trackitem.css";
 import {TrackUI} from "../../../classes/observers/TrackUI.ts";
 
-function TrackItem({ index, track, tracks }) {
+function TrackItem({ track, tracks }) {
     const [isPlaying, setIsPlaying] = React.useState(false);
     const [isCurrent, setIsCurrent] = React.useState(false);
     const player = React.useRef(Player.getInstance()).current;
@@ -37,11 +37,11 @@ function TrackItem({ index, track, tracks }) {
 
     const handleClick = () => {
         if (!player.track) {
-            player.setTrackByIndex(index, tracks);
+            player.setTrack(track, tracks);
         }
         else {
             if (player.track.id !== track.id) {
-                player.setTrackByIndex(index, tracks)
+                player.setTrack(track, tracks)
             } else {
                 player.isPlaying() ? player.pause() : player.play()
             }
@@ -72,9 +72,7 @@ function TrackItem({ index, track, tracks }) {
                 <div className="track-item__actions">
                     <span className="time">{formatTime(track.duration)}</span>
 
-                    <button onClick={() => {
-                        console.log("clicked");
-                    }} className="track-item__button">
+                    <button className="track-item__button">
                         <Heart size={20} color={"white"}/>
                     </button>
 
