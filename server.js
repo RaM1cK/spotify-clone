@@ -7,13 +7,14 @@ import {fileURLToPath} from 'url';
 import socket from './controllers/ChatController.js'
 import {parseFile} from "music-metadata";
 import {inspect} from 'util';
+import TrackRouter from './routers/TrackRouter.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+export const __filename = fileURLToPath(import.meta.url);
+export const __dirname = path.dirname(__filename);
 
 // (
 //     async () => {
@@ -43,6 +44,8 @@ const io = new Server(server, {
 app.get('/:musicName', (req, res) => {
     res.sendFile(path.join(__dirname + '/music/' + req.params['musicName']));
 })
+
+app.use("/tracks", TrackRouter);
 
 socket(io)
 

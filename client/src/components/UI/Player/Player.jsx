@@ -36,8 +36,6 @@ const Player = () => {
                 intervalRef.current = setInterval(() => {
                     if (!isDraggingRef.current) setRangeValue(prev => prev + 1);
                 }, 1000)
-            } else {
-                clearIntervalIfExists()
             }
 
             if (player.isStopped() || player.isLoading()) {
@@ -51,13 +49,11 @@ const Player = () => {
         return () => {
             player.detach(playerObserver);
         }
-    })
+    }, [])
 
     const clearIntervalIfExists = () => {
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-        }
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
     };
 
     const handleMouseDown = () => {
@@ -71,16 +67,18 @@ const Player = () => {
             player.seek(newValue);
             setRangeValue(newValue);
 
+            clearIntervalIfExists();
             intervalRef.current = setInterval(() => {
                 if (!isDraggingRef.current) setRangeValue(prev => prev + 1);
-            }, 1000);
+            }, 1000)
 
             isDraggingRef.current = false;
         }
     };
 
     const handleChange = (e) => {
-        setRangeValue(parseInt(e.target.value));
+        const newValue = parseInt(e.target.value);
+        setRangeValue(newValue);
     };
 
     return (

@@ -27,19 +27,21 @@ export class Player implements Subject {
         this._track = track;
         this.load()
 
+        console.log(track.url)
+
         this.howl = new Howl({
             src: [track.url],
             volume: 0.05,
             loop: true,
             html5: true,
+            preload: true,
             onload: () => {
                 this.howl?.play()
-                this.play();
+                this.play()
             },
             onend: () => {
-                this.stop()
-                if (this.howl?.loop()) {
-                    this.play()
+                if (!this.howl?.loop()) {
+                    this.stop()
                 }
             }
         })
