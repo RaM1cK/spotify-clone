@@ -20,7 +20,7 @@ function App() {
 
     const getTrack = async (trackName) => {
         try {
-            const res =  await axios.post('http://192.168.25.83:8080/tracks/getTrack/' + trackName)
+            const res =  await axios.post('http://localhost:8080/tracks/getTrack/' + trackName)
 
             return res.data;
         } catch (error) {
@@ -51,7 +51,9 @@ function App() {
 
     useEffect(() => {
         (async () => {
-            const tracks = await Promise.all(music.map(async name => new Track(await getTrack(name))));
+            const tracks = await Promise.all(music.map(async name => {
+                return await getTrack(name);
+            }));
             setTrackList(tracks.filter(track => track !== null));
         })();
     }, []);

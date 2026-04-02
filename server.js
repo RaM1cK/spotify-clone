@@ -41,9 +41,9 @@ const io = new Server(server, {
 //     });
 // })
 
-app.get('/:musicName', (req, res) => {
-    res.sendFile(path.join(__dirname + '/music/' + req.params['musicName']));
-})
+// app.get('/:musicName', (req, res) => {
+//     res.sendFile(path.join(__dirname + '/music/' + req.params['musicName']));
+// })
 
 app.use("/tracks", TrackRouter);
 

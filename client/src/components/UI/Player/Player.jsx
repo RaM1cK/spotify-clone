@@ -30,16 +30,10 @@ const Player = () => {
             setDisabledPlayer(player.isLoading())
             if (player.track) {
                 setDuration(player.track.duration);
-            }
-
-            if (player.isPlaying()) {
-                intervalRef.current = setInterval(() => {
-                    if (!isDraggingRef.current) setRangeValue(prev => prev + 1);
-                }, 1000)
+                setRangeValue(player.seek())
             }
 
             if (player.isStopped() || player.isLoading()) {
-                clearIntervalIfExists()
                 setRangeValue(0)
             }
         })
@@ -51,14 +45,24 @@ const Player = () => {
         }
     }, [])
 
-    const clearIntervalIfExists = () => {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-    };
+    useEffect(() => {
+        if (playing) {
+            intervalRef.current = setInterval(() => {
+                if (!isDraggingRef.current) setRangeValue(prev => (prev + 1) % (duration + 1));
+            }, 1000)
+        } else {
+            clearInterval(intervalRef.current);
+        }
 
-    const handleMouseDown = () => {
+        return () => {
+            clearInterval(intervalRef.current);
+        }
+    }, [playing])
+
+    const handleMouseDown = (e) => {
+        if (e.button !== 0) return
+
         isDraggingRef.current = true;
-        clearIntervalIfExists();
     };
 
     const handleMouseUp = (e) => {
@@ -66,11 +70,6 @@ const Player = () => {
             const newValue = parseInt(e.target.value);
             player.seek(newValue);
             setRangeValue(newValue);
-
-            clearIntervalIfExists();
-            intervalRef.current = setInterval(() => {
-                if (!isDraggingRef.current) setRangeValue(prev => prev + 1);
-            }, 1000)
 
             isDraggingRef.current = false;
         }
@@ -164,8 +163,8 @@ const Player = () => {
                         onInput={handleChange}
                         onMouseDown={handleMouseDown}
                         onMouseUp={handleMouseUp}
-                        onTouchStart={handleMouseDown}
-                        onTouchEnd={handleMouseUp}
+                        onPointerDown={handleMouseDown}
+                        onPointerUp={handleMouseUp}
                         onKeyDown={(e) => e.preventDefault()}
                         style={{
                             touchAction: 'none',
