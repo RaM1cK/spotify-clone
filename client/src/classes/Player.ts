@@ -27,17 +27,16 @@ export class Player implements Subject {
         this._track = track;
         this.load()
 
-        console.log(track.url)
-
         this.howl = new Howl({
-            src: [track.url],
+            src: [this._track.url],
             volume: 0.05,
             loop: true,
             html5: true,
             preload: true,
+            autoplay: true,
             onload: () => {
-                this.howl?.play()
-                this.play()
+                this.state = new PlayingState(this)
+                this.notify()
             },
             onend: () => {
                 if (!this.howl?.loop()) {
@@ -124,6 +123,8 @@ export class Player implements Subject {
     }
 
     public next(): void {
+        this.stop();
+
         if (this.howl) {
             if (this._queue.length !== 0) {
                 this.indexCurrent = (this.indexCurrent + 1) % this._queue.length
@@ -134,9 +135,12 @@ export class Player implements Subject {
     }
 
     public previous(): void {
-        if (this.howl) {
-            if (this.howl.seek() > 3) {
-                this.stop();
+        const curPos = this.howl?.seek();
+
+        this.stop()
+
+        if (curPos !== undefined) {
+            if (curPos > 3) {
                 this.play()
             } else {
                 if (this._queue.length !== 0) {

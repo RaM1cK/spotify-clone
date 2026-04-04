@@ -67,7 +67,7 @@ export class LoadingState implements PlayerState {
     }
 
     public play(): void {
-        this.player.state = new PlayingState(this.player);
+        // this.player.state = new PlayingState(this.player);
     }
 
     public pause(): void {
