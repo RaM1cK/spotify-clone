@@ -6,9 +6,11 @@ import {CircleUserRound, ListMusic, MessageCircleMore} from 'lucide-react'
 import axios from "axios";
 import "./App.css";
 import TrackList from "./components/UI/TrackList/TrackList";
-import {Track} from "./classes/models/Track.ts";
 
 // const socket = io("http://localhost:8080");
+
+const IP_APP = process.env.REACT_APP_IP_APP
+const SERVER_PORT = process.env.REACT_APP_SERVER_PORT
 
 function App() {
     const music = [
@@ -18,9 +20,9 @@ function App() {
 
     const [trackList, setTrackList] = useState([]);
 
-    const getTrack = async (trackName) => {
+    const getTrack = async (trackId) => {
         try {
-            const res =  await axios.post('http://localhost:8080/tracks/getTrack/' + trackName)
+            const res =  await axios.post(`http://${IP_APP}:${SERVER_PORT}/tracks/getTrack/${trackId}`)
 
             return res.data;
         } catch (error) {

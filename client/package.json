@@ -9,6 +9,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.13.6",
     "bootstrap": "^5.3.8",
+    "dotenv": "^17.4.0",
     "howler": "^2.2.4",
     "lucide-react": "^0.577.0",
     "module": "^2.0.0",
@@ -44,5 +45,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2"
   }
 }

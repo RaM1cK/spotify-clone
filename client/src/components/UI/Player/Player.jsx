@@ -42,6 +42,7 @@ const Player = () => {
 
         return () => {
             player.detach(playerObserver);
+            clearInterval(intervalRef.current);
         }
     }, [])
 
