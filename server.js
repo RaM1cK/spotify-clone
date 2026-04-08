@@ -17,6 +17,8 @@ const CLIENT_PORT = process.env.CLIENT_PORT;
 app.use(cors());
 app.use(express.json());
 
+const eblan = "1";
+
 export const __filename = fileURLToPath(import.meta.url);
 export const __dirname = path.dirname(__filename);
 
