@@ -9,13 +9,15 @@ import TrackList from "./components/UI/TrackList/TrackList";
 
 // const socket = io("http://localhost:8080");
 
-const IP_APP = process.env.REACT_APP_IP_APP
-const SERVER_PORT = process.env.REACT_APP_SERVER_PORT
+export const IP_APP = process.env.REACT_APP_IP_APP
+export const SERVER_PORT = process.env.REACT_APP_SERVER_PORT
 
 function App() {
     const music = [
         "morgenshtern-cvetok-(allmusic.kz).mp3",
-        "Jane_Remover_-_Dancing_with_your_eyes_closed_80039450.mp3"
+        "Jane_Remover_-_Dancing_with_your_eyes_closed_80039450.mp3",
+        "morgenshtern-уфф-деньги.mp3",
+        "MORGENSHTERN_-_Novyjj_merin_66404393.mp3"
     ]
 
     const [trackList, setTrackList] = useState([]);
@@ -32,6 +34,8 @@ function App() {
 
 
     }
+
+    console.log(Intl.DateTimeFormat().resolvedOptions().timeZone)
 
     // const first = new Track({
     //     id: '1',

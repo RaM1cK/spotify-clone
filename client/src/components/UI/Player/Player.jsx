@@ -1,16 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from "react-bootstrap";
-import {Pause, Play, SkipForward, SkipBack, Repeat, Repeat1, LoaderCircle} from "lucide-react";
+import {Pause, Play, SkipForward, SkipBack, Repeat, Repeat1, LoaderCircle, Shuffle} from "lucide-react";
 import FormRange from "react-bootstrap/cjs/FormRange";
 import classes from '../../../css/rangestyle.module.css';
 import "./Player.css"
 import {Player as pl} from "../../../classes/Player.ts";
-import RangeTrack from "../Track/rangeTrack";
+import RangeTrack from "./rangeTrack";
 import {PlayerUI} from "../../../classes/observers/PlayerUI.ts";
 
 const Player = () => {
     const intervalRef = useRef(null);
-    const isDraggingRef = useRef(false);
     const player = useRef(pl.getInstance()).current
 
     const [track, setTrack] = useState(undefined);
@@ -42,149 +41,145 @@ const Player = () => {
 
         return () => {
             player.detach(playerObserver);
+            player.destroy();
             clearInterval(intervalRef.current);
         }
     }, [])
-
-    useEffect(() => {
-        if (playing) {
-            intervalRef.current = setInterval(() => {
-                if (!isDraggingRef.current) setRangeValue(prev => (prev + 1) % (duration + 1));
-            }, 1000)
-        } else {
-            clearInterval(intervalRef.current);
-        }
-
-        return () => {
-            clearInterval(intervalRef.current);
-        }
-    }, [playing])
-
-    const handleMouseDown = (e) => {
-        if (e.button !== 0) return
-
-        isDraggingRef.current = true;
-    };
-
-    const handleMouseUp = (e) => {
-        if (isDraggingRef.current) {
-            const newValue = parseInt(e.target.value);
-            player.seek(newValue);
-            setRangeValue(newValue);
-
-            isDraggingRef.current = false;
-        }
-    };
-
-    const handleChange = (e) => {
-        const newValue = parseInt(e.target.value);
-        setRangeValue(newValue);
-    };
 
     return (
         <>
             {hidePlayer ? <></> : <div
                 id={"playerView"}
-                className="position-sticky rounded-1 p-2 d-flex"
+                className="position-sticky rounded-3 d-flex flex-column"
                 style={{
-                    border: '2px solid purple',
-                    backgroundColor: 'black',
-                    bottom: '0',
+                    background: `linear-gradient(to right, #2c24246b 0%, #2c24246b ${
+                        duration ? ((rangeValue / duration) * 100) : 0
+                    }%, black ${duration ? (rangeValue / duration) * 100 : 0}%, black 100%)`,
+                    bottom: 0,
+                    paddingTop: 0
             }}
             >
-                <Button
-                    onClick={() => {
-                        player.previous()
-                    }}
+                {/*<FormRange*/}
+                {/*    className={classes.customRange}*/}
+                {/*    value={rangeValue.toString()}*/}
+                {/*    max={duration}*/}
+                {/*    onInput={handleChange}*/}
+                {/*    onMouseDown={handleMouseDown}*/}
+                {/*    onMouseUp={handleMouseUp}*/}
+                {/*    onPointerDown={handleMouseDown}*/}
+                {/*    onPointerUp={handleMouseUp}*/}
+                {/*    onKeyDown={(e) => e.preventDefault()}*/}
+                {/*    style={{*/}
+                {/*        touchAction: 'none',*/}
+                {/*        margin: 0*/}
+                {/*    }}*/}
+                {/*/>*/}
+
+                <RangeTrack
+                    duration={duration}
+                    currentTime={rangeValue}
+                    setRangeValue={setRangeValue}
+                    playing={playing}
+                    intervalRef={intervalRef}
                     style={{
-                        backgroundColor: 'transparent',
-                        border: "none"
+                        touchAction: 'none'
                     }}
-                >
-                    <SkipBack className="d-flex align-self-center" size={20}/>
-                </Button>
-                <Button
-                    disabled={disabledPlayer}
-                    style={{
-                        width: '50px',
-                        height: '50px',
-                        backgroundColor: 'purple',
-                        borderColor: 'purple'
-                    }}
-                    onClick={() => {
-                        player.isPlaying() ? player.pause() : player.play()
-                    }}
-                    className="d-flex align-self-center rounded-5"
-                >
-                    <div className="d-flex align-self-center">
-                        {(() => {
-                            if (loading) {
-                                return <LoaderCircle className="spin" size={20}/>
-                            } else {
-                                return playing ? <Pause size={20}/> : <Play size={20}/>
-                            }
-                        })()}
-                    </div>
-                </Button>
-                <Button
-                    onClick={() => {
-                        player.next()
-                    }}
-                    style={{
-                        backgroundColor: 'transparent',
-                        border: "none"
-                    }}
-                >
-                    <SkipForward
+                />
 
-                        className="d-flex align-self-center"
-                        size={20}
-                    />
-                </Button>
-
-                <div className="d-flex w-100 flex-column">
-                    <div className="d-flex flex-column justify-content-between">
-                        <span className="track-item__title">{track ? track.name : ""}</span>
-                        <span className="track-item__artist ">{track ? track.creator : ""}</span>
-                    </div>
-
-                    {/*<RangeTrack*/}
-                    {/*    duration={track.duration}*/}
-                    {/*    currentTime={rangeValue}*/}
-                    {/*    onSeek={*/}
-                    {/*        soundRef.current.seek*/}
-                    {/*    }*/}
-                    {/*/>*/}
-
-
-                    <FormRange
-                        className={classes.customRange}
-                        value={rangeValue.toString()}
-                        max={duration}
-                        onInput={handleChange}
-                        onMouseDown={handleMouseDown}
-                        onMouseUp={handleMouseUp}
-                        onPointerDown={handleMouseDown}
-                        onPointerUp={handleMouseUp}
-                        onKeyDown={(e) => e.preventDefault()}
-                        style={{
-                            touchAction: 'none',
+                <div className="d-flex flex-row p-3">
+                    <Button
+                        onClick={() => {
+                            player.previous()
                         }}
-                    />
-                </div>
+                        style={{
+                            backgroundColor: 'transparent',
+                            border: "none"
+                        }}
+                    >
+                        <SkipBack className="d-flex align-self-center" size={20}/>
+                    </Button>
+                    <Button
+                        disabled={disabledPlayer}
+                        style={{
+                            width: '50px',
+                            height: '50px',
+                            backgroundColor: 'rgb(131 0 255)',
+                            border: 'none'
+                        }}
+                        onClick={() => {
+                            player.isPlaying() ? player.pause() : player.play()
+                        }}
+                        className="d-flex align-self-center rounded-5"
+                    >
+                        <div className="d-flex align-self-center">
+                            {(() => {
+                                if (loading) {
+                                    return <LoaderCircle className="spin" size={20}/>
+                                } else {
+                                    return playing ? <Pause size={20}/> : <Play size={20}/>
+                                }
+                            })()}
+                        </div>
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            player.next()
+                        }}
+                        style={{
+                            backgroundColor: 'transparent',
+                            border: "none"
+                        }}
+                    >
+                        <SkipForward
 
-                <Button
-                    style={{
-                        backgroundColor: 'transparent',
-                        border: "none"
-                    }}
-                >
-                    <Repeat
-                        className="d-flex align-self-center"
-                        size={20}
-                    />
-                </Button>
-            </div>}
+                            className="d-flex align-self-center"
+                            size={20}
+                        />
+                    </Button>
+
+                    <div className="d-flex w-100 flex-column">
+                        <div className="d-flex flex-column justify-content-between">
+                            <span className="track-item__title">{track ? track.name : ""}</span>
+                            <span className="track-item__artist ">{track ? track.creator : ""}</span>
+                        </div>
+
+
+
+
+
+                    </div>
+
+                    <Button
+                        style={{
+                            backgroundColor: 'transparent',
+                            border: "none"
+                        }}
+                    >
+                        <Shuffle
+                            onClick={() => {
+                                player.setStrategy("shuffle")
+                            }}
+                            className="d-flex align-self-center"
+                            size={20}
+                        />
+                    </Button>
+
+                    <Button
+                        style={{
+                            backgroundColor: 'transparent',
+                            border: "none"
+                        }}
+                    >
+                        <Repeat
+                            // onClick={() => {
+                            //     player.setStrategy("shuffle")
+                            // }}
+                            className="d-flex align-self-center"
+                            size={20}
+                        />
+                    </Button>
+                </div>
+                </div>}
         </>
     );
 };
