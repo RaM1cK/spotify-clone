@@ -23,20 +23,14 @@ export class SimplePLayerStrategy implements PlayerStrategy {
     }
 
     public next(): void {
-        this.player.stop();
-
-        if (this.player.howl) {
-            if (this.player.queue.length !== 0) {
-                this.player.indexCurrent = (this.player.indexCurrent + 1) % this.player.queue.length
-                this.player.setTrack(this.player.queue[this.player.indexCurrent], this.player.queue)
-            }
+        if (this.player.queue.length !== 0) {
+            this.player.indexCurrent = (this.player.indexCurrent + 1) % this.player.queue.length
+            this.player.setTrack(this.player.queue[this.player.indexCurrent], this.player.queue)
         }
     }
 
     public previous(): void {
         const curPos = this.player.howl.seek();
-
-        this.player.stop()
 
         if (curPos !== undefined) {
             if (curPos > 3) {
@@ -67,20 +61,14 @@ export class ShufflePLayerStrategy extends SimplePLayerStrategy {
 
 
     public next(): void {
-        this.player.stop();
-
-        if (this.player.howl) {
-            if (this.player.queue.length !== 0) {
-                this.player.indexCurrent = (this.player.indexCurrent + 1) % this.player.queue.length
-                this.player.setTrack(this.queue[this.player.indexCurrent], this.queue)
-            }
+        if (this.player.queue.length !== 0) {
+            this.player.indexCurrent = (this.player.indexCurrent + 1) % this.player.queue.length
+            this.player.setTrack(this.queue[this.player.indexCurrent], this.queue)
         }
     }
 
     public previous(): void {
         const curPos = this.player.howl.seek();
-
-        this.player.stop()
 
         if (curPos !== undefined) {
             if (curPos > 3) {

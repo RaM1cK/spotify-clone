@@ -14,10 +14,10 @@ const Player = () => {
 
     const [track, setTrack] = useState(undefined);
     const [disabledPlayer, setDisabledPlayer] = useState(true);
-    const [hidePlayer, setHidePlayer] = useState(true);
     const [playing, setPlaying] = useState(false);
     const [loading, setLoading] = useState(false);
     const [rangeValue, setRangeValue] = useState(0);
+    const [rangeEnabled, setRangeEnabled] = useState(false);
     const [duration, setDuration] = useState(0);
 
     useEffect(() => {
@@ -25,15 +25,18 @@ const Player = () => {
             setPlaying(player.isPlaying());
             setLoading(player.isLoading())
             setTrack(player.track);
-            setHidePlayer(player.track === undefined)
             setDisabledPlayer(player.isLoading())
             if (player.track) {
                 setDuration(player.track.duration);
                 setRangeValue(player.seek())
             }
 
-            if (player.isStopped() || player.isLoading()) {
+            if (player.isStopped()) {
                 setRangeValue(0)
+            }
+
+            if (player.isLoading()) {
+                setRangeValue(player.seek())
             }
         })
 
@@ -48,7 +51,7 @@ const Player = () => {
 
     return (
         <>
-            {hidePlayer ? <></> : <div
+            <div
                 id={"playerView"}
                 className="position-sticky rounded-3 d-flex flex-column"
                 style={{
@@ -101,8 +104,8 @@ const Player = () => {
                     <Button
                         disabled={disabledPlayer}
                         style={{
-                            width: '50px',
-                            height: '50px',
+                            width: '45px',
+                            height: '45px',
                             backgroundColor: 'rgb(131 0 255)',
                             border: 'none'
                         }}
@@ -179,7 +182,7 @@ const Player = () => {
                         />
                     </Button>
                 </div>
-                </div>}
+                </div>
         </>
     );
 };
