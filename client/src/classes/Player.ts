@@ -39,9 +39,11 @@ export class Player implements Subject {
         this.stop()
 
         this._queue = queue;
-        this._indexCurrent = queue.findIndex((t) => t.id === track.id)
         this._track = track;
-        this.load()
+        this.state = new LoadingState(this);
+        this.notify()
+
+        this._indexCurrent = queue.findIndex((t) => t.id === track.id)
 
         this.howl = new Howl({
             src: [track.url],
@@ -49,16 +51,9 @@ export class Player implements Subject {
             loop: false,
             html5: true,
             onload: () => {
-                this.state = new PlayingState(this)
                 this.play()
-                if (!this.howl?.playing()) {
-                    this.howl?.play()
-                }
             },
             onend: () => {
-                // if (!this.howl?.loop()) {
-                //     this.stop()
-                // }
                 this._strategy.onTrackEnd()
             },
             onloaderror: () => {
@@ -145,8 +140,9 @@ export class Player implements Subject {
 
     public load() {
         this.state = new LoadingState(this);
-        this.notify()
+
         this.howl?.load()
+        this.notify()
     }
 
     public setTrack(track: Track, queue: Track[]) {

@@ -9,8 +9,6 @@ import TrackList from "./components/UI/TrackList/TrackList";
 
 // const socket = io("http://localhost:8080");
 
-export const IP_APP = process.env.REACT_APP_IP_APP
-export const SERVER_PORT = process.env.REACT_APP_SERVER_PORT
 
 function App() {
     const music = [
@@ -24,7 +22,7 @@ function App() {
 
     const getTrack = async (trackId) => {
         try {
-            const res =  await axios.post(`http://${IP_APP}:${SERVER_PORT}/tracks/getTrack/${trackId}`)
+            const res =  await axios.post(`/api/tracks/getTrack/${trackId}`)
 
             return res.data;
         } catch (error) {

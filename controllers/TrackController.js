@@ -19,7 +19,7 @@ export const getTrack = async (req, res)=> {
             logoURL: null,
             name: metadata.common.title,
             creator: metadata.common.artist,
-            url: `http://${process.env.IP_APP}:${process.env.SERVER_PORT}/tracks/getTrackFile/${trackName}`,
+            url: `/${process.env.SERVER}/tracks/getTrackFile/${trackName}`,
             duration: Math.floor(metadata.format.duration)
         }
 
