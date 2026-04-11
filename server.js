@@ -10,6 +10,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const x = () => {
+  
+}
+
 const app = express();
 const IP_APP = process.env.IP_APP;
 const SERVER_PORT = process.env.SERVER_PORT;
