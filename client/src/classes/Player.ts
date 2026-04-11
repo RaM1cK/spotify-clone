@@ -1,21 +1,37 @@
-import {Track} from "./models/Track";
+import {Track} from "../../../models/Track";
 import {Observer} from "./observers/Observer";
 import {Subject} from "./Subject";
 // @ts-ignore
 import {LoadingState, PlayerState, PlayingState, StoppedState} from "./states/PlayerState.ts";
 import {Howl} from "howler";
+// @ts-ignore
+import {PlayerStrategy, ShufflePLayerStrategy, SimplePLayerStrategy} from "./PlayerStrategy.ts";
 
 export class Player implements Subject {
     private static uniqueInstance: Player = new Player();
     private howl: Howl | undefined;
     private observers: Observer[] = [];
     private _state: PlayerState;
-    private indexCurrent: number = 0;
+    private _strategy: PlayerStrategy;
+    private _indexCurrent: number = 0;
     private _queue: Track[] = [];
     private _track: Track | undefined;
 
+
+    public get indexCurrent(): number {
+        return this._indexCurrent;
+    }
+
+    public set indexCurrent(value: number) {
+        this._indexCurrent = value;
+    }
+
     public get state(): PlayerState {
         return this._state;
+    }
+
+    public destroy(){
+        this.howl?.unload()
     }
 
     private setHowl(track: Track, queue: Track[]): void {
@@ -23,32 +39,40 @@ export class Player implements Subject {
         this.stop()
 
         this._queue = queue;
-        this.indexCurrent = queue.findIndex((t) => t.id === track.id)
         this._track = track;
-        this.load()
+        this.state = new LoadingState(this);
+        this.notify()
+
+        this._indexCurrent = queue.findIndex((t) => t.id === track.id)
 
         this.howl = new Howl({
-            src: [this._track.url],
-            volume: 0.05,
-            loop: true,
+            src: [track.url],
+            volume: 0.06,
+            loop: false,
             html5: true,
-            preload: true,
-            autoplay: true,
             onload: () => {
-                this.state = new PlayingState(this)
-                this.notify()
+                this.play()
             },
             onend: () => {
-                if (!this.howl?.loop()) {
-                    this.stop()
-                }
+                this._strategy.onTrackEnd()
+            },
+            onloaderror: () => {
+                console.log('Load error')
+                this.howl?.load()
+            },
+            onplayerror: () => {
+                console.log('Load error')
+                this.howl?.load()
             }
         })
     }
 
     public seek(num?: number) {
         if (this.howl) {
-            if (num !== undefined) this.howl.seek(num);
+            if (num !== undefined) {
+                this.howl.seek(num)
+                this.load()
+            }
             else return Math.floor(this.howl.seek() as number);
         }
     }
@@ -59,6 +83,7 @@ export class Player implements Subject {
 
     private constructor() {
         this._state = new StoppedState(this);
+        this._strategy = new SimplePLayerStrategy(this);
     }
 
     public isPlaying(): boolean {
@@ -77,7 +102,7 @@ export class Player implements Subject {
         return this._track;
     }
 
-    get queue(): Track[] {
+    public get queue(): Track[] {
         return [...this._queue];
     }
 
@@ -115,6 +140,8 @@ export class Player implements Subject {
 
     public load() {
         this.state = new LoadingState(this);
+
+        this.howl?.load()
         this.notify()
     }
 
@@ -122,33 +149,24 @@ export class Player implements Subject {
         this.setHowl(track, queue);
     }
 
-    public next(): void {
-        this.stop();
-
-        if (this.howl) {
-            if (this._queue.length !== 0) {
-                this.indexCurrent = (this.indexCurrent + 1) % this._queue.length
-                // @ts-ignore
-                this.setTrack(this._queue[this.indexCurrent], this._queue)
-            }
+    public setStrategy(strategy: "simple" | "shuffle" | "loopTrack" | "loopPlaylist") {
+        switch (strategy) {
+            case "simple":
+                this._strategy = new SimplePLayerStrategy(this);
+                break;
+            case "shuffle":
+                this._strategy = new ShufflePLayerStrategy(this)
+                break;
         }
+
+        console.log(this._strategy)
     }
 
-    public previous(): void {
-        const curPos = this.howl?.seek();
+    public next() {
+        this._strategy.next();
+    }
 
-        this.stop()
-
-        if (curPos !== undefined) {
-            if (curPos > 3) {
-                this.play()
-            } else {
-                if (this._queue.length !== 0) {
-                    this.indexCurrent = (this.indexCurrent + this._queue.length - 1) % this._queue.length
-                    // @ts-ignore
-                    this.setTrack(this._queue[this.indexCurrent], this._queue)
-                }
-            }
-        }
+    public previous() {
+        this._strategy.previous();
     }
 }

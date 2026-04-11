@@ -1,4 +1,3 @@
-import {Track} from "../client/src/classes/models/Track.ts";
 import {parseFile} from "music-metadata";
 import {inspect} from 'util';
 import path from "path";
@@ -20,7 +19,7 @@ export const getTrack = async (req, res)=> {
             logoURL: null,
             name: metadata.common.title,
             creator: metadata.common.artist,
-            url: `http://${process.env.IP_APP}:${process.env.SERVER_PORT}/tracks/getTrackFile/${trackName}`,
+            url: `/${process.env.SERVER}/tracks/getTrackFile/${trackName}`,
             duration: Math.floor(metadata.format.duration)
         }
 
@@ -45,7 +44,19 @@ export const getTrackFile = async (req, res)=> {
     const start = parseInt(parts[0], 10);
     const end = start + 1024 * 1024 >= fileSize ? fileSize - 1 : start + 1024 * 1024;
 
-    const fileStream = fs.createReadStream(filePath, { start, end });
+    const fileStream = fs.createReadStream(filePath, { start, end});
+
+    fileStream.on('error', () => {
+        fileStream.destroy()
+    })
+
+    fileStream.on('close', () => {
+        if (!fileStream.destroyed) fileStream.destroy();
+    })
+
+    fileStream.on('end', () => {
+        if (!fileStream.destroyed) fileStream.destroy();
+    })
 
     const chunkSize = end - start + 1
 
