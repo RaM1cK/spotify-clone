@@ -136,14 +136,14 @@ export default function AuthPage({ onAuth }) {
                 {/* Fields */}
                 <div className="auth-fields">
                     <div className="auth-field-group">
-                        <label className="auth-label">Логин</label>
+                        <label className="auth-label">E-mail</label>
                         <input
                             className="auth-input"
                             name="username"
                             value={form.username}
                             onChange={handleChange}
                             onKeyDown={handleKeyDown}
-                            placeholder="Введите логин"
+                            placeholder="Введите e-mail"
                             autoComplete="username"
                         />
                     </div>
