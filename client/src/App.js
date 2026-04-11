@@ -6,23 +6,26 @@ import {CircleUserRound, ListMusic, MessageCircleMore} from 'lucide-react'
 import axios from "axios";
 import "./App.css";
 import TrackList from "./components/UI/TrackList/TrackList";
+import AuthPage, { getSession, clearSession } from "./AuthPage";
 
 // const socket = io("http://localhost:8080");
 
 const IP_APP = process.env.REACT_APP_IP_APP
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT
-
-function App() {
+//тут то что было в апе
+function AppContent(){
     const music = [
         "morgenshtern-cvetok-(allmusic.kz).mp3",
-        "Jane_Remover_-_Dancing_with_your_eyes_closed_80039450.mp3"
+        "Jane_Remover_-_Dancing_with_your_eyes_closed_80039450.mp3",
+        "morgenshtern-уфф-деньги.mp3",
+        "MORGENSHTERN_-_Novyjj_merin_66404393.mp3"
     ]
 
     const [trackList, setTrackList] = useState([]);
 
     const getTrack = async (trackId) => {
         try {
-            const res =  await axios.post(`http://${IP_APP}:${SERVER_PORT}/tracks/getTrack/${trackId}`)
+            const res =  await axios.post(`/api/tracks/getTrack/${trackId}`)
 
             return res.data;
         } catch (error) {
@@ -32,6 +35,8 @@ function App() {
 
 
     }
+
+    console.log(Intl.DateTimeFormat().resolvedOptions().timeZone)
 
     // const first = new Track({
     //     id: '1',
@@ -68,58 +73,80 @@ function App() {
     //     console.log(home.data);
     // }
 
-  return (
-      <>
-          <div
-              className="d-flex flex-row"
-              style={{
-                  minHeight: '100vh'
-              }}
-          >
-              <Nav
-                  className="d-flex flex-column justify-content-start"
-                  style={{
-                      position: "sticky",
-                      top: '0',
-                      height: '100%',
-                  }}
-              >
-                  <NavLink>
-                      <CircleUserRound />
-                  </NavLink>
-                  <NavLink>
-                      <ListMusic />
-                  </NavLink>
-                  <NavLink>
-                      <MessageCircleMore />
-                  </NavLink>
-              </Nav>
-
-              <div
-                  className="d-flex flex-column"
-                  style={{
-                      width: "100%",
-                      height: '100%',
+    return (
+        <>
+            <div
+                className="d-flex flex-row"
+                style={{
+                    minHeight: '100vh'
+                }}
+            >
+                <Nav
+                    className="d-flex flex-column justify-content-start"
+                    style={{
+                        position: "sticky",
+                        top: '0',
+                        height: '100%',
                     }}
-              >
-                  {/*<Button onClick={getHome}>click</Button>*/}
+                >
+                    <NavLink>
+                        <CircleUserRound />
+                    </NavLink>
+                    <NavLink>
+                        <ListMusic />
+                    </NavLink>
+                    <NavLink>
+                        <MessageCircleMore />
+                    </NavLink>
+                </Nav>
 
-                  {/*<TrackItem Track={first}/>*/}
-                  {/*<TrackItem Track={second}/>*/}
+                <div
+                    className="d-flex flex-column"
+                    style={{
+                        width: "100%",
+                        height: '100%',
+                    }}
+                >
+                    {/*<Button onClick={getHome}>click</Button>*/}
 
-                  <TrackList tracks={trackList}/>
-                  {/*<Button onClick={*/}
-                  {/*    async () => {*/}
-                  {/*        await getTrack(music[0])*/}
-                  {/*    }*/}
-                  {/*}>*/}
-                  {/*    Добавить трек*/}
-                  {/*</Button>*/}
-              </div>
-          </div>
-          <Player/>
-      </>
-  );
+                    {/*<TrackItem Track={first}/>*/}
+                    {/*<TrackItem Track={second}/>*/}
+
+                    <TrackList tracks={trackList}/>
+                    {/*<Button onClick={*/}
+                    {/*    async () => {*/}
+                    {/*        await getTrack(music[0])*/}
+                    {/*    }*/}
+                    {/*}>*/}
+                    {/*    Добавить трек*/}
+                    {/*</Button>*/}
+                </div>
+            </div>
+            <Player/>
+        </>
+    );
+}
+
+function App() {
+    const [session, setSession] = useState(() => getSession());
+
+    //Строчка ниже очищает локальную сессию - если удалишь, при обновлении страницы форма бл
+    clearSession();
+
+    const handleAuth = (newSession) => {
+        setSession(newSession);
+    };
+
+    const handleLogout = () => {
+        clearSession();
+        setSession(null);
+    };
+
+    if (!session) {
+        return <AuthPage onAuth={handleAuth} />;
+    }
+
+    return <AppContent user={session} onLogout={handleLogout} />;
 }
 
 export default App;
