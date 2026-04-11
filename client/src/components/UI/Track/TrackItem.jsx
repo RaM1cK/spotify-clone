@@ -43,7 +43,12 @@ function TrackItem({ track, tracks }) {
             if (player.track.id !== track.id) {
                 player.setTrack(track, tracks)
             } else {
-                player.isPlaying() ? player.pause() : player.play()
+                if (player.isLoading()) {
+                    player.pause()
+                    return
+                }
+
+                player.isPlaying() && !player.isLoading() ? player.pause() : player.play()
             }
         }
     }

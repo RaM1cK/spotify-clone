@@ -50,7 +50,9 @@ export class Player implements Subject {
             volume: 0.06,
             loop: false,
             html5: true,
+            autoplay: true,
             onload: () => {
+                this.state = new PlayingState(this);
                 this.play()
             },
             onend: () => {
@@ -71,7 +73,6 @@ export class Player implements Subject {
         if (this.howl) {
             if (num !== undefined) {
                 this.howl.seek(num)
-                this.load()
             }
             else return Math.floor(this.howl.seek() as number);
         }

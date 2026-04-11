@@ -64,7 +64,8 @@ const RangeTrack = ({duration, currentTime, setRangeValue, playing, intervalRef}
                     appearance: 'none',
                     background: `linear-gradient(to right, #a855f7 0%, #a855f7 ${
                         duration ? (currentTime / duration) * 100 : 0
-                    }%, #444 ${duration ? (currentTime / duration) * 100 : 0}%, #444 100%)`
+                    }%, #444 ${duration ? (currentTime / duration) * 100 : 0}%, #444 100%)`,
+                    touchAction: 'none'
                 }}
             />
     );
