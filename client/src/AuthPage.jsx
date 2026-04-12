@@ -78,7 +78,7 @@ export default function AuthPage({ onAuth }) {
                 return;
             }
             if (!isValidEmail(email)) {
-                setError("Невалидный email");
+                setError("Некорректный e-mail");
                 triggerShake();
                 return;
             }
@@ -110,6 +110,8 @@ export default function AuthPage({ onAuth }) {
         setForm({nickname: form.nickname , email: form.email, password: form.password, confirm: "" });
         setError("");
     };
+
+    const [show, setShow] = useState(false);
 
     return (
         <div className="auth-overlay">
@@ -180,13 +182,26 @@ export default function AuthPage({ onAuth }) {
                         <input
                             className="auth-input"
                             name="password"
-                            type="password"
+                            type={show ? 'text' : 'password'}
                             value={form.password}
                             onChange={handleChange}
                             onKeyDown={handleKeyDown}
                             placeholder="Введите пароль"
                             autoComplete={mode === "login" ? "current-password" : "new-password"}
-                        />
+                            />
+                        <button
+                            type="button"
+                            onClick={() => setShow(s => !s)}
+                            aria-label={show ? "Скрыть пароль" : "Показать пароль"}
+                            style={{
+                                position: 'absolute', right: '8px', top: '50%',
+                                transform: 'none',
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                color: '#d4d4d4'
+                            }}
+                        >
+                            {show ? '🙈' : '👁'}
+                        </button>
                     </div>
 
                     {mode === "register" && (
