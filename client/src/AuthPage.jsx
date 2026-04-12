@@ -31,7 +31,7 @@ export function clearSession() {
 
 export default function AuthPage({ onAuth }) {
     const [mode, setMode] = useState("login");
-    const [form, setForm] = useState({ username: "", password: "", confirm: "" });
+    const [form, setForm] = useState({nickname: "" , email: "", password: "", confirm: "" });
     const [error, setError] = useState("");
     const [shake, setShake] = useState(false);
 
@@ -45,10 +45,15 @@ export default function AuthPage({ onAuth }) {
         setError("");
     };
 
-    const handleSubmit = () => {
-        const { username, password, confirm } = form;
+    const isValidEmail = (email) => {
+        const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        return regex.test(email);
+    }
 
-        if (!username.trim() || !password.trim()) {
+    const handleSubmit = () => {
+        const {nickname , email, password, confirm } = form;
+
+        if (!email.trim() || !password.trim() || (mode === "register" && !nickname.trim())) {
             setError("Заполните все поля");
             triggerShake();
             return;
@@ -67,24 +72,30 @@ export default function AuthPage({ onAuth }) {
                 triggerShake();
                 return;
             }
-            if (users[username]) {
+            if (users[email]) {
                 setError("Пользователь уже существует");
                 triggerShake();
                 return;
             }
-            users[username] = { password };
+            if (!isValidEmail(email)) {
+                setError("Невалидный email");
+                triggerShake();
+                return;
+            }
+
+            users[email] = { password };
             saveUsers(users);
-            const session = { username };
+            const session = { email };
             localStorage.setItem(SESSION_KEY, JSON.stringify(session));
             onAuth(session);
         } else {
-            const user = users[username];
+            const user = users[email];
             if (!user || user.password !== password) {
                 setError("Неверный логин или пароль");
                 triggerShake();
                 return;
             }
-            const session = { username };
+            const session = { email };
             localStorage.setItem(SESSION_KEY, JSON.stringify(session));
             onAuth(session);
         }
@@ -96,7 +107,7 @@ export default function AuthPage({ onAuth }) {
 
     const switchMode = (newMode) => {
         setMode(newMode);
-        setForm({ username: "", password: "", confirm: "" });
+        setForm({nickname: form.nickname , email: form.email, password: form.password, confirm: "" });
         setError("");
     };
 
@@ -135,16 +146,32 @@ export default function AuthPage({ onAuth }) {
 
                 {/* Fields */}
                 <div className="auth-fields">
+                    {mode === "register" && (
+                        <div className="auth-field-group">
+                            <label className="auth-label">Псевдоним</label>
+                            <input
+                                className="auth-input"
+                                name="nickname"
+                                type="text"
+                                value={form.nickname}
+                                onChange={handleChange}
+                                onKeyDown={handleKeyDown}
+                                placeholder="Введите псевдоним"
+                                autoComplete="off"
+                            />
+                        </div>
+                    )}
+
                     <div className="auth-field-group">
                         <label className="auth-label">E-mail</label>
                         <input
                             className="auth-input"
-                            name="username"
-                            value={form.username}
+                            name="email"
+                            value={form.email}
                             onChange={handleChange}
                             onKeyDown={handleKeyDown}
                             placeholder="Введите e-mail"
-                            autoComplete="username"
+                            autoComplete="email"
                         />
                     </div>
 

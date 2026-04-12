@@ -17,7 +17,7 @@ const Player = () => {
     const [playing, setPlaying] = useState(false);
     const [loading, setLoading] = useState(false);
     const [rangeValue, setRangeValue] = useState(0);
-    const [rangeEnabled, setRangeEnabled] = useState(false);
+    const [rangeDisabled, setRangeDisabled] = useState(false);
     const [duration, setDuration] = useState(0);
 
     useEffect(() => {
@@ -55,7 +55,7 @@ const Player = () => {
                 id={"playerView"}
                 className="position-sticky rounded-3 d-flex flex-column"
                 style={{
-                    background: `linear-gradient(to right, #2c24246b 0%, #2c24246b ${
+                    background: `linear-gradient(to right, rgb(63 53 53) 0%, rgb(63 53 53) ${
                         duration ? ((rangeValue / duration) * 100) : 0
                     }%, black ${duration ? (rangeValue / duration) * 100 : 0}%, black 100%)`,
                     bottom: 0,
@@ -84,9 +84,7 @@ const Player = () => {
                     setRangeValue={setRangeValue}
                     playing={playing}
                     intervalRef={intervalRef}
-                    style={{
-                        touchAction: 'none'
-                    }}
+
                 />
 
                 <div className="d-flex flex-row p-3">
