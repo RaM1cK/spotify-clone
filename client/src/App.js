@@ -7,131 +7,33 @@ import axios from "axios";
 import "./App.css";
 import TrackList from "./components/UI/TrackList/TrackList";
 import AuthPage, { getSession, clearSession } from "./AuthPage";
+import MainPage from "./components/pages/MainPage";
+import ContextMenu from "./components/ContextMenu";
+import testpage from "./components/pages/testpage";
+import MenuButton from "./components/MenuButton";
 
 // const socket = io("http://localhost:8080");
 
 const IP_APP = process.env.REACT_APP_IP_APP
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT
-//тут то что было в апе
-function AppContent(){
-    const music = [
-        "morgenshtern-cvetok-(allmusic.kz).mp3",
-        "Jane_Remover_-_Dancing_with_your_eyes_closed_80039450.mp3",
-        "morgenshtern-уфф-деньги.mp3",
-        "MORGENSHTERN_-_Novyjj_merin_66404393.mp3"
-    ]
 
-    const [trackList, setTrackList] = useState([]);
+//Страницы, которые будут посередине
+const PAGES = [
+    {id: "testTrack", component: MainPage, label: "Test Track"},
+    {id: "testPage", component: testpage, label: "Test Page"},
+]
 
-    const getTrack = async (trackId) => {
-        try {
-            const res =  await axios.post(`/api/tracks/getTrack/${trackId}`)
-
-            return res.data;
-        } catch (error) {
-            console.error(error);
-            return null;
-        }
-
-
-    }
-
-    console.log(Intl.DateTimeFormat().resolvedOptions().timeZone)
-
-    // const first = new Track({
-    //     id: '1',
-    //     logoURL: 'https://t2.genius.com/unsafe/184x184/https%3A%2F%2Fimages.genius.com%2F76714eccf8df6ec9924514712f9cdd15.1000x1000x1.png',
-    //     name: 'Цветок',
-    //     creator: 'Моргенштерн',
-    //     url: music[0],
-    //     duration: 155
-    // })
-    // //
-    // const second = new Track({
-    //     id: '2',
-    //     logoURL: 'https://t2.genius.com/unsafe/184x184/https%3A%2F%2Fimages.genius.com%2Fdfc77405bb4b0bdc013dba5e348b1553.1000x1000x1.png',
-    //     name: 'Dancing with your eyes closed',
-    //     creator: 'Jane Remover',
-    //     url: music[1],
-    //     duration: 230
-    // })
-
-    useEffect(() => {
-        (async () => {
-            const tracks = await Promise.all(music.map(async name => {
-                return await getTrack(name);
-            }));
-            setTrackList(tracks.filter(track => track !== null));
-        })();
-    }, []);
-
-    //
-    //
-    // const getHome = async () => {
-    //     const home = await axios.post("http://localhost:8080/home");
-    //
-    //     console.log(home.data);
-    // }
-
-    return (
-        <>
-            <div
-                className="d-flex flex-row"
-                style={{
-                    minHeight: '100vh'
-                }}
-            >
-                <Nav
-                    className="d-flex flex-column justify-content-start"
-                    style={{
-                        position: "sticky",
-                        top: '0',
-                        height: '100%',
-                    }}
-                >
-                    <NavLink>
-                        <CircleUserRound />
-                    </NavLink>
-                    <NavLink>
-                        <ListMusic />
-                    </NavLink>
-                    <NavLink>
-                        <MessageCircleMore />
-                    </NavLink>
-                </Nav>
-
-                <div
-                    className="d-flex flex-column"
-                    style={{
-                        width: "100%",
-                        height: '100%',
-                    }}
-                >
-                    {/*<Button onClick={getHome}>click</Button>*/}
-
-                    {/*<TrackItem Track={first}/>*/}
-                    {/*<TrackItem Track={second}/>*/}
-
-                    <TrackList tracks={trackList}/>
-                    {/*<Button onClick={*/}
-                    {/*    async () => {*/}
-                    {/*        await getTrack(music[0])*/}
-                    {/*    }*/}
-                    {/*}>*/}
-                    {/*    Добавить трек*/}
-                    {/*</Button>*/}
-                </div>
-            </div>
-            <Player/>
-        </>
-    );
-}
 
 function App() {
     const [session, setSession] = useState(() => getSession());
+    const [activePage, setActivePage] = useState("testTrack");
+
+    const [currentTrack, setCurrentTrack] = useState(null);
+
+    const [menuOpen, setMenuOpen] = useState(false);
 
     //Строчка ниже очищает локальную сессию - если удалишь, при обновлении страницы форма бл
-    clearSession();
+    //clearSession();
 
     const handleAuth = (newSession) => {
         setSession(newSession);
@@ -146,7 +48,24 @@ function App() {
         return <AuthPage onAuth={handleAuth} />;
     }
 
-    return <AppContent user={session} onLogout={handleLogout} />;
+    //Функция ищет активную страницу в массиве страниц и возвращает ее
+    const { component: PageComponent } = PAGES.find(p => p.id === activePage);
+    return (
+        <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
+            <MenuButton menuOpen={menuOpen} setMenuOpen={setMenuOpen}/>
+            <div style={{ display: "flex", flex: 1, overflow: "hidden", minHeight: 0 }}>
+                <ContextMenu PAGES={PAGES} activePage={activePage} setActivePage={setActivePage} menuOpen={menuOpen} setMenuOpen={setMenuOpen}/>
+                <main style={{ flex: 1, overflowY: "auto" }}>
+                    <PageComponent setCurrentTrack={setCurrentTrack} />
+                </main>
+            </div>
+            <Player
+                track={currentTrack}
+                setCurrentTrack={setCurrentTrack}
+            />
+        </div>
+    )
+
 }
 
 export default App;

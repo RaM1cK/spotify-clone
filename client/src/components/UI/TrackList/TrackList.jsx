@@ -2,9 +2,7 @@ import React from "react"
 import TrackItem from "../Track/TrackItem";
 import "./TrackList.css"
 
-function TrackList({
-                        tracks
-                   }) {
+function TrackList({tracks, setCurrentTrack}) {
 
     const getWordForm = (count) => {
         const lastTwo = count % 100;
@@ -46,6 +44,7 @@ function TrackList({
                         index={index}
                         track={track}
                         tracks={tracks}
+                        setCurrentTrack = {setCurrentTrack}
                     />
                 ))}
             </div>

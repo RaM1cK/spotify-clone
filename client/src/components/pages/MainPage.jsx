@@ -1,15 +1,15 @@
 import io from 'socket.io-client';
 import React, {useEffect, useState} from "react";
-import Player from "./UI/Player/Player";
+import Player from "../UI/Player/Player";
 import {Button, Nav, NavLink} from "react-bootstrap";
 import {CircleUserRound, ListMusic, MessageCircleMore} from 'lucide-react'
 import axios from "axios";
-import "../App.css";
-import TrackList from "./UI/TrackList/TrackList";
+import "../../App.css";
+import TrackList from "../UI/TrackList/TrackList";
 
 // const socket = io("http://localhost:8080");
 
-const MainPage = () => {
+const MainPage = ({setCurrentTrack}) => {
     const music = [
         "morgenshtern-cvetok-(allmusic.kz).mp3",
         "Jane_Remover_-_Dancing_with_your_eyes_closed_80039450.mp3",
@@ -46,27 +46,27 @@ const MainPage = () => {
             <div
                 className="d-flex flex-row"
                 style={{
-                    minHeight: '100vh'
+                    height: '100%'
                 }}
             >
-                <Nav
-                    className="d-flex flex-column justify-content-start"
-                    style={{
-                        position: "sticky",
-                        top: '0',
-                        height: '100%',
-                    }}
-                >
-                    <NavLink>
-                        <CircleUserRound />
-                    </NavLink>
-                    <NavLink>
-                        <ListMusic />
-                    </NavLink>
-                    <NavLink>
-                        <MessageCircleMore />
-                    </NavLink>
-                </Nav>
+                {/*<Nav*/}
+                {/*    className="d-flex flex-column justify-content-start"*/}
+                {/*    style={{*/}
+                {/*        position: "sticky",*/}
+                {/*        top: '0',*/}
+                {/*        height: '100%',*/}
+                {/*    }}*/}
+                {/*>*/}
+                {/*    <NavLink>*/}
+                {/*        <CircleUserRound />*/}
+                {/*    </NavLink>*/}
+                {/*    <NavLink>*/}
+                {/*        <ListMusic />*/}
+                {/*    </NavLink>*/}
+                {/*    <NavLink>*/}
+                {/*        <MessageCircleMore />*/}
+                {/*    </NavLink>*/}
+                {/*</Nav>*/}
 
                 <div
                     className="d-flex flex-column"
@@ -75,10 +75,9 @@ const MainPage = () => {
                         height: '100%',
                     }}
                 >
-                    <TrackList tracks={trackList}/>
+                    <TrackList tracks={trackList} setCurrentTrack = {setCurrentTrack} />
                 </div>
             </div>
-            <Player/>
         </>
     );
 };
