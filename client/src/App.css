@@ -3,4 +3,33 @@ html, body, #root {
     padding: 0;
     min-height: 100vh;
     background-color: #000;
+    overflow: hidden;
+}
+
+.context-menu {
+    width: 220px;
+    flex-shrink: 0;
+}
+
+.menu-toggle {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: block !important;
+    }
+
+    .context-menu {
+        position: fixed;
+        top: 0; left: 0;
+        height: 100vh;
+        z-index: 150;
+        transform: translateX(-100%);  /* скрыто за экраном */
+        transition: transform 0.3s ease;
+    }
+
+    .context-menu.open {
+        transform: translateX(0);
+    }
 }
