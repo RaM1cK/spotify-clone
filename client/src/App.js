@@ -16,7 +16,7 @@ function App() {
     const [session, setSession] = useState(() => getSession());
 
     //Строчка ниже очищает локальную сессию - если удалишь, при обновлении страницы форма бл
-    clearSession();
+    // clearSession();
 
     const handleAuth = (newSession) => {
         setSession(newSession);

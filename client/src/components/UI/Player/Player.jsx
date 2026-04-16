@@ -59,6 +59,7 @@ const Player = () => {
                         duration ? ((rangeValue / duration) * 100) : 0
                     }%, black ${duration ? (rangeValue / duration) * 100 : 0}%, black 100%)`,
                     bottom: 0,
+                    paddingBottom: "env(self-area-inset-bottom)",
                     paddingTop: 0
             }}
             >
