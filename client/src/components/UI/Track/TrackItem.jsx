@@ -4,7 +4,7 @@ import {Player} from "../../../classes/Player.ts";
 import "./trackitem.css";
 import {TrackUI} from "../../../classes/observers/TrackUI.ts";
 
-function TrackItem({ track, tracks }) {
+function TrackItem({ track, tracks, setCurrentTrack }) {
     const [isPlaying, setIsPlaying] = React.useState(false);
     const [isCurrent, setIsCurrent] = React.useState(false);
     const player = React.useRef(Player.getInstance()).current;
@@ -38,10 +38,12 @@ function TrackItem({ track, tracks }) {
     const handleClick = () => {
         if (!player.track) {
             player.setTrack(track, tracks);
+            setCurrentTrack(track);
         }
         else {
             if (player.track.id !== track.id) {
                 player.setTrack(track, tracks)
+                setCurrentTrack(track);
             } else {
                 if (player.isLoading()) {
                     player.pause()

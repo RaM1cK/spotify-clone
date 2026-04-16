@@ -8,11 +8,13 @@ import {Player as pl} from "../../../classes/Player.ts";
 import RangeTrack from "./rangeTrack";
 import {PlayerUI} from "../../../classes/observers/PlayerUI.ts";
 
-const Player = () => {
+const Player = ({track, setTrack, style}) => {
     const intervalRef = useRef(null);
     const player = useRef(pl.getInstance()).current
 
-    const [track, setTrack] = useState(undefined);
+    //const [track, setTrack] = useState(undefined);
+    //перенес в app чтобы плеера не было, пока нет проигрываемого трека
+
     const [disabledPlayer, setDisabledPlayer] = useState(true);
     const [playing, setPlaying] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -24,7 +26,6 @@ const Player = () => {
         const playerObserver = new PlayerUI(() => {
             setPlaying(player.isPlaying());
             setLoading(player.isLoading())
-            setTrack(player.track);
             setDisabledPlayer(player.isLoading())
             if (player.track) {
                 setDuration(player.track.duration);
@@ -38,7 +39,7 @@ const Player = () => {
             if (player.isLoading()) {
                 setRangeValue(player.seek())
             }
-        })
+        },[setTrack])
 
         player.attach(playerObserver);
 
@@ -50,7 +51,6 @@ const Player = () => {
     }, [])
 
     return (
-        <>
             <div
                 id={"playerView"}
                 className="position-sticky rounded-3 d-flex flex-column"
@@ -60,7 +60,10 @@ const Player = () => {
                     }%, black ${duration ? (rangeValue / duration) * 100 : 0}%, black 100%)`,
                     bottom: 0,
                     paddingBottom: "env(self-area-inset-bottom)",
-                    paddingTop: 0
+                    paddingTop: 0,
+                    visibility: track ? "visible" : "hidden",
+                    height: track ? "auto" : 0,
+                    overflow: "hidden",
             }}
             >
                 {/*<FormRange*/}
@@ -181,8 +184,7 @@ const Player = () => {
                         />
                     </Button>
                 </div>
-                </div>
-        </>
+            </div>
     );
 };
 
