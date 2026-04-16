@@ -120,7 +120,6 @@ export class Player implements Subject {
     }
 
     public notify(): void {
-        console.log(this._state)
         this.observers.forEach(async (o) => {o.update()})
     }
 
