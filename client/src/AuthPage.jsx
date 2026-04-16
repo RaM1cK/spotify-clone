@@ -1,21 +1,13 @@
 import { useState } from "react";
 import "./css/auth.css";
+import axios from "axios";
 
 const USERS_KEY = "app_users";
 const SESSION_KEY = "app_session";
 
-function getUsers() {
-    try {
-        console.log(localStorage.getItem(USERS_KEY));
-        return JSON.parse(localStorage.getItem(USERS_KEY)) || {};
-    } catch {
-        return {};
-    }
-}
-
-function saveUsers(users) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
+// function saveUsers(users) {
+//     localStorage.setItem(USERS_KEY, JSON.stringify(users));
+// }
 
 export function getSession() {
     try {
@@ -34,6 +26,63 @@ export default function AuthPage({ onAuth }) {
     const [form, setForm] = useState({nickname: "" , email: "", password: "", confirm: "" });
     const [error, setError] = useState("");
     const [shake, setShake] = useState(false);
+    const [sending, setSending] = useState(false);
+
+    function setLocal(email) {
+        const session = { email };
+        console.log(session)
+        localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        onAuth(session);
+    }
+
+    function register(regUserData) {
+        setSending(true);
+
+        axios.post("/api/users/reg", regUserData).then(
+            () => setLocal(regUserData.email)
+        ).catch(err => {
+            if (err.response) {
+                const status = err.response.status;
+
+                if (status === 409) {
+                    setError("Пользователь уже существует");
+                    triggerShake();
+                } else {
+                    setError("Ошибка регистрации");
+                    triggerShake()
+                }
+            } else if (err.request) {
+                setError("Нет ответа от сервера");
+                triggerShake();
+            } else {
+                setError("Ошибка отправки");
+                triggerShake();
+            }
+
+            setSending(false);
+        });
+    }
+
+    function authenticate(authUserData) {
+        setSending(true);
+
+        axios.post("/api/users/auth", authUserData).then(
+            () => setLocal(authUserData.email)
+        ).catch(err => {
+            if (err.response) {
+                setError("Неверный e-mail или пароль");
+                triggerShake()
+            } else if (err.request) {
+                setError("Нет ответа от сервера");
+                triggerShake();
+            } else {
+                setError("Ошибка отправки");
+                triggerShake();
+            }
+
+            setSending(false);
+        })
+    }
 
     const triggerShake = () => {
         setShake(true);
@@ -51,7 +100,7 @@ export default function AuthPage({ onAuth }) {
     }
 
     const handleSubmit = () => {
-        const {nickname , email, password, confirm } = form;
+        const {nickname, email, password, confirm } = form;
 
         if (!email.trim() || !password.trim() || (mode === "register" && !nickname.trim())) {
             setError("Заполните все поля");
@@ -59,7 +108,12 @@ export default function AuthPage({ onAuth }) {
             return;
         }
 
-        const users = getUsers();
+        // const users = getUsers();
+        if (!isValidEmail(email)) {
+            setError("Невалидный email");
+            triggerShake();
+            return;
+        }
 
         if (mode === "register") {
             if (password !== confirm) {
@@ -72,32 +126,25 @@ export default function AuthPage({ onAuth }) {
                 triggerShake();
                 return;
             }
-            if (users[email]) {
-                setError("Пользователь уже существует");
-                triggerShake();
-                return;
-            }
-            if (!isValidEmail(email)) {
-                setError("Некорректный e-mail");
-                triggerShake();
-                return;
-            }
 
-            users[email] = { password };
-            saveUsers(users);
-            const session = { email };
-            localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-            onAuth(session);
+            // users[email] = { password };
+            // saveUsers(users);
+            register({
+                password_hash: password.trim(),
+                nickname: nickname.trim(),
+                email: email.trim(),
+            })
         } else {
-            const user = users[email];
-            if (!user || user.password !== password) {
-                setError("Неверный логин или пароль");
-                triggerShake();
-                return;
-            }
-            const session = { email };
-            localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-            onAuth(session);
+            // const user = users[email];
+            // if (!user || user.password !== password) {
+            //     setError("Неверный логин или пароль");
+            //     triggerShake();
+            //     return;
+            // }
+            authenticate({
+                password_hash: password.trim(),
+                email: email.trim(),
+            })
         }
     };
 
@@ -243,7 +290,7 @@ export default function AuthPage({ onAuth }) {
 
                     {error && <div className="auth-error">{error}</div>}
 
-                    <button className="auth-button" onClick={handleSubmit}>
+                    <button className="auth-button" onClick={handleSubmit} disabled={sending}>
                         {mode === "login" ? "Войти" : "Зарегистрироваться"}
                     </button>
                 </div>
@@ -255,8 +302,8 @@ export default function AuthPage({ onAuth }) {
                         className="auth-link"
                         onClick={() => switchMode(mode === "login" ? "register" : "login")}
                     >
-            {mode === "login" ? "Зарегистрироваться" : "Войти"}
-          </span>
+                        {mode === "login" ? "Зарегистрироваться" : "Войти"}
+                    </span>
                 </p>
             </div>
         </div>

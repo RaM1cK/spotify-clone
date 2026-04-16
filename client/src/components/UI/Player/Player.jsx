@@ -59,6 +59,7 @@ const Player = ({track, setTrack, style}) => {
                         duration ? ((rangeValue / duration) * 100) : 0
                     }%, black ${duration ? (rangeValue / duration) * 100 : 0}%, black 100%)`,
                     bottom: 0,
+                    paddingBottom: "env(self-area-inset-bottom)",
                     paddingTop: 0,
                     visibility: track ? "visible" : "hidden",
                     height: track ? "auto" : 0,

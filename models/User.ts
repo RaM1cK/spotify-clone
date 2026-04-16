@@ -1,41 +1,41 @@
-export class User {
-    private readonly _id: bigint;
-    private _name: string;
-    private _avatarURL: string | null = null;
-    private _email: string;
+import {
+    Model,
+    DataTypes,
+    InferAttributes,
+    InferCreationAttributes,
+    sql
+} from "@sequelize/core";
 
-    public get id(): bigint {
-        return this._id;
-    }
+import type {
+    CreationOptional
+} from "@sequelize/core";
 
-    public get name(): string {
-        return this._name;
-    }
+import {Attribute, Default, NotNull, PrimaryKey, Table, Unique} from "@sequelize/core/decorators-legacy";
 
-    public set name(value: string) {
-        this._name = value;
-    }
+@Table({
+    underscored: true,
+})
+export class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
+    @Attribute(DataTypes.UUID)
+    @PrimaryKey
+    @Default(sql.uuidV4)
+    declare id: CreationOptional<string>;
 
-    public get avatarURL(): string | null {
-        return this._avatarURL;
-    }
+    @Attribute(DataTypes.TEXT)
+    @NotNull
+    declare password_hash: string;
 
-    public set avatarURL(value: string) {
-        this._avatarURL = value;
-    }
+    @Attribute(DataTypes.STRING(24))
+    @NotNull
+    declare nickname: string;
 
-    public get email(): string {
-        return this._email;
-    }
+    @Attribute(DataTypes.STRING(255))
+    @Unique
+    @NotNull
+    declare email: string;
 
-    public set email(value: string) {
-        this._email = value;
-    }
-
-    public constructor(id: bigint, name: string, avatarURL: string | null, email: string) {
-        this._id = id;
-        this._name = name;
-        this._avatarURL = avatarURL;
-        this._email = email;
-    }
+    @Attribute(DataTypes.UUID)
+    @NotNull
+    @Default(sql.uuidV4)
+    declare session_id: string;
 }

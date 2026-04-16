@@ -33,7 +33,7 @@ function App() {
     const [menuOpen, setMenuOpen] = useState(false);
 
     //Строчка ниже очищает локальную сессию - если удалишь, при обновлении страницы форма бл
-    //clearSession();
+    // clearSession();
 
     const handleAuth = (newSession) => {
         setSession(newSession);
