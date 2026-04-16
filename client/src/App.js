@@ -61,7 +61,7 @@ function App() {
             </div>
             <Player
                 track={currentTrack}
-                setCurrentTrack={setCurrentTrack}
+                setTrack={setCurrentTrack}
             />
         </div>
     )

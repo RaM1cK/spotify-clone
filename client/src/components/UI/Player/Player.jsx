@@ -8,7 +8,7 @@ import {Player as pl} from "../../../classes/Player.ts";
 import RangeTrack from "./rangeTrack";
 import {PlayerUI} from "../../../classes/observers/PlayerUI.ts";
 
-const Player = ({track, setTrack, style}) => {
+const Player = ({track, setTrack}) => {
     const intervalRef = useRef(null);
     const player = useRef(pl.getInstance()).current
 
@@ -28,6 +28,7 @@ const Player = ({track, setTrack, style}) => {
             setLoading(player.isLoading())
             setDisabledPlayer(player.isLoading())
             if (player.track) {
+                setTrack(player.track);
                 setDuration(player.track.duration);
                 setRangeValue(player.seek())
             }
@@ -39,7 +40,7 @@ const Player = ({track, setTrack, style}) => {
             if (player.isLoading()) {
                 setRangeValue(player.seek())
             }
-        },[setTrack])
+        },[])
 
         player.attach(playerObserver);
 
@@ -147,11 +148,7 @@ const Player = ({track, setTrack, style}) => {
                             <span className="track-item__title">{track ? track.name : ""}</span>
                             <span className="track-item__artist ">{track ? track.creator : ""}</span>
                         </div>
-
-
-
-
-
+                        
                     </div>
 
                     <Button
