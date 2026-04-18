@@ -54,17 +54,18 @@ const Player = ({track, setTrack}) => {
     return (
             <div
                 id={"playerView"}
-                className="position-sticky rounded-3 d-flex flex-column"
+                className="position-fixed rounded-3 d-flex flex-column"
                 style={{
                     background: `linear-gradient(to right, rgb(63 53 53) 0%, rgb(63 53 53) ${
                         duration ? ((rangeValue / duration) * 100) : 0
                     }%, black ${duration ? (rangeValue / duration) * 100 : 0}%, black 100%)`,
                     bottom: 0,
-                    paddingBottom: "env(self-area-inset-bottom)",
                     paddingTop: 0,
                     visibility: track ? "visible" : "hidden",
                     height: track ? "auto" : 0,
+                    width: '100%',
                     overflow: "hidden",
+                    paddingBottom: "env(safe-area-inset-bottom)"
             }}
             >
                 {/*<FormRange*/}
