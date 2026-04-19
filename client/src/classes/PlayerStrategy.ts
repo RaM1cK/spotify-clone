@@ -34,6 +34,7 @@ export class SimplePLayerStrategy implements PlayerStrategy {
 
         if (curPos !== undefined) {
             if (curPos > 3) {
+                this.player.stop()
                 this.player.play()
             } else {
                 if (this.player.queue.length !== 0) {

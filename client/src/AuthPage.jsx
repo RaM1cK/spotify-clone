@@ -28,18 +28,16 @@ export default function AuthPage({ onAuth }) {
     const [shake, setShake] = useState(false);
     const [sending, setSending] = useState(false);
 
-    function setLocal(email) {
-        const session = { email };
-        console.log(session)
-        localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-        onAuth(session);
+    function setLocal(token) {
+        // localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        onAuth(token);
     }
 
     function register(regUserData) {
         setSending(true);
 
         axios.post("/api/users/reg", regUserData).then(
-            () => setLocal(regUserData.email)
+            res => setLocal(res.data)
         ).catch(err => {
             if (err.response) {
                 const status = err.response.status;
@@ -58,16 +56,16 @@ export default function AuthPage({ onAuth }) {
                 setError("Ошибка отправки");
                 triggerShake();
             }
-
-            setSending(false);
         });
+
+        setSending(false);
     }
 
     function authenticate(authUserData) {
         setSending(true);
 
         axios.post("/api/users/auth", authUserData).then(
-            () => setLocal(authUserData.email)
+            res => setLocal(res.data)
         ).catch(err => {
             if (err.response) {
                 setError("Неверный e-mail или пароль");
@@ -79,9 +77,9 @@ export default function AuthPage({ onAuth }) {
                 setError("Ошибка отправки");
                 triggerShake();
             }
-
-            setSending(false);
         })
+
+        setSending(false);
     }
 
     const triggerShake = () => {
