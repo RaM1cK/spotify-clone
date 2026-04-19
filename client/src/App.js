@@ -12,7 +12,7 @@ import ContextMenu from "./components/ContextMenu";
 import testpage from "./components/pages/testpage";
 import MenuButton from "./components/MenuButton";
 
-// const socket = io("http://localhost:8080");
+const SESSION_KEY = "app_session";
 
 const IP_APP = process.env.REACT_APP_IP_APP
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT
@@ -27,6 +27,9 @@ const PAGES = [
 function App() {
     const [session, setSession] = useState(() => getSession());
     const [activePage, setActivePage] = useState("testTrack");
+    const [sessionToken, setSessionToken] = useState(() => {
+        return getSession()?.token;
+    });
 
     const [currentTrack, setCurrentTrack] = useState(null);
 
@@ -35,14 +38,45 @@ function App() {
     //Строчка ниже очищает локальную сессию - если удалишь, при обновлении страницы форма бл
     // clearSession();
 
-    const handleAuth = (newSession) => {
-        setSession(newSession);
+    const initializeSocket = (token) => {
+        const socket = io('http://localhost:8080', { //при деплое изменить
+            auth: {token}
+        });
+
+        socket.on('connect', () => console.log('Socket.IO connected'));
+        socket.on('connect_error', (err) => {
+            console.error('Socket connection failed:', err.message)
+            handleLogout()
+        });
+        return socket;
+    };
+
+    const handleAuth = (token) => {
+        setSessionToken(token)
     };
 
     const handleLogout = () => {
         clearSession();
         setSession(null);
     };
+
+    useEffect(() => {
+        if (sessionToken) {
+            const socket = initializeSocket(sessionToken);
+
+            socket.on('email-verified', () => {
+                const _session = {token: sessionToken};
+
+                localStorage.setItem(SESSION_KEY, JSON.stringify(_session));
+                setSession(_session);
+            })
+
+            return () => {
+                socket.off('email-verified');
+                socket.disconnect();
+            }
+        }
+    }, [sessionToken])
 
     if (!session) {
         return <AuthPage onAuth={handleAuth} />;
