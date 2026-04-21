@@ -30,7 +30,7 @@ const MainPage = ({setCurrentTrack}) => {
         }
     }
 
-    console.log(Intl.DateTimeFormat().resolvedOptions().timeZone)
+    // console.log(Intl.DateTimeFormat().resolvedOptions().timeZone)
 
     useEffect(() => {
         (async () => {

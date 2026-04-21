@@ -1,85 +1,93 @@
 import {Track} from "../../../models/Track";
+import {Player} from "./Player.ts"
 
-export interface PlayerStrategy {
-    onTrackEnd: () => void;
-    next: () => void;
-    previous: () => void;
-}
+export abstract class PlayerStrategy {
+    protected _queue: Track[] = [];
 
-export class SimplePLayerStrategy implements PlayerStrategy {
-    constructor(protected player: any) {
-        this.player.indexCurrent = this.player.queue.findIndex((t: Track) => t.id === this.player.track?.id);
-
-        if (this.player.indexCurrent === -1) this.player.indexCurrent = 0;
+    protected get player(): Player {
+        return Player.getInstance()
     }
 
-    public onTrackEnd(): void {
-        if (this.player.indexCurrent === this.player.queue.length - 1) {
+    public get track(): Track {
+        // @ts-ignore
+        return this._queue[this.player.currentIndex];
+    };
+    public get queue(): Track[] {
+        return [...this._queue];
+    };
+    public onTrackEnd() {
+        if (this.player.currentIndex === this._queue.length - 1) {
             this.player.stop()
             return
         }
 
-        this.next()
+        this.player.next()
+    };
+    public execute(track: Track, queue: Track[]) {
+        this.player.currentIndex = queue.findIndex(t => t.id === track.id);
+        this._queue = [...queue];
+    };
+}
+
+export class SimplePlayerStrategy extends PlayerStrategy {
+}
+
+export class ShufflePlayerStrategy extends PlayerStrategy {
+    private unshuffledQueue: Track[] = [];
+
+    public getUnshuffledQueue() {
+        return [...this.unshuffledQueue]
     }
 
-    public next(): void {
-        if (this.player.queue.length !== 0) {
-            this.player.indexCurrent = (this.player.indexCurrent + 1) % this.player.queue.length
-            this.player.setTrack(this.player.queue[this.player.indexCurrent], this.player.queue)
-        }
-    }
+    public execute(track: Track, queue: Track[]) {
+        this.unshuffledQueue = [...queue];
+        const toShuffleQueue = [...queue];
+        const onStartShuffleIndex = toShuffleQueue.findIndex(t => t.id === track.id);
 
-    public previous(): void {
-        const curPos = this.player.howl.seek();
-
-        if (curPos !== undefined) {
-            if (curPos > 3) {
-                this.player.stop()
-                this.player.play()
-            } else {
-                if (this.player.queue.length !== 0) {
-                    this.player.indexCurrent = (this.player.indexCurrent + this.player.queue.length - 1) % this.player.queue.length
-                    this.player.setTrack(this.player.queue[this.player.indexCurrent], this.player.queue)
-                }
-            }
+        for (let i = 0; i < queue.length; i++) {
+            const randIndex = Math.floor(Math.random() * toShuffleQueue.length);
+            // @ts-ignore
+            [toShuffleQueue[i], toShuffleQueue[randIndex]] = [toShuffleQueue[randIndex], toShuffleQueue[i]];
         }
+
+        const onEndShuffleIndex = toShuffleQueue.findIndex(t => t.id === track.id);
+        [
+            // @ts-ignore
+            toShuffleQueue[onStartShuffleIndex], toShuffleQueue[onEndShuffleIndex]
+        ] = [toShuffleQueue[onEndShuffleIndex], toShuffleQueue[onStartShuffleIndex]];
+
+        super.execute(track, toShuffleQueue);
     }
 }
 
-export class ShufflePLayerStrategy extends SimplePLayerStrategy {
-    public readonly queue: Track[] = [];
+export abstract class StrategyLoopDecorator extends PlayerStrategy {
+    public wrapped: PlayerStrategy;
 
-    constructor(player: any) {
-        super(player);
-
-        this.queue = this.player.queue.sort(() => Math.random() - 0.5);
-        const newPos = this.queue.findIndex((t: Track) => t.id === this.player.track?.id);
-
-        // @ts-ignore
-        [this.queue[newPos], this.queue[this.player.indexCurrent]] = [this.queue[this.player.indexCurrent], this.queue[newPos]];
-
+    public constructor(wrapped: PlayerStrategy) {
+        super();
+        this.wrapped = wrapped;
     }
 
-
-    public next(): void {
-        if (this.player.queue.length !== 0) {
-            this.player.indexCurrent = (this.player.indexCurrent + 1) % this.player.queue.length
-            this.player.setTrack(this.queue[this.player.indexCurrent], this.queue)
-        }
+    public execute(track: Track, queue: Track[]) {
+        this.wrapped.execute(track, queue);
     }
+}
 
-    public previous(): void {
-        const curPos = this.player.howl.seek();
+export class TrackLoopDecorator extends StrategyLoopDecorator {
+    public onTrackEnd() {
+        this.player.stop();
+        this.player.play();
+    }
+}
 
-        if (curPos !== undefined) {
-            if (curPos > 3) {
-                this.player.play()
-            } else {
-                if (this.player.queue.length !== 0) {
-                    this.player.indexCurrent = (this.player.indexCurrent + this.player.queue.length - 1) % this.player.queue.length
-                    this.player.setTrack(this.queue[this.player.indexCurrent], this.queue)
-                }
-            }
-        }
+export class PlaylistLoopDecorator extends StrategyLoopDecorator {
+    public onTrackEnd() {
+        this.player.next()
+    }
+}
+
+export class NoneLoopDecorator extends StrategyLoopDecorator {
+    public onTrackEnd() {
+        this.wrapped.onTrackEnd()
     }
 }

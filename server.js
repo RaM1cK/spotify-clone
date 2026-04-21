@@ -52,4 +52,16 @@ server.listen(SERVER_PORT, () => {
     console.log(`Listening on http://localhost:${SERVER_PORT}`);
 });
 
+process.on('SIGINT', async () => {
+    await sequelize.close();
+    console.log('CLOSED');
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    await sequelize.close();
+    console.log('CLOSED');
+    process.exit(0);
+});
+
 export default io;
