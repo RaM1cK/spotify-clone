@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from "react-bootstrap";
 import {Pause, Play, SkipForward, SkipBack, Repeat, Repeat1, LoaderCircle, Shuffle} from "lucide-react";
-import FormRange from "react-bootstrap/cjs/FormRange";
-import classes from '../../../css/rangestyle.module.css';
 import "./Player.css"
 import {Player as pl} from "../../../classes/Player.ts";
 import RangeTrack from "./rangeTrack";
@@ -11,6 +9,14 @@ import {PlayerUI} from "../../../classes/observers/PlayerUI.ts";
 const Player = ({track, setTrack}) => {
     const intervalRef = useRef(null);
     const player = useRef(pl.getInstance()).current
+    const [loopState, setLoopState] = useState("noneLoop")
+    const [isShuffle, setIsShuffle] = useState(false);
+
+    const chainLoopStates = {
+        "noneLoop": "loopPlaylist",
+        "loopPlaylist": "loopTrack",
+        "loopTrack": "noneLoop"
+    }
 
     //const [track, setTrack] = useState(undefined);
     //перенес в app чтобы плеера не было, пока нет проигрываемого трека
@@ -18,8 +24,6 @@ const Player = ({track, setTrack}) => {
     const [disabledPlayer, setDisabledPlayer] = useState(true);
     const [playing, setPlaying] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [rangeValue, setRangeValue] = useState(0);
-    const [rangeDisabled, setRangeDisabled] = useState(false);
     const [duration, setDuration] = useState(0);
 
     useEffect(() => {
@@ -30,15 +34,6 @@ const Player = ({track, setTrack}) => {
             if (player.track) {
                 setTrack(player.track);
                 setDuration(player.track.duration);
-                setRangeValue(player.seek())
-            }
-
-            if (player.isStopped()) {
-                setRangeValue(0)
-            }
-
-            if (player.isLoading()) {
-                setRangeValue(player.seek())
             }
         },[])
 
@@ -51,16 +46,21 @@ const Player = ({track, setTrack}) => {
         }
     }, [])
 
+    const handleRepeat = () => {
+        const tempState = chainLoopStates[loopState]
+
+        setLoopState(tempState);
+        player.setStrategy(tempState)
+    }
+
     return (
             <div
                 id={"playerView"}
                 className="position-fixed rounded-3 d-flex flex-column"
                 style={{
-                    background: `linear-gradient(to right, rgb(63 53 53) 0%, rgb(63 53 53) ${
-                        duration ? ((rangeValue / duration) * 100) : 0
-                    }%, black ${duration ? (rangeValue / duration) * 100 : 0}%, black 100%)`,
                     bottom: 0,
                     paddingTop: 0,
+                    backgroundColor: "black",
                     visibility: track ? "visible" : "hidden",
                     height: track ? "auto" : 0,
                     width: '100%',
@@ -68,26 +68,8 @@ const Player = ({track, setTrack}) => {
                     paddingBottom: "env(safe-area-inset-bottom)"
             }}
             >
-                {/*<FormRange*/}
-                {/*    className={classes.customRange}*/}
-                {/*    value={rangeValue.toString()}*/}
-                {/*    max={duration}*/}
-                {/*    onInput={handleChange}*/}
-                {/*    onMouseDown={handleMouseDown}*/}
-                {/*    onMouseUp={handleMouseUp}*/}
-                {/*    onPointerDown={handleMouseDown}*/}
-                {/*    onPointerUp={handleMouseUp}*/}
-                {/*    onKeyDown={(e) => e.preventDefault()}*/}
-                {/*    style={{*/}
-                {/*        touchAction: 'none',*/}
-                {/*        margin: 0*/}
-                {/*    }}*/}
-                {/*/>*/}
-
                 <RangeTrack
                     duration={duration}
-                    currentTime={rangeValue}
-                    setRangeValue={setRangeValue}
                     playing={playing}
                     intervalRef={intervalRef}
 
@@ -157,11 +139,13 @@ const Player = ({track, setTrack}) => {
                             backgroundColor: 'transparent',
                             border: "none"
                         }}
+                        onClick={() => {
+                            player.setStrategy(isShuffle ? "simple" : "shuffle")
+                            setIsShuffle(!isShuffle);
+                        }}
                     >
                         <Shuffle
-                            onClick={() => {
-                                player.setStrategy("shuffle")
-                            }}
+                            color={isShuffle ? 'rgb(165,69,244)' : "white"}
                             className="d-flex align-self-center"
                             size={20}
                         />
@@ -172,14 +156,29 @@ const Player = ({track, setTrack}) => {
                             backgroundColor: 'transparent',
                             border: "none"
                         }}
+                        onClick={handleRepeat}
                     >
-                        <Repeat
-                            // onClick={() => {
-                            //     player.setStrategy("shuffle")
-                            // }}
-                            className="d-flex align-self-center"
-                            size={20}
-                        />
+                        {loopState === "noneLoop" &&
+                            <Repeat
+                                className="d-flex align-self-center"
+                                size={20}
+                            />
+                        }
+                        {loopState === "loopPlaylist" &&
+                            <Repeat
+                                color='rgb(165,69,244)'
+                                className="d-flex align-self-center"
+                                size={20}
+                            />
+                        }
+
+                        {loopState === "loopTrack" &&
+                            <Repeat1
+                                color='rgb(165,69,244)'
+                                className="d-flex align-self-center"
+                                size={20}
+                            />
+                        }
                     </Button>
                 </div>
             </div>

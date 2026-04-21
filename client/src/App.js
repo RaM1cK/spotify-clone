@@ -46,7 +46,6 @@ function App() {
         socket.on('connect', () => console.log('Socket.IO connected'));
         socket.on('connect_error', (err) => {
             console.error('Socket connection failed:', err.message)
-            handleLogout()
         });
         return socket;
     };
@@ -69,6 +68,9 @@ function App() {
 
                 localStorage.setItem(SESSION_KEY, JSON.stringify(_session));
                 setSession(_session);
+
+                socket.off('email-verified');
+                socket.disconnect();
             })
 
             return () => {

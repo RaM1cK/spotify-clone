@@ -7,7 +7,7 @@ const socket = (io) => {
         if (!token) return next(new Error('No token provided'));
 
         try {
-            socket.email = jwt.verify(token, process.env.SECRET_KEY);
+            socket.email = jwt.verify(token, process.env.SECRET_KEY).email;
             next();
         } catch (err) {
             next(new Error("Invalid token"));
