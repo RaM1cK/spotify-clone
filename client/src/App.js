@@ -39,14 +39,19 @@ function App() {
     // clearSession();
 
     const initializeSocket = (token) => {
-        const socket = io('http://localhost:8080', { //при деплое изменить
+        const socket = io('ws://localhost:8080', { //при деплое изменить
             auth: {token}
         });
 
         socket.on('connect', () => console.log('Socket.IO connected'));
         socket.on('connect_error', (err) => {
             console.error('Socket connection failed:', err.message)
+
+            if (err.message === 'USER_DOESNT_EXISTS') {
+                handleLogout()
+            }
         });
+
         return socket;
     };
 
@@ -70,7 +75,6 @@ function App() {
                 setSession(_session);
 
                 socket.off('email-verified');
-                socket.disconnect();
             })
 
             return () => {

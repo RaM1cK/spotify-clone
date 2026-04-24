@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 import {sequelize} from './models/index.js';
 import {User} from "./models/User.ts";
 import UserRouter from "./routers/UserRouter.js";
+import {Composition, Track} from "./models/Track.ts";
 
 dotenv.config();
 
@@ -40,10 +41,29 @@ const io = new Server(server, {
 
 try {
     await sequelize.authenticate();
-    // await sequelize.sync({force: true});
     console.log('Connected');
+    await sequelize.sync({alter: true});
+
+    // await sequelize.transaction(async t => {
+    //     const track = await Track.create({
+    //         isrc: 'US1234567892',
+    //         title: 'Transactional Song',
+    //         duration: 200.0,
+    //         url: 'https://cdn.example.com/track3.mp3'
+    //     }, { transaction: t });
+    //
+    //     const composition = await Composition.create({
+    //         iswc: 'T987654321B'
+    //     }, {transaction: t});
+    //
+    //     await track.addComposition(composition);
+    //
+    //
+    // })
+
 } catch (err) {
     console.error(err);
+    await sequelize.close();
 }
 
 socket(io)
