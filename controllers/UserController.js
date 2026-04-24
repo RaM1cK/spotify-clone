@@ -85,4 +85,21 @@ const auth = async (req, res) => {
     res.status(201).send(sendVerificationLink(authData.email))
 }
 
-export default {reg, auth, verifyEmail}
+const getUsersByNickname = async (req, res) => {
+    const nickname = req.body.nickname
+
+    const user = await User.findAll({
+        where: { nickname },
+        attributes: {
+            exclude: ['password_hash', 'createdAt', 'updatedAt'],
+        }
+    })
+
+    if (!user) {
+        return res.status(404).json({})
+    } else {
+        return res.status(200).send(user)
+    }
+}
+
+export default {reg, auth, verifyEmail, getUsersByNickname}
