@@ -2,6 +2,9 @@ import { Sequelize } from '@sequelize/core';
 import { PostgresDialect } from '@sequelize/postgres';
 import dotenv from "dotenv";
 import {User} from "./User.ts";
+import {Track} from "./Track.ts";
+import {Composition} from "./Composition.ts";
+import {Release} from "./Release.ts";
 
 dotenv.config();
 
@@ -13,5 +16,10 @@ export const sequelize = new Sequelize({
     host: process.env.DB_HOST,
     port: 5432,
     logging: console.log,
-    models: [User]
+    models: [
+        User,
+        Composition,
+        Track,
+        Release
+    ]
 })

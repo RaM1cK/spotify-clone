@@ -41,14 +41,16 @@ const io = new Server(server, {
 try {
     await sequelize.authenticate();
     console.log('Connected');
-    await sequelize.sync({alter: true});
+    // await sequelize.sync({alter: true});
 
     // await sequelize.transaction(async t => {
     //     const track = await Track.create({
     //         isrc: 'US1234567892',
     //         title: 'Transactional Song',
+    //         artist: 'MORGENSHTERN',
     //         duration: 200.0,
-    //         url: 'https://cdn.example.com/track3.mp3'
+    //         uri: 'https://cdn.example.com/track3.mp3',
+    //         parentalWarning: 'Explicit'
     //     }, { transaction: t });
     //
     //     const composition = await Composition.create({
@@ -56,8 +58,6 @@ try {
     //     }, {transaction: t});
     //
     //     await track.addComposition(composition);
-    //
-    //
     // })
 
 } catch (err) {

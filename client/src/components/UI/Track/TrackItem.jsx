@@ -1,8 +1,9 @@
 import React, {useEffect} from "react";
-import { Heart, MoreVertical, Play, Pause } from "lucide-react";
+import {Heart, MoreVertical, Pause, Play} from "lucide-react";
 import {Player} from "../../../classes/Player.ts";
 import "./trackitem.css";
 import {TrackUI} from "../../../classes/observers/TrackUI.ts";
+import axios from "axios";
 
 function TrackItem({ number, track, tracks, setCurrentTrack }) {
     const [isPlaying, setIsPlaying] = React.useState(false);
@@ -27,6 +28,7 @@ function TrackItem({ number, track, tracks, setCurrentTrack }) {
             setIsPlaying(false)
             setIsCurrent(false);
         })
+        observer.update()
 
         player.attach(observer);
 
@@ -63,8 +65,8 @@ function TrackItem({ number, track, tracks, setCurrentTrack }) {
                     <span className="track-number">{number}</span>
                     <div className="track-item__cover-wrapper">
                         <img
-                            src={track.logoURL}
-                            alt={track.name}
+                            src={`/api/tracks/getCover/${track.id}`}
+                            alt={track.title}
                             className="track-item__cover"
                         />
                         <div className={`track-item__play${isCurrent ? "--current" : ""}`}>
@@ -72,8 +74,8 @@ function TrackItem({ number, track, tracks, setCurrentTrack }) {
                         </div>
                     </div>
                     <div className="d-flex flex-column justify-content-between">
-                        <span className="track-item__title">{track.name}</span>
-                        <span className="track-item__artist">{track.creator}</span>
+                        <span className="track-item__title">{track.title}</span>
+                        <span className="track-item__artist">{track.artist}</span>
                     </div>
                 </div>
 
