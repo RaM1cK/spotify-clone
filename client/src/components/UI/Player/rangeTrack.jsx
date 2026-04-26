@@ -2,7 +2,7 @@ import React, {useRef, useEffect, useState} from 'react';
 import {Heart} from "lucide-react";
 import "../Track/trackitem.css"
 import {Player as pl} from "../../../classes/Player.ts";
-import {PlayerUI} from "../../../classes/observers/PlayerUI";
+import {PlayerUI} from "../../../classes/observers/PlayerUI.ts";
 
 // eslint-disable-next-line react-hooks/rules-of-hooks
 

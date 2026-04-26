@@ -1,67 +1,71 @@
-type T_Track = {
-    id: string;
-    logoURL: string;
-    name: string;
-    creator: string;
-    url: string;
-    duration: number;
+import {
+    BelongsToManyAddAssociationMixin,
+    BelongsToManyAddAssociationsMixin,
+    DataTypes,
+    InferAttributes, InferCreationAttributes,
+    Model
+} from "@sequelize/core";
+import type {
+    NonAttribute,
+    CreationOptional
+} from "@sequelize/core";
+import {
+    Attribute, AutoIncrement, BelongsTo, BelongsToMany,
+    NotNull,
+    PrimaryKey,
+    Table,
+    Unique
+} from "@sequelize/core/decorators-legacy";
+import {Composition} from "./Composition.ts";
+import {Release} from "./Release.ts";
+
+@Table({
+    underscored: true,
+})
+export class Track extends Model<InferAttributes<Track>, InferCreationAttributes<Track>> {
+    @Attribute(DataTypes.BIGINT)
+    @PrimaryKey
+    @AutoIncrement
+    declare id: number;
+
+    @Attribute(DataTypes.STRING(12))
+    @Unique
+    @NotNull
+    declare isrc: string
+
+    @Attribute(DataTypes.BIGINT)
+    @NotNull
+    declare releaseId: number
+
+    @Attribute(DataTypes.STRING(140))
+    @NotNull
+    declare title: string
+
+    @Attribute(DataTypes.STRING(140))
+    @NotNull
+    declare artist: string
+
+    @Attribute(DataTypes.FLOAT)
+    @NotNull
+    declare duration: number
+
+    @Attribute(DataTypes.STRING(21))
+    @NotNull
+    declare parentalWarning: string;
+
+    @Attribute(DataTypes.TEXT)
+    @NotNull
+    declare uri: string
+
+    @Attribute(DataTypes.TEXT)
+    declare cover: string
+
+    @BelongsToMany(() => Composition, {
+        through: 'TrackComposition',
+    })
+    declare trackCompositions?: NonAttribute<Composition[]>;
+
+    declare addComposition: BelongsToManyAddAssociationMixin<Composition, Composition['id']>
+    declare addCompositions: BelongsToManyAddAssociationsMixin<Composition, Composition['id']>
 }
 
-export class Track {
-    private readonly _id: string;
-    private _logoURL: string;
-    private _name: string;
-    private _creator: string;
-    private _url: string;
-    private readonly _duration: number;
-
-    constructor(track: T_Track) {
-        this._id = track.id;
-        this._logoURL = track.logoURL;
-        this._name = track.name;
-        this._creator = track.creator;
-        this._url = track.url;
-        this._duration = track.duration;
-    }
-
-
-    public get id(): string{
-        return this._id;
-    }
-
-    public get logoURL(): string {
-        return this._logoURL;
-    }
-
-    public set logoURL(value: string) {
-        this._logoURL = value;
-    }
-
-    public get name(): string {
-        return this._name;
-    }
-
-    public set name(value: string) {
-        this._name = value;
-    }
-
-    public get creator(): string {
-        return this._creator;
-    }
-
-    public set creator(value: string) {
-        this._creator = value;
-    }
-
-    public get url(): string {
-        return this._url;
-    }
-
-    public set url(value: string) {
-        this._url = value;
-    }
-
-    public get duration(): number {
-        return this._duration;
-    }
-}
