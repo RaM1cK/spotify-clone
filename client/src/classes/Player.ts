@@ -49,7 +49,8 @@ export class Player implements Subject {
         this.notify()
 
         this.howl = new Howl({
-            src: [track.url],
+            src: [`/api/tracks/getTrackFile/${track.id}`],
+            format: ['mp3', 'flac'],
             volume: 0.06,
             loop: false,
             html5: true,
@@ -61,11 +62,14 @@ export class Player implements Subject {
             onend: () => {
                 this._strategy.onTrackEnd()
             },
-            onloaderror: () => {
+            onloaderror: (e) => {
                 console.log('Load error')
+                console.error(e)
             },
-            onplayerror: () => {
+            onplayerror: (e) => {
                 console.log('PLay error')
+                console.log('Load error')
+                console.error(e)
             }
         })
     }

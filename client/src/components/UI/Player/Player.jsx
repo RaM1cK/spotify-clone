@@ -128,8 +128,8 @@ const Player = ({track, setTrack}) => {
 
                     <div className="d-flex w-100 flex-column">
                         <div className="d-flex flex-column justify-content-between">
-                            <span className="track-item__title">{track ? track.name : ""}</span>
-                            <span className="track-item__artist ">{track ? track.creator : ""}</span>
+                            <span className="track-item__title">{track ? track.title : ""}</span>
+                            <span className="track-item__artist ">{track ? track.artist : ""}</span>
                         </div>
                         
                     </div>

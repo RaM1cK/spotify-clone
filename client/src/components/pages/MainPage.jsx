@@ -11,10 +11,11 @@ import TrackList from "../UI/TrackList/TrackList";
 
 const MainPage = ({setCurrentTrack}) => {
     const music = [
-        "morgenshtern-cvetok-(allmusic.kz).mp3",
-        "Jane_Remover_-_Dancing_with_your_eyes_closed_80039450.mp3",
-        "morgenshtern-уфф-деньги.mp3",
-        "MORGENSHTERN_-_Novyjj_merin_66404393.mp3"
+        1
+        // "Jane_Remover_-_Dancing_with_your_eyes_closed_80039450.mp3",
+        // "morgenshtern-уфф-деньги.mp3",
+        // "MORGENSHTERN_-_Novyjj_merin_66404393.mp3",
+        // "TiA_-_Ai_a_em_v_Cukak_Remix_81005861.mp3"
     ]
 
     const [trackList, setTrackList] = useState([]);
@@ -34,8 +35,8 @@ const MainPage = ({setCurrentTrack}) => {
 
     useEffect(() => {
         (async () => {
-            const tracks = await Promise.all(music.map(async name => {
-                return await getTrack(name);
+            const tracks = await Promise.all(music.map(async trackId => {
+                return await getTrack(trackId);
             }));
             setTrackList(tracks.filter(track => track !== null));
         })();
@@ -77,6 +78,17 @@ const MainPage = ({setCurrentTrack}) => {
                 >
                     <TrackList tracks={trackList} setCurrentTrack = {setCurrentTrack} />
                 </div>
+
+                {/*<Button onClick={async () => {*/}
+                {/*        await axios.post(`/api/users/get-users`, {*/}
+                {/*            nickname: 'ram1ck'*/}
+                {/*        })*/}
+                {/*            .then(res => console.log(res))*/}
+                {/*            .catch((err) => console.error(err));*/}
+                {/*    }*/}
+                {/*}>*/}
+                {/*    Click!*/}
+                {/*</Button>*/}
             </div>
         </>
     );

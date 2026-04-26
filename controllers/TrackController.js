@@ -4,30 +4,42 @@ import path from "path";
 import {__dirname} from "../server.js";
 import * as fs from "node:fs";
 import dotenv from "dotenv";
+import {Track} from "../models/Track.ts";
+import {Release} from "../models/Release.ts";
 
 dotenv.config();
 
 export const getTrack = async (req, res)=> {
-    let trackName = req.params['trackName'];
+    const id = req.params['trackId'];
 
-    const metadata = await parseFile(path.join(__dirname, '/music/', trackName))
-    // console.log(inspect(metadata, {showHidden: false, depth: null}));
+    const track = await Track.findOne({
+        where: { id },
+        attributes: {
+            exclude: ['isrc', 'createdAt', 'updatedAt']
+        },
+    })
 
-    const track =
-        {
-            id: trackName,
-            logoURL: null,
-            name: metadata.common.title,
-            creator: metadata.common.artist,
-            url: `/${process.env.SERVER}/tracks/getTrackFile/${trackName}`,
-            duration: Math.floor(metadata.format.duration)
-        }
+    if (!track) {
+        return res.status(404).json({})
+    }
 
     return res.json(track);
 }
 
 export const getTrackFile = async (req, res)=> {
-    const filePath = path.join(__dirname, 'music', req.params['trackName']);
+    const id = req.params['trackId'];
+
+    console.log(id);
+
+    const track = await Track.findOne({
+        where: { id }
+    })
+
+    const release = await Release.findOne({
+        where: { id: track.releaseId }
+    })
+
+    const filePath = path.join(__dirname, 'music', release.icpn, track.uri);
 
     const stat = fs.statSync(filePath);
     const fileSize = stat.size;
@@ -63,12 +75,25 @@ export const getTrackFile = async (req, res)=> {
     res.writeHead(206, {
         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
         'Accept-Ranges': 'bytes',
-        'Content-Length': chunkSize,
-        'Content-Type': 'audio/mpeg'
+        'Content-Length': chunkSize
     });
 
     fileStream.pipe(res);
 }
 
-export default {getTrack, getTrackFile}
+export const getCover = async (req, res) => {
+    const trackId = req.params['trackId'];
+
+    const track = await Track.findOne({
+        where: { id: trackId }
+    })
+
+    const release = await Release.findOne({
+        where: { id: track.releaseId }
+    })
+
+    res.sendFile(path.join(__dirname, 'music', release.icpn, track.cover));
+}
+
+export default {getTrack, getTrackFile, getCover}
 
