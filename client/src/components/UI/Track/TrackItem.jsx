@@ -5,7 +5,7 @@ import "./trackitem.css";
 import {TrackUI} from "../../../classes/observers/TrackUI.ts";
 import axios from "axios";
 
-function TrackItem({ track, tracks, setCurrentTrack }) {
+function TrackItem({ number, track, tracks, setCurrentTrack }) {
     const [isPlaying, setIsPlaying] = React.useState(false);
     const [isCurrent, setIsCurrent] = React.useState(false);
     const player = React.useRef(Player.getInstance()).current;
@@ -60,7 +60,9 @@ function TrackItem({ track, tracks, setCurrentTrack }) {
         return (
             <div className="track-item">
                 {/* Left section */}
+
                 <div onClick={handleClick} className="track-item__left">
+                    <span className="track-number">{number}</span>
                     <div className="track-item__cover-wrapper">
                         <img
                             src={`/api/tracks/getCover/${track.id}`}

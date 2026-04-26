@@ -2,7 +2,7 @@ import React from "react"
 import TrackItem from "../Track/TrackItem";
 import "./TrackList.css"
 
-function TrackList({tracks, setCurrentTrack}) {
+function TrackList({tracks, setCurrentTrack, UsingContext, RollBack}) {
 
     const getWordForm = (count) => {
         const lastTwo = count % 100;
@@ -33,13 +33,16 @@ function TrackList({tracks, setCurrentTrack}) {
     };
     return (
         <div className="track-list">
-            <div className="header">
-                <span className="count">{tracks.length} {getWordForm(tracks.length)}</span>
-                <span className="time">{getSum()}</span>
-            </div>
+            {RollBack && (
+                <button className="music-back" onClick={RollBack}>← Назад</button>
+            )}
+            {UsingContext != null && (
+                <h1 style={{color: '#fff'}}>Все треки: {UsingContext}</h1>
+            )}
             <div className="tracks">
                 {tracks.map((track, index) => (
                     <TrackItem
+                        number={index+1}
                         key={index}
                         index={index}
                         track={track}
