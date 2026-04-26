@@ -56,7 +56,7 @@ const Player = ({track, setTrack}) => {
     return (
             <div
                 id={"playerView"}
-                className="position-fixed rounded-3 d-flex flex-column"
+                className="rounded-3 d-flex flex-column"
                 style={{
                     bottom: 0,
                     paddingTop: 0,

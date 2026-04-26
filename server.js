@@ -10,7 +10,6 @@ import dotenv from 'dotenv';
 import {sequelize} from './models/index.js';
 import {User} from "./models/User.ts";
 import UserRouter from "./routers/UserRouter.js";
-import {Composition, Track} from "./models/Track.ts";
 
 dotenv.config();
 

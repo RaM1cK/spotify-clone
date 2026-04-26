@@ -7,7 +7,7 @@ import axios from "axios";
 import "./App.css";
 import TrackList from "./components/UI/TrackList/TrackList";
 import AuthPage, { getSession, clearSession } from "./AuthPage";
-import MainPage from "./components/pages/MainPage";
+import MusicPage from "./components/pages/MusicPage";
 import ContextMenu from "./components/ContextMenu";
 import testpage from "./components/pages/testpage";
 import MenuButton from "./components/MenuButton";
@@ -19,8 +19,8 @@ const SERVER_PORT = process.env.REACT_APP_SERVER_PORT
 
 //Страницы, которые будут посередине
 const PAGES = [
-    {id: "testTrack", component: MainPage, label: "Test Track"},
-    {id: "testPage", component: testpage, label: "Test Page"},
+    {id: "testTrack", component: MusicPage, label: "Музыка"},
+    {id: "testPage", component: testpage, label: "Газан"},
 ]
 
 
@@ -91,7 +91,7 @@ function App() {
     //Функция ищет активную страницу в массиве страниц и возвращает ее
     const { component: PageComponent } = PAGES.find(p => p.id === activePage);
     return (
-        <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
+        <div style={{ display: "flex", flexDirection: "column", height: "100vh"}}>
             <MenuButton menuOpen={menuOpen} setMenuOpen={setMenuOpen}/>
             <div style={{ display: "flex", flex: 1, overflow: "hidden", minHeight: 0 }}>
                 <ContextMenu PAGES={PAGES} activePage={activePage} setActivePage={setActivePage} menuOpen={menuOpen} setMenuOpen={setMenuOpen}/>
