@@ -1,0 +1,80 @@
+.liked {
+    container-type: inline-size;
+}
+
+.liked-header {
+    padding: 10px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-end;
+    height: 200px;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.logo {
+    max-height: 100%;
+    width: auto;
+    flex-shrink: 1;
+    flex-basis: 200px;
+    min-width: 60px;
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+}
+
+.liked-header-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-shrink: 1;
+    min-width: 0;
+    word-break: normal;
+}
+
+.liked-header-info p {
+    margin: 0;
+}
+
+.liked-header-info p:first-child {
+    color: #737373;
+    font-size: 14px;
+}
+
+.liked-header-info h1 {
+    color: #e8e6e1;
+    max-width: 600px;
+    margin: 0;
+    word-break: normal;
+    overflow-wrap: normal;
+    white-space: normal;
+}
+
+.liked-header-info p.liked-composer {
+    color: #d4d4d4;
+    font-size: 18px;
+}
+
+.liked-count-time {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 14px;
+    color: #a3a3a3;
+}
+
+/* Текст начинает сжиматься только когда картинка уже на минимуме */
+@container (max-width: 600px) {
+    .liked-header-info h1 {
+        font-size: clamp(18px, 8cqi, 48px);
+    }
+
+    .liked-header-info p:first-child,
+    .liked-count-time {
+        font-size: clamp(10px, 2.5cqi, 14px);
+    }
+
+    .liked-header-info p.liked-composer {
+        font-size: clamp(12px, 3cqi, 18px);
+    }
+}

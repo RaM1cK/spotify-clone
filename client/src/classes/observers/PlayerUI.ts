@@ -11,3 +11,4 @@ export class PlayerUI implements Observer {
         this.updateCallback()
     }
 }
+

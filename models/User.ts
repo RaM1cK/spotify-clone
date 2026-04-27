@@ -19,7 +19,7 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
     @Attribute(DataTypes.UUID)
     @PrimaryKey
     @Default(sql.uuidV4)
-    declare id: CreationOptional<string>;
+    declare id: string;
 
     @Attribute(DataTypes.TEXT)
     @NotNull
@@ -35,7 +35,10 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
     declare email: string;
 
     @Attribute(DataTypes.UUID)
-    @NotNull
-    @Default(sql.uuidV4)
-    declare session_id: string;
+    declare avatar: string;
+
+    // @Attribute(DataTypes.UUID)
+    // @NotNull
+    // @Default(sql.uuidV4)
+    // declare session_id: string;
 }

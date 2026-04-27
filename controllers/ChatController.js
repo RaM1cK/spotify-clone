@@ -1,13 +1,24 @@
 import jwt from "jsonwebtoken";
+import {User} from "../models/User.ts";
 
 const socket = (io) => {
-    io.use((socket, next) => {
+    io.use(async (socket, next) => {
         const token  = socket.handshake.auth.token;
 
         if (!token) return next(new Error('No token provided'));
 
         try {
-            socket.email = jwt.verify(token, process.env.SECRET_KEY);
+            const email = jwt.verify(token, process.env.SECRET_KEY).email
+
+            const user = await User.findOne({
+                where: { email }
+            })
+
+            if (!user) {
+                next(new Error("USER_DOESNT_EXISTS"));
+            }
+
+            socket.email = email;
             next();
         } catch (err) {
             next(new Error("Invalid token"));

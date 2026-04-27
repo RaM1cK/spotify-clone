@@ -40,16 +40,47 @@ const io = new Server(server, {
 
 try {
     await sequelize.authenticate();
-    // await sequelize.sync({force: true});
     console.log('Connected');
+    // await sequelize.sync({alter: true});
+
+    // await sequelize.transaction(async t => {
+    //     const track = await Track.create({
+    //         isrc: 'US1234567892',
+    //         title: 'Transactional Song',
+    //         artist: 'MORGENSHTERN',
+    //         duration: 200.0,
+    //         uri: 'https://cdn.example.com/track3.mp3',
+    //         parentalWarning: 'Explicit'
+    //     }, { transaction: t });
+    //
+    //     const composition = await Composition.create({
+    //         iswc: 'T987654321B'
+    //     }, {transaction: t});
+    //
+    //     await track.addComposition(composition);
+    // })
+
 } catch (err) {
     console.error(err);
+    await sequelize.close();
 }
 
 socket(io)
 
 server.listen(SERVER_PORT, () => {
     console.log(`Listening on http://localhost:${SERVER_PORT}`);
+});
+
+process.on('SIGINT', async () => {
+    await sequelize.close();
+    console.log('CLOSED');
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    await sequelize.close();
+    console.log('CLOSED');
+    process.exit(0);
 });
 
 export default io;

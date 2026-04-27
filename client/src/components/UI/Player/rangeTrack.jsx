@@ -1,13 +1,43 @@
-import React, {useRef, useEffect} from 'react';
+import React, {useRef, useEffect, useState} from 'react';
 import {Heart} from "lucide-react";
 import "../Track/trackitem.css"
 import {Player as pl} from "../../../classes/Player.ts";
+import {PlayerUI} from "../../../classes/observers/PlayerUI.ts";
 
 // eslint-disable-next-line react-hooks/rules-of-hooks
 
-const RangeTrack = ({duration, currentTime, setRangeValue, playing, intervalRef}) => {
+const RangeTrack = ({duration, playing, intervalRef}) => {
     const isDraggingRef = useRef(false);
     const player = useRef(pl.getInstance()).current
+    const [rangeDisabled, setRangeDisabled] = useState(false);
+    const [rangeValue, setRangeValue] = useState(0);
+
+    useEffect(() => {
+        const playerObserver = new PlayerUI(() => {
+            if (player.track) {
+                setRangeValue(player.seek())
+            }
+
+            if (player.isStopped()) {
+                setRangeValue(0)
+            }
+
+            if (player.isLoading() && player.seek() === 0) {
+                // setRangeValue(player.seek())
+                setRangeDisabled(true);
+            } else {
+                setRangeDisabled(false);
+            }
+        },[])
+
+        player.attach(playerObserver);
+
+        return () => {
+            player.detach(playerObserver);
+            player.destroy();
+            clearInterval(intervalRef.current);
+        }
+    }, [])
 
     useEffect(() => {
         if (playing) {
@@ -31,9 +61,11 @@ const RangeTrack = ({duration, currentTime, setRangeValue, playing, intervalRef}
 
     const handleMouseUp = (e) => {
         if (isDraggingRef.current) {
-            const newValue = parseInt(e.target.value);
-            player.seek(newValue);
-            setRangeValue(newValue);
+            if (!rangeDisabled) {
+                const newValue = parseInt(e.target.value);
+                player.seek(newValue);
+                setRangeValue(newValue);
+            }
 
             isDraggingRef.current = false;
         }
@@ -49,8 +81,9 @@ const RangeTrack = ({duration, currentTime, setRangeValue, playing, intervalRef}
                 type="range"
                 min={0}
                 max={duration || 0}
-                value={currentTime}
+                value={rangeValue}
                 onInput={handleChange}
+                disabled={rangeDisabled}
                 onMouseDown={handleMouseDown}
                 onMouseUp={handleMouseUp}
                 onPointerDown={handleMouseDown}
@@ -62,9 +95,10 @@ const RangeTrack = ({duration, currentTime, setRangeValue, playing, intervalRef}
                     width: '100%',
                     height: 4,
                     appearance: 'none',
+                    color: "black",
                     background: `linear-gradient(to right, #a855f7 0%, #a855f7 ${
-                        duration ? (currentTime / duration) * 100 : 0
-                    }%, #444 ${duration ? (currentTime / duration) * 100 : 0}%, #444 100%)`,
+                        duration ? (rangeValue / duration) * 100 : 0
+                    }%, #444 ${duration ? (rangeValue / duration) * 100 : 0}%, #444 100%)`,
                     touchAction: 'none'
                 }}
             />
