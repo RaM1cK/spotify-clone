@@ -116,7 +116,7 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
             const reply = {
                 id: Date.now() + 1,
                 from: "them",
-                text: "Пошёл нахуй!",
+                text: "Хорошо",
                 time: new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }),
             };
             setChats((prev) =>

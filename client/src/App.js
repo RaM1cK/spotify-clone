@@ -37,7 +37,7 @@ function App() {
     const [trackList, setTrackList] = useState([]);
 
     const music = [
-        { src: "morgenshtern-cvetok-(allmusic.kz).mp3",                        artistId: 1, mainAlbId:  "morgen_alb"},
+        { src: 1,                        artistId: 1, mainAlbId:  "morgen_alb"},
         { src: "Jane_Remover_-_Dancing_with_your_eyes_closed_80039450.mp3",    artistId: 2, mainAlbId: "Jane_Danced"},
         { src: "morgenshtern-уфф-деньги.mp3",                                  artistId: 1, mainAlbId: "morgen_alb" },
         { src: "MORGENSHTERN_-_Novyjj_merin_66404393.mp3",                     artistId: 1, mainAlbId: "morgen_alb" },

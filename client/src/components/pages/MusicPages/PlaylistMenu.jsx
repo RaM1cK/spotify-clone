@@ -14,7 +14,7 @@ import trackList from "../../UI/TrackList/TrackList";
 // const socket = io("http://localhost:8080");
 
 const music = [
-    "morgenshtern-cvetok-(allmusic.kz).mp3",
+    1,
     "morgenshtern-уфф-деньги.mp3",
     "MORGENSHTERN_-_Novyjj_merin_66404393.mp3"
 ]

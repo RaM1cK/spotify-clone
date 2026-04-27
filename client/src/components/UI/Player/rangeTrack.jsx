@@ -9,7 +9,7 @@ import {PlayerUI} from "../../../classes/observers/PlayerUI.ts";
 const RangeTrack = ({duration, playing, intervalRef}) => {
     const isDraggingRef = useRef(false);
     const player = useRef(pl.getInstance()).current
-    const [rangeDisabled, setRangeDisabled] = useState(false);
+    const [rangeDisabled, setRangeDisabled] = useState(true);
     const [rangeValue, setRangeValue] = useState(0);
 
     useEffect(() => {
