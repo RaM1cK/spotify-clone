@@ -57,28 +57,6 @@ const MusicPage = ({setCurrentTrack}) => {
         }
     };
 
-    const getTrack = async (trackId) => {
-        try {
-            const res =  await axios.post(`/api/tracks/getTrack/${trackId}`)
-
-            return res.data;
-        } catch (error) {
-            console.error(error);
-            return null;
-        }
-    }
-
-    useEffect(() => {
-        (async () => {
-            const tracks = await Promise.all(
-                music.map(async ({ src, artistId }) => {
-                const track = await getTrack(src);
-                return track? { ...track, artistId} : null;
-            }));
-            setTrackList(tracks.filter(track => track !== null));
-        })();
-    }, []);
-
     if (!activePage) {
         return (
             <div className="music-home">
