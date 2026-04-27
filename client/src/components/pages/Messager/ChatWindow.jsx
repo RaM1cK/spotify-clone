@@ -91,7 +91,7 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
                         }
                     }}
                 />
-                <button className="messages-send-btn" onClick={handleSend}>
+                <button className="messages-send-btn" onClick={() => handleSend()}>
                     →
                 </button>
             </div>

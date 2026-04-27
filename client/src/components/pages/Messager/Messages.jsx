@@ -79,14 +79,15 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
         setActiveChat({ ...chat, unread: 0 });
     };
 
-    const handleSend = (text = input, track = null) => {
-        if (!track && !text.trim() || !activeChat) return;
+    const handleSend = (text = input) => {
+        console.log(text);
+
+        if (!text.trim() || !activeChat) return;
 
         const newMessage = {
             id: Date.now(),
             from: "me",
-            text: track ? null : text.trim(),
-            track: track || null,
+            text:  text.trim(),
             time: new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }),
         };
 
@@ -98,7 +99,7 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
                 return {
                     ...chat,
                     messages: [...chat.messages, newMessage],
-                    lastMessage: track ? `🎵 ${track.name}` : newMessage.text,
+                    lastMessage: newMessage.text,
                     time: newMessage.time,
                 };
             })
@@ -106,10 +107,10 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
         setActiveChat((prev) => ({
             ...prev,
             messages: [...prev.messages, newMessage],
-            lastMessage: track ? `🎵 ${track.name}` : newMessage.text,
+            lastMessage: newMessage.text,
         }));
 
-        if (!track) setInput("");
+        setInput("");
 
         setTimeout(() => {
             const reply = {
