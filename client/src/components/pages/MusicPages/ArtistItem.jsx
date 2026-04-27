@@ -21,6 +21,8 @@ const ArtistItem = ({artist, tracks, albums, setCurrentTrack, RollBack}) => {
     const player = React.useRef(Player.getInstance()).current;
     const isPlaying = usePlayerState(player, tracks);
 
+    const artistAlbums = albums.filter(a => a.sub === artist.name);
+
     const handlePlay = () => {
         const queue = player.queue;
         const isSameQueue = queue.length === tracks.length &&
@@ -44,7 +46,7 @@ const ArtistItem = ({artist, tracks, albums, setCurrentTrack, RollBack}) => {
     if (showAllAlbums) {
         return (
             <AlbumMenu
-                albums={albums}
+                albums={artistAlbums}
                 setCurrentTrack={setCurrentTrack}
                 UsingContext={artist.name}
                 RollBack={() => setShowAllAlbums(null)}
@@ -77,8 +79,6 @@ const ArtistItem = ({artist, tracks, albums, setCurrentTrack, RollBack}) => {
             />
         )
     }
-
-    const artistAlbums = albums.filter(a => a.sub === artist.name);
 
     const previewTracks = tracks.slice(0, 5);
     const previewAlbums = artistAlbums.slice(0, 5);
