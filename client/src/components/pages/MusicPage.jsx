@@ -23,7 +23,7 @@ const MENU_ITEMS = [
 
 const MusicPage = ({setCurrentTrack}) => {
     const music = [
-        { src: "morgenshtern-cvetok-(allmusic.kz).mp3",                        artistId: 1 },
+        { src: 1,                        artistId: 1 },
         { src: "Jane_Remover_-_Dancing_with_your_eyes_closed_80039450.mp3",    artistId: 2 },
         { src: "morgenshtern-уфф-деньги.mp3",                                  artistId: 1 },
         { src: "MORGENSHTERN_-_Novyjj_merin_66404393.mp3",                     artistId: 1 },
