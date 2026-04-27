@@ -13,14 +13,31 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/RaM1cK/spotify-clone/issues"
   },
   "homepage": "https://github.com/RaM1cK/spotify-clone#readme",
   "dependencies": {
+    "@sequelize/core": "^7.0.0-alpha.48",
+    "@sequelize/postgres": "^7.0.0-alpha.48",
+    "@stardust-distro/cli": "^1.0.5",
+    "axios": "^1.13.6",
     "cors": "^2.8.6",
+    "dotenv": "^17.4.0",
     "express": "^5.2.1",
-    "socket.io": "^4.8.3"
+    "fast-xml-parser": "^5.7.2",
+    "howler": "^2.2.4",
+    "http": "^0.0.1-security",
+    "https": "^1.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "music-metadata": "^11.12.3",
+    "nodemailer": "^8.0.5",
+    "socket.io": "^4.8.3",
+    "ssh2-sftp-client": "^12.1.1"
+  },
+  "devDependencies": {
+    "@types/howler": "^2.2.12",
+    "nodemon": "^3.1.14"
   }
 }

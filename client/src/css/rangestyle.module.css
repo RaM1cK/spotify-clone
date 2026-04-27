@@ -1,0 +1,11 @@
+.customRange::-webkit-slider-thumb {
+    background-color: purple !important;
+}
+
+.customRange::-moz-range-thumb {
+    background-color: purple !important;
+}
+
+.customRange::-ms-thumb {
+    background-color: purple !important;
+}

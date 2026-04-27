@@ -1,0 +1,11 @@
+.header{
+    padding: 10px 10px;
+    color: #787676;
+    font-size: 18px;
+    display: flex;
+    justify-content: space-around;
+}
+
+.track-list {
+    /*padding: 0 10px;*/
+}
