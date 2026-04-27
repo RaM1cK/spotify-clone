@@ -72,9 +72,6 @@ const PLaylistMenu = ({setCurrentTrack, RollBack}) => {
         }
     }
 
-
-    console.log(Intl.DateTimeFormat().resolvedOptions().timeZone)
-
     useEffect(() => {
         (async () => {
             const tracks = await Promise.all(music.map(async name => {
