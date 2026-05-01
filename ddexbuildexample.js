@@ -7,8 +7,9 @@ import {fileURLToPath} from "url";
 import {sequelize} from "./models/index.js";
 import {Track} from "./models/Track.ts";
 import {Release} from "./models/Release.ts";
+import {Artist} from "./models/Artist.ts";
 
-let xml = fs.readFileSync("music/123456789012/metadata.xml", 'utf8');
+let xml = fs.readFileSync("music/1234567890123/metadata.xml", 'utf8');
 
 const parser = new XMLParser({
     ignoreAttributes: false,
@@ -16,11 +17,11 @@ const parser = new XMLParser({
     removeNSPrefix: true,
     isArray: (name) => [
         'SoundRecording',
+        'DisplayArtist',
         'Image',
         'Party',
         'Deal',
         'Genre',
-        'ResourceGroup',
         'ResourceGroupContentItem',
         'Release'
     ].includes(name)
@@ -29,77 +30,111 @@ const parser = new XMLParser({
 const ddex = parser.parse(xml)
 const ern = ddex.NewReleaseMessage
 
-const resourceMap = new Map();
+const resourceTrackMap = new Map();
+const resourceImageMap = new Map();
+const partyMap = new Map();
 
 (ern.ResourceList?.SoundRecording || []).forEach(sr => {
-    resourceMap.set(sr.ResourceReference, sr)
+    resourceTrackMap.set(sr.ResourceReference, sr)
 });
 
 
 (ern.ResourceList?.Image || []).forEach(image => {
-    resourceMap.set(image.ResourceReference, image)
+    resourceImageMap.set(image.ResourceReference, image)
 });
 
+
+(ern.PartyList?.Party || []).forEach(party => {
+    partyMap.set(party.PartyReference, party.PartyName.FullName)
+});
+
+
 const releases = ern.ReleaseList?.Release || [];
+
+const artistsMap = new Map();
 
 for (const r of releases) {
     const icpn = r.ReleaseId.ICPN.toString();
     const releaseType = r.ReleaseType;
     const releaseTitle = r.DisplayTitle?.TitleText || r.DisplayTitleText;
-    const releaseArtist = r.DisplayArtistName;
+    const releaseDisplayArtistName = r.DisplayArtistName;
     const releaseParentalWarning = r.ParentalWarningType;
 
     await sequelize.transaction(async t => {
+        const releaseLinkedResource = r.ResourceGroup.LinkedReleaseResourceReference
+
+        const releaseCover = resourceImageMap.get(releaseLinkedResource)
+
+        const releaseCoverTech = releaseCover.TechnicalDetails;
+        const releaseCoverFile = releaseCoverTech?.DeliveryFile;
+        const releaseCoverURI = releaseCoverFile?.File?.URI;
+
         const [release, created] = await Release.upsert({
             icpn,
             type: releaseType,
             title: releaseTitle,
-            artist: releaseArtist,
+            displayArtist: releaseDisplayArtistName,
+            cover: releaseCoverURI,
             parentalWarning: releaseParentalWarning,
         }, { transaction: t });
 
-        const resourceGroups = r.ResourceGroup || [];
-        for (const group of resourceGroups) {
-            const contentItems = group.ResourceGroupContentItem || [];
-            for (const contentItem of contentItems) {
-                const audioRef = contentItem.ReleaseResourceReference;
-                const coverRef = contentItem.LinkedReleaseResourceReference;
+        for (const { ArtistPartyReference } of r.DisplayArtist) {
+            const [artist, _] = await Artist.upsert({
+                name: partyMap.get(ArtistPartyReference)
+            }, {transaction: t });
 
-                const audio = resourceMap.get(audioRef);
-                const cover = resourceMap.get(coverRef);
+            artistsMap.set(
+                ArtistPartyReference,
+                artist
+            )
 
-                const isrc = audio.SoundRecordingEdition?.ResourceId?.ISRC;
-                const title = audio.DisplayTitle?.TitleText || audio.DisplayTitleText;
-                const artist = audio.DisplayArtistName;
-                const parentalWarning = audio.ParentalWarningType;
+            await artist.addRelease(release, {transaction: t });
+        }
 
-                const durationPattern = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?/;
-                const matchDuration = audio.Duration.match(durationPattern);
-                const hours = parseInt(matchDuration?.[1] || '0');
-                const minutes = parseInt(matchDuration?.[2] || '0');
-                const seconds = parseFloat(matchDuration?.[3] || '0');
-                const duration = hours * 3600 + minutes * 60 + seconds;
+        const contentItems = r.ResourceGroup.ResourceGroupContentItem || [];
 
-                const audioTech = audio.TechnicalDetails;
-                const audioFile = audioTech?.DeliveryFile;
-                const audioURI = audioFile?.File?.URI;
+        for (const contentItem of contentItems) {
+            const audioRef = contentItem.ResourceReference;
+            const coverRef = contentItem.LinkedReleaseResourceReference || releaseLinkedResource;
 
-                const coverTech = cover.TechnicalDetails;
-                const coverFile = coverTech?.DeliveryFile;
-                const coverURI = coverFile?.File?.URI;
+            const audio = resourceTrackMap.get(audioRef);
+            const cover = resourceImageMap.get(coverRef);
 
-                const [track] = await Track.upsert({
-                    isrc,
-                    releaseId: release.id,
-                    title,
-                    artist,
-                    duration,
-                    parentalWarning,
-                    uri: audioURI,
-                    cover: coverURI,
-                }, { transaction: t });
+            const isrc = audio.SoundRecordingEdition?.ResourceId?.ISRC;
+            const title = audio.DisplayTitle?.TitleText || audio.DisplayTitleText;
+            const displayArtist = audio.DisplayArtistName;
+            const parentalWarning = audio.ParentalWarningType;
 
-                await release.addTrack(track, { transaction: t });
+            const durationPattern = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?/;
+            const matchDuration = audio.Duration.match(durationPattern);
+            const hours = parseInt(matchDuration?.[1] || '0');
+            const minutes = parseInt(matchDuration?.[2] || '0');
+            const seconds = parseFloat(matchDuration?.[3] || '0');
+            const duration = hours * 3600 + minutes * 60 + seconds;
+
+            const audioTech = audio.TechnicalDetails;
+            const audioFile = audioTech?.DeliveryFile;
+            const audioURI = audioFile?.File?.URI;
+
+            const coverTech = cover.TechnicalDetails;
+            const coverFile = coverTech?.DeliveryFile;
+            const coverURI = coverFile?.File?.URI;
+
+            const [track, _] = await Track.upsert({
+                isrc,
+                releaseId: release.id,
+                title,
+                displayArtist,
+                duration,
+                parentalWarning,
+                uri: audioURI,
+                cover: coverURI,
+            }, { transaction: t });
+
+            await release.addTrack(track, { transaction: t });
+
+            for (const { ArtistPartyReference } of audio.DisplayArtist) {
+                await artistsMap.get(ArtistPartyReference).addTrack(track, { transaction: t });
             }
         }
     });
