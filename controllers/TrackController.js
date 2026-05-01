@@ -60,14 +60,9 @@ export const getTrackFile = async (req, res)=> {
 
     fileStream.on('error', () => {
         fileStream.destroy()
-    })
-
-    fileStream.on('close', () => {
-        if (!fileStream.destroyed) fileStream.destroy();
-    })
-
-    fileStream.on('end', () => {
-        if (!fileStream.destroyed) fileStream.destroy();
+        if (!res.headersSent) {
+            res.sendStatus(500);
+        }
     })
 
     const chunkSize = end - start + 1
@@ -91,6 +86,10 @@ export const getCover = async (req, res) => {
     const release = await Release.findOne({
         where: { id: track.releaseId }
     })
+
+    if (!release || !track) {
+        return res.status(404).send({})
+    }
 
     res.sendFile(path.join(__dirname, 'music', release.icpn, track.cover));
 }

@@ -11,10 +11,11 @@ import Liked from "./MusicPages/Liked";
 import PlaylistMenu from "./MusicPages/PlaylistMenu";
 import AlbumMenu from "./MusicPages/AlbumMenu";
 import ArtistMenu from "./MusicPages/ArtistMenu";
+import SearchBar from "../SearchBar";
 // const socket = io("http://localhost:8080");
 
 const MENU_ITEMS = [
-    { id: "liked",     label: "Избранное",   sub: "Вам понравилось", Icon: Heart,            color: "info" }, ,
+    { id: "liked",     label: "Избранное",   sub: "Вам понравилось", Icon: Heart,            color: "info" },
     { id: "playlists", label: "Плейлисты",   sub: "Ваши подборки",   Icon: LayoutList,       color: "success" },
     { id: "artists",   label: "Исполнители", sub: "По артистам",     Icon: CircleUserRound,  color: "warning" },
     { id: "albums",    label: "Альбомы",     sub: "Дискография",     Icon: Disc3,            color: "danger" },
@@ -39,24 +40,27 @@ const MusicPage = ({trackList, ALBUM_ITEMS, artists, setCurrentTrack}) => {
 
     if (!activePage) {
         return (
-            <div className="music-home">
-                <h1 className="music-home__title">Куда отправимся?</h1>
-                <div className="music-grid">
-                    {MENU_ITEMS.map(({ id, label, sub, Icon, color }) => (
-                        <button
-                            key={id}
-                            className={`music-tile music-tile--${color}`}
-                            onClick={() => handleSetPage(id)}
-                        >
-                            <div className={`music-tile__icon music-tile__icon--${color}`}>
-                                <Icon size={22} />
-                            </div>
-                            <span className="music-tile__label">{label}</span>
-                            <span className="music-tile__sub">{sub}</span>
-                        </button>
-                    ))}
+            <>
+                <SearchBar/>
+                <div className="music-home">
+                    <h1 className="music-home__title">Куда отправимся?</h1>
+                    <div className="music-grid">
+                        {MENU_ITEMS.map(({ id, label, sub, Icon, color }) => (
+                            <button
+                                key={id}
+                                className={`music-tile music-tile--${color}`}
+                                onClick={() => handleSetPage(id)}
+                            >
+                                <div className={`music-tile__icon music-tile__icon--${color}`}>
+                                    <Icon size={22} />
+                                </div>
+                                <span className="music-tile__label">{label}</span>
+                                <span className="music-tile__sub">{sub}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            </>
         );
     }
 

@@ -37,11 +37,20 @@ function App() {
     const [trackList, setTrackList] = useState([]);
 
     const music = [
-        { src: 1,                        artistId: 1, mainAlbId:  "morgen_alb"},
-        { src: "Jane_Remover_-_Dancing_with_your_eyes_closed_80039450.mp3",    artistId: 2, mainAlbId: "Jane_Danced"},
-        { src: "morgenshtern-уфф-деньги.mp3",                                  artistId: 1, mainAlbId: "morgen_alb" },
-        { src: "MORGENSHTERN_-_Novyjj_merin_66404393.mp3",                     artistId: 1, mainAlbId: "morgen_alb" },
-        { src: "gazan-khochu-bit-kak-gazan-(allmusic.kz).mp3",                 artistId: 3, mainAlbId: "Want_to_be_like_Gazan"},
+        { src: '1',                        artistId: 2, mainAlbId:  "tsoi_alb"},
+        { src: '2',                        artistId: 2, mainAlbId:  "tsoi_alb"},
+        { src: '3',                        artistId: 3, mainAlbId:  "tsoi_alb"},
+        { src: '4',                        artistId: 2, mainAlbId:  "tsoi_alb"},
+        { src: '5',                        artistId: 2, mainAlbId:  "tsoi_alb"},
+        { src: '6',                        artistId: 2, mainAlbId:  "tsoi_alb"},
+        { src: '7',                        artistId: 2, mainAlbId:  "tsoi_alb"},
+        { src: '8',                        artistId: 2, mainAlbId:  "tsoi_alb"},
+        { src: '9',                        artistId: 2, mainAlbId:  "tsoi_alb"},
+        { src: '10',                        artistId: 1, mainAlbId:  "morgen_alb"},
+        // { src: "Jane_Remover_-_Dancing_with_your_eyes_closed_80039450.mp3",    artistId: 2, mainAlbId: "Jane_Danced"},
+        // { src: "morgenshtern-уфф-деньги.mp3",                                  artistId: 1, mainAlbId: "morgen_alb" },
+        // { src: "MORGENSHTERN_-_Novyjj_merin_66404393.mp3",                     artistId: 1, mainAlbId: "morgen_alb" },
+        // { src: "gazan-khochu-bit-kak-gazan-(allmusic.kz).mp3",                 artistId: 3, mainAlbId: "Want_to_be_like_Gazan"},
     ];
 
     const artists = [
@@ -51,10 +60,12 @@ function App() {
     ];
 
     const ALBUM_ITEMS = useMemo(() => [
-        { id: "morgen_alb", label: "Легендарная пыль 2", sub: "Morgenshtern", sub2: "2027", tracks: trackList, img: "https://upload.wikimedia.org/wikipedia/ru/0/0f/%D0%9B%D0%B5%D0%B3%D0%B5%D0%BD%D0%B4%D0%B0%D1%80%D0%BD%D0%B0%D1%8F_%D0%BF%D1%8B%D0%BB%D1%8C.jpg" },
-        { id: "flower",     label: "Цветок",             sub: "Morgenshtern", sub2: "2022", tracks: trackList[0] ? [trackList[0]] : [], img: "https://images.genius.com/76714eccf8df6ec9924514712f9cdd15.1000x1000x1.png" },
-        { id: "Jane_Danced", label: "Danced with your eyes closed", sub: "Jane Remover", sub2: "2021", tracks: trackList[1] ? [trackList[1]] : [], img:  artists[1].photo},
-        { id: "Want_to_be_like_Gazan", label: "Хочу быть как Газан", sub: "Gazan", sub2: "2026", tracks: trackList[4] ? [trackList[4]] : [], img:  artists[2].photo},
+        {id: '1', tracks: trackList.slice(0, 9)},
+        {id: '2', tracks: trackList.slice(9)},
+        // { id: "morgen_alb", label: "Легендарная пыль 2", sub: "Morgenshtern", sub2: "2027", tracks: trackList, img: "https://upload.wikimedia.org/wikipedia/ru/0/0f/%D0%9B%D0%B5%D0%B3%D0%B5%D0%BD%D0%B4%D0%B0%D1%80%D0%BD%D0%B0%D1%8F_%D0%BF%D1%8B%D0%BB%D1%8C.jpg" },
+        // { id: "flower",     label: "Цветок",             sub: "Morgenshtern", sub2: "2022", tracks: trackList[0] ? [trackList[0]] : [], img: "https://images.genius.com/76714eccf8df6ec9924514712f9cdd15.1000x1000x1.png" },
+        // { id: "Jane_Danced", label: "Danced with your eyes closed", sub: "Jane Remover", sub2: "2021", tracks: trackList[1] ? [trackList[1]] : [], img:  artists[1].photo},
+        // { id: "Want_to_be_like_Gazan", label: "Хочу быть как Газан", sub: "Gazan", sub2: "2026", tracks: trackList[4] ? [trackList[4]] : [], img:  artists[2].photo},
     ], [trackList]);
 
     const getTrack = async (trackId) => {

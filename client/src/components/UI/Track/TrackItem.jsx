@@ -75,7 +75,7 @@ function TrackItem({ number, track, tracks, setCurrentTrack }) {
                     </div>
                     <div className="d-flex flex-column justify-content-between">
                         <span className="track-item__title">{track.title}</span>
-                        <span className="track-item__artist">{track.artist}</span>
+                        <span className="track-item__artist">{track.displayArtist}</span>
                     </div>
                 </div>
 

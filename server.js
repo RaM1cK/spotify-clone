@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 import {sequelize} from './models/index.js';
 import {User} from "./models/User.ts";
 import UserRouter from "./routers/UserRouter.js";
+import ReleaseRouter from "./routers/ReleaseRouter.js";
 //import {Composition, Track} from "./models/Track.ts";
 
 dotenv.config();
@@ -26,6 +27,7 @@ app.use(cors());
 app.use(express.json());
 app.use("/tracks", TrackRouter);
 app.use("/users", UserRouter);
+app.use("/releases", ReleaseRouter);
 
 export const __filename = fileURLToPath(import.meta.url);
 export const __dirname = path.dirname(__filename);
@@ -42,7 +44,7 @@ const io = new Server(server, {
 try {
     await sequelize.authenticate();
     console.log('Connected');
-    await sequelize.sync({alter: true});
+    // await sequelize.sync({alter: true});
 
     // await sequelize.transaction(async t => {
     //     const track = await Track.create({

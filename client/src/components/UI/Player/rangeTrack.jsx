@@ -42,7 +42,7 @@ const RangeTrack = ({duration, playing, intervalRef}) => {
     useEffect(() => {
         if (playing) {
             intervalRef.current = setInterval(() => {
-                if (!isDraggingRef.current) setRangeValue(prev => (prev + 1) % (duration + 1));
+                if (!isDraggingRef.current) setRangeValue(prev => prev + 1);
             }, 1000)
         } else {
             clearInterval(intervalRef.current);

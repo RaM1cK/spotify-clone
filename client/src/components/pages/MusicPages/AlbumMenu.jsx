@@ -29,6 +29,7 @@ const getWordForm = (count) => {
 const AlbumMenu = ({setCurrentTrack, RollBack, albums, UsingContext}) => {
 
     const [activePageId, setActivePageId] = useState(() => localStorage.getItem("musicActivePage"));
+    const [albumsData, setAlbumsData] = useState([]);
 
     const activePage = activePageId ? albums.find(p => p.id === activePageId) || null : null;
     const handleSetPage = (page) => {
@@ -41,26 +42,29 @@ const AlbumMenu = ({setCurrentTrack, RollBack, albums, UsingContext}) => {
         }
     };
 
-    const getTrack = async (trackId) => {
-        try {
-            const res =  await axios.post(`/api/tracks/getTrack/${trackId}`)
+    // const getTrack = async (trackId) => {
+    //     try {
+    //         const res =  await axios.post(`/api/tracks/getTrack/${trackId}`)
+    //
+    //         return res.data;
+    //     } catch (error) {
+    //         console.error(error);
+    //         return null;
+    //     }
+    // }
 
-            return res.data;
-        } catch (error) {
-            console.error(error);
-            return null;
-        }
-    }
+    useEffect(() => {
+        (async () => {
+            const results = await Promise.all(
+                albums.map(({ id }) =>
+                    axios.post(`/api/releases/getRelease/${id}`)
+                        .then(res => ({ id, ...res.data }))
+                )
+            )
 
-    // useEffect(() => {
-    //     (async () => {
-    //         const tracks = await Promise.all(music.map(async name => {
-    //             return await getTrack(name);
-    //         }));
-    //         const filtered = tracks.filter(track => track !== null);
-    //         setTrackList(tracks.filter(track => track !== null));
-    //     })();
-    // }, []);
+            setAlbumsData(results);
+        })();
+    }, []);
 
     if (!activePage) {
         return (
@@ -81,26 +85,28 @@ const AlbumMenu = ({setCurrentTrack, RollBack, albums, UsingContext}) => {
                     }
                 </div>
                 <div className="playlist-grid">
-                    {albums.map(({ id, label, sub, sub2, img, tracks }) => (
-                        <button
-                            key={id}
-                            onClick={() => handleSetPage({ id, label, sub, sub2, img, tracks })}
-                        >
-                            <div className="album-imagediv">
-                                <img src={img} alt="" />
-                            </div>
-                            <span className="music-tile__label">{label}</span>
-                            {UsingContext === "menu" && <span className="album-autor">{sub}</span>}
-                            <span className="date-issingle">{sub2} {tracks.length === 1 ? " · сингл" : ""}</span>
-                        </button>
-                    ))}
+                    {albumsData.map(data => (
+                            <button
+                                key={data.id}
+                                onClick={() => handleSetPage({id: data.id})}
+                            >
+                                <div className="album-imagediv">
+                                    <img src={`/api/releases/getCover/${data.id}`} alt={`${data.title}`} />
+                                </div>
+                                <span className="music-tile__label">{data.title}</span>
+                                {UsingContext === "menu" && <span className="album-autor">{data.displayArtist}</span>}
+                            </button>
+                        )
+                    )}
                 </div>
             </div>
         );
     }
 
     else return (
-        <PlaylistItem Tracks={activePage.tracks} title={activePage.label} type = {"Альбом"} image={activePage.img} setCurrentTrack={setCurrentTrack} AutName={activePage.sub} year={activePage.sub2} RollBack = {handleSetPage}/>
+        <PlaylistItem Tracks={activePage.tracks} title={activePage.title} type = {"Альбом"} image={`/api/releases/getCover/${activePage.id}`} setCurrentTrack={setCurrentTrack} AutName={activePage.sub}
+                      // year={activePage.sub2}
+                      RollBack = {handleSetPage}/>
     );
 };
 
