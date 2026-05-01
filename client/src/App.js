@@ -1,11 +1,9 @@
 import io from 'socket.io-client';
-import React, {useEffect, useMemo, useState} from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Player from "./components/UI/Player/Player";
-import {Button, Nav, NavLink} from "react-bootstrap";
-import {CircleUserRound, ListMusic, MessageCircleMore} from 'lucide-react'
 import axios from "axios";
 import "./App.css";
-import TrackList from "./components/UI/TrackList/TrackList";
 import AuthPage, { getSession, clearSession } from "./AuthPage";
 import MusicPage from "./components/pages/MusicPage";
 import ContextMenu from "./components/ContextMenu";
@@ -15,26 +13,53 @@ import Messages from "./components/pages/Messager/Messages";
 
 const SESSION_KEY = "app_session";
 
-const IP_APP = process.env.REACT_APP_IP_APP
-const SERVER_PORT = process.env.REACT_APP_SERVER_PORT
-
-
-//Страницы, которые будут посередине
 const PAGES = [
-    {id: "testTrack", component: MusicPage, label: "Музыка"},
-    {id: "messagePage", component: Messages, label: "Сообщения"},
-    {id: "testPage", component: testpage, label: "Газан"}
-]
+    { id: "testTrack",   path: "/music/*",  navPath: "/music",    component: MusicPage, label: "Музыка" },
+    { id: "messagePage", path: "/messages", navPath: "/messages", component: Messages,  label: "Сообщения" },
+    { id: "testPage",    path: "/gazan",    navPath: "/gazan",    component: testpage,  label: "Газан" },
+];
 
+function AppLayout({ trackList, setCurrentTrack, ALBUM_ITEMS, artists, currentTrack, menuOpen, setMenuOpen }) {
+    return (
+        <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+            <MenuButton menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+            <div style={{ display: "flex", flex: 1, overflow: "hidden", minHeight: 0 }}>
+                <ContextMenu
+                    PAGES={PAGES}
+                    menuOpen={menuOpen}
+                    setMenuOpen={setMenuOpen}
+                />
+                <main style={{ flex: 1, overflowY: "auto" }}>
+                    <Routes>
+                        {PAGES.map(({ path, component: Component }) => (
+                            <Route
+                                key={path}
+                                path={path}
+                                element={
+                                    <Component
+                                        trackList={trackList}
+                                        setCurrentTrack={setCurrentTrack}
+                                        ALBUM_ITEMS={ALBUM_ITEMS}
+                                        artists={artists}
+                                    />
+                                }
+                            />
+                        ))}
+                        <Route path="*" element={<Navigate to="/music" replace />} />
+                    </Routes>
+                </main>
+            </div>
+            <Player track={currentTrack} setTrack={setCurrentTrack} />
+        </div>
+    );
+}
 
 function App() {
     const [session, setSession] = useState(() => getSession());
-    const [activePage, setActivePage] = useState("testTrack");
-    const [sessionToken, setSessionToken] = useState(() => {
-        return getSession()?.token;
-    });
-
+    const [sessionToken, setSessionToken] = useState(() => getSession()?.token);
     const [trackList, setTrackList] = useState([]);
+    const [currentTrack, setCurrentTrack] = useState(null);
+    const [menuOpen, setMenuOpen] = useState(false);
 
     const music = [
         { src: '1',                        artistId: 2, mainAlbId:  "tsoi_alb"},
@@ -70,53 +95,37 @@ function App() {
 
     const getTrack = async (trackId) => {
         try {
-            const res =  await axios.post(`/api/tracks/getTrack/${trackId}`)
-
+            const res = await axios.post(`/api/tracks/getTrack/${trackId}`);
             return res.data;
         } catch (error) {
             console.error(error);
             return null;
         }
-    }
+    };
 
     useEffect(() => {
         (async () => {
             const tracks = await Promise.all(
-                music.map(async ({ src, artistId }) => {
+                music.map(async ({ src, artistId, mainAlbId }) => {
                     const track = await getTrack(src);
-                    return track? { ...track, artistId} : null;
-                }));
-            setTrackList(tracks.filter(track => track !== null));
+                    return track ? { ...track, artistId, mainAlbId } : null;
+                })
+            );
+            setTrackList(tracks.filter(Boolean));
         })();
     }, []);
 
-    const [currentTrack, setCurrentTrack] = useState(null);
-
-    const [menuOpen, setMenuOpen] = useState(false);
-
-    //Строчка ниже очищает локальную сессию - если удалишь, при обновлении страницы форма бл
-    // clearSession();
-
     const initializeSocket = (token) => {
-        const socket = io('ws://localhost:8080', { //при деплое изменить
-            auth: {token}
-        });
-
+        const socket = io('ws://localhost:8080', { auth: { token } });
         socket.on('connect', () => console.log('Socket.IO connected'));
         socket.on('connect_error', (err) => {
-            console.error('Socket connection failed:', err.message)
-
-            if (err.message === 'USER_DOESNT_EXISTS') {
-                handleLogout()
-            }
+            console.error('Socket connection failed:', err.message);
+            if (err.message === 'USER_DOESNT_EXISTS') handleLogout();
         });
-
         return socket;
     };
 
-    const handleAuth = (token) => {
-        setSessionToken(token)
-    };
+    const handleAuth = (token) => setSessionToken(token);
 
     const handleLogout = () => {
         clearSession();
@@ -126,45 +135,34 @@ function App() {
     useEffect(() => {
         if (sessionToken) {
             const socket = initializeSocket(sessionToken);
-
             socket.on('email-verified', () => {
-                const _session = {token: sessionToken};
-
+                const _session = { token: sessionToken };
                 localStorage.setItem(SESSION_KEY, JSON.stringify(_session));
                 setSession(_session);
-
                 socket.off('email-verified');
-            })
-
+            });
             return () => {
                 socket.off('email-verified');
                 socket.disconnect();
-            }
+            };
         }
-    }, [sessionToken])
+    }, [sessionToken]);
 
-    if (!session) {
-        return <AuthPage onAuth={handleAuth} />;
-    }
+    if (!session) return <AuthPage onAuth={handleAuth} />;
 
-    //Функция ищет активную страницу в массиве страниц и возвращает ее
-    const { component: PageComponent } = PAGES.find(p => p.id === activePage);
     return (
-        <div style={{ display: "flex", flexDirection: "column", height: "100vh"}}>
-            <MenuButton menuOpen={menuOpen} setMenuOpen={setMenuOpen}/>
-            <div style={{ display: "flex", flex: 1, overflow: "hidden", minHeight: 0 }}>
-                <ContextMenu PAGES={PAGES} activePage={activePage} setActivePage={setActivePage} menuOpen={menuOpen} setMenuOpen={setMenuOpen}/>
-                <main style={{ flex: 1, overflowY: "auto" }}>
-                    <PageComponent trackList = {trackList} setCurrentTrack={setCurrentTrack} ALBUM_ITEMS = {ALBUM_ITEMS} artists = {artists} />
-                </main>
-            </div>
-            <Player
-                track={currentTrack}
-                setTrack={setCurrentTrack}
+        <BrowserRouter>
+            <AppLayout
+                trackList={trackList}
+                setCurrentTrack={setCurrentTrack}
+                ALBUM_ITEMS={ALBUM_ITEMS}
+                artists={artists}
+                currentTrack={currentTrack}
+                menuOpen={menuOpen}
+                setMenuOpen={setMenuOpen}
             />
-        </div>
-    )
-
+        </BrowserRouter>
+    );
 }
 
 export default App;
