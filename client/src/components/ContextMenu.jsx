@@ -1,13 +1,22 @@
 import React from 'react';
-import ContextMenuStyle from './ContextMenuStyle.css';
+import { useNavigate, useLocation } from "react-router-dom";
+import './ContextMenuStyle.css';
 
-export default function ContextMenu({PAGES, activePage, setActivePage, menuOpen, setMenuOpen}) {
+export default function ContextMenu({ PAGES, menuOpen, setMenuOpen }) {
+    const navigate = useNavigate();
+    const location = useLocation();
+
     return (
         <aside className={`context-menu MainDiv ${menuOpen ? "open" : ""}`}>
             {PAGES.map(page => (
-                <button className={`buttons${activePage === page.id ? " select" : ""}`}
-                        key={page.id}
-                        onClick={() => {setActivePage(page.id); setMenuOpen(false)}}>
+                <button
+                    className={`buttons${location.pathname.startsWith(page.navPath) ? " select" : ""}`}
+                    key={page.id}
+                    onClick={() => {
+                        navigate(page.navPath);
+                        setMenuOpen(false);
+                    }}
+                >
                     {page.label}
                 </button>
             ))}

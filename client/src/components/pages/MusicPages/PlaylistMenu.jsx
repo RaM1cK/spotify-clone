@@ -10,6 +10,7 @@ import "./PlaylistMenu.css"
 import playlistItem from "./PlaylistItem";
 import PlaylistItem from "./PlaylistItem";
 import trackList from "../../UI/TrackList/TrackList";
+import {Routes, Route, useNavigate, useParams, Navigate} from "react-router-dom";
 
 // const socket = io("http://localhost:8080");
 
@@ -36,78 +37,82 @@ const getWordForm = (count) => {
 };
 
 
-const PLaylistMenu = ({setCurrentTrack, RollBack}) => {
-    const [trackList, setTrackList] = useState([]);
+
+const PlaylistMenu = ({trackList, setCurrentTrack, RollBack }) => {
+    const navigate = useNavigate();
 
     const PLAYLIST_ITEMS = [
-        { id: "morgen", label: "MORGENSHTERN: лучшее", tracks: trackList, img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
-        { id: "morgen1", label: "MORGENSHTERN: лучшее", tracks: trackList, img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
-        { id: "morgen2", label: "MORGENSHTERN: лучшее", tracks: trackList, img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
-        { id: "morgen3", label: "MORGENSHTERN: лучшее", tracks: trackList, img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
+        { id: "morgen", label: "MORGENSHTERN: лучшее", tracks: trackList ?? [] , img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
+        { id: "morgen1", label: "MORGENSHTERN: лучшее", tracks: trackList ?? [], img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
+        { id: "morgen2", label: "MORGENSHTERN: лучшее", tracks: trackList ?? [], img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
+        { id: "morgen3", label: "MORGENSHTERN: лучшее", tracks: trackList ?? [], img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
         { id: "morgen4", label: "MORGENSHTERN: худшее", tracks: [], img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
     ];
 
-    const [activePage, setActivePage] = useState(() => {
-        const savedId = localStorage.getItem("musicActivePage");
-        return savedId ? PLAYLIST_ITEMS.find(p => p.id === savedId) || null : null;
-    });
-
-    const handleSetPage = (page) => {
-        setActivePage(page);
-        if (page) {
-            localStorage.setItem("musicActivePage", page.id);
-        } else {
-            localStorage.removeItem("musicActivePage");
-        }
-    };
-
-    const getTrack = async (trackId) => {
-        try {
-            const res =  await axios.post(`/api/tracks/getTrack/${trackId}`)
-
-            return res.data;
-        } catch (error) {
-            console.error(error);
-            return null;
-        }
-    }
-
-    useEffect(() => {
-        (async () => {
-            const tracks = await Promise.all(music.map(async name => {
-                return await getTrack(name);
-            }));
-            setTrackList(tracks.filter(track => track !== null));
-        })();
-    }, []);
-
-    if (!activePage) {
-        return (
-            <div className="playlist-home">
-                <button className="music-back" onClick={() => RollBack(null)}>
-                    ← Назад
-                </button>
-                <div className="playlist-grid">
-                    {PLAYLIST_ITEMS.map(({ id, label, img, tracks }) => (
-                        <button
-                            key={id}
-                            onClick={() => handleSetPage({ id, label, img, tracks })}
-                        >
-                            <div className="album-imagediv">
-                                <img src={img} alt="" />
-                            </div>
-                            <span className="music-tile__label">{label}</span>
-                            <span className="playlist-track-count">{tracks.length} {getWordForm(tracks.length)}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
-    else return (
-        <PlaylistItem Tracks={activePage.tracks} title={activePage.label} type="Плейлист" image={activePage.img} setCurrentTrack={setCurrentTrack} RollBack = {handleSetPage}/>
+    return (
+        <Routes>
+            <Route
+                index
+                element={
+                    <PlaylistList
+                        items={PLAYLIST_ITEMS}
+                        onSelect={(item) => navigate(item.id)}
+                        RollBack={RollBack}
+                    />
+                }
+            />
+            <Route
+                path=":playlistId"
+                element={
+                    <PlaylistDetail
+                        items={PLAYLIST_ITEMS}
+                        setCurrentTrack={setCurrentTrack}
+                        RollBack={() => navigate(-1)}
+                    />
+                }
+            />
+        </Routes>
     );
 };
 
-export default PLaylistMenu;
+// Список плейлистов
+const PlaylistList = ({ items, onSelect, RollBack }) => (
+    <div className="playlist-home">
+        <button className="music-back" onClick={RollBack}>← Назад</button>
+        <div className="playlist-grid">
+            {items.map((item) => (
+                <button key={item.id} onClick={() => onSelect(item)}>
+                    <div className="album-imagediv">
+                        <img src={item.img} alt="" />
+                    </div>
+                    <span className="music-tile__label">{item.label}</span>
+                    <span className="playlist-track-count">
+                        {item.tracks.length} {getWordForm(item.tracks.length)}
+                    </span>
+                </button>
+            ))}
+        </div>
+    </div>
+);
+
+// Открытый плейлист
+const PlaylistDetail = ({ items, setCurrentTrack, RollBack }) => {
+    const { playlistId } = useParams();
+    const item = items.find((p) => p.id === playlistId);
+
+    if (!item) return <Navigate to="/music/playlists" replace />;
+    console.log(item.tracks)
+    return (
+        <PlaylistItem
+            Tracks={item.tracks}
+            title={item.label}
+            type="Плейлист"
+            image={item.img}
+            setCurrentTrack={setCurrentTrack}
+            RollBack={RollBack}
+        />
+
+    );
+};
+
+export default PlaylistMenu;

@@ -35,7 +35,7 @@ const getSum = (Tracks) => {
 };
 
 
-const PlaylistItem = ({Tracks, setCurrentTrack, title, type, AutName, year, image, RollBack}) => {
+const PlaylistItem = ({Tracks = [], setCurrentTrack, title, type, AutName, year, image, RollBack}) => {
 
     const player = useRef(pl.getInstance()).current
     const isPlaying = usePlayerState(player, Tracks);
@@ -60,7 +60,7 @@ const PlaylistItem = ({Tracks, setCurrentTrack, title, type, AutName, year, imag
 
     return (
         <div className={"liked"}>
-            <button className="music-back" onClick={() => RollBack(null)}>
+            <button className="music-back" onClick={() => RollBack()}>
                 ← Назад
             </button>
             <div className="liked-header">

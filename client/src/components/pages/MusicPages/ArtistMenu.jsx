@@ -1,5 +1,7 @@
-import React, {useState} from "react";
+// ArtistMenu.jsx
+import React from "react";
 import { CircleUserRound } from "lucide-react";
+import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
 import "./ArtistMenu.css";
 import ArtistItem from "./ArtistItem";
 
@@ -9,27 +11,11 @@ const declension = (n) => {
     return "треков";
 };
 
-const ArtistMenu = ({ artists, albums, tracks, onSelectArtist, setCurrentTrack, RollBack }) => {
+const ArtistList = ({ artists, tracks, RollBack }) => {
+    const navigate = useNavigate();
+
     const getCount = (artistId) =>
         tracks.filter(t => t.artistId === artistId).length;
-
-    const [activeArtist, setActiveArtist] = useState(null);
-
-    const handleSetArtist = (artist) => {
-        setActiveArtist(artist);
-    };
-
-    if (activeArtist) {
-        return (
-            <ArtistItem
-                artist={activeArtist}
-                tracks={tracks.filter(t => t.artistId === activeArtist.id)}
-                albums={albums}
-                setCurrentTrack={setCurrentTrack}
-                RollBack={() => setActiveArtist(null)}
-            />
-        );
-    }
 
     return (
         <div className="playlist-home">
@@ -40,7 +26,7 @@ const ArtistMenu = ({ artists, albums, tracks, onSelectArtist, setCurrentTrack, 
                 {artists.map((artist) => (
                     <button
                         key={artist.id}
-                        onClick={() => handleSetArtist(artist)}
+                        onClick={() => navigate(encodeURIComponent(artist.name))}
                     >
                         <div className="artist-avatar">
                             {artist.photo
@@ -56,6 +42,55 @@ const ArtistMenu = ({ artists, albums, tracks, onSelectArtist, setCurrentTrack, 
                 ))}
             </div>
         </div>
+    );
+};
+
+const ArtistDetail = ({ artists, tracks, albums, setCurrentTrack }) => {
+    const { artistName } = useParams();
+    const navigate = useNavigate();
+
+    const artist = artists.find(
+        a => a.name === decodeURIComponent(artistName)
+    );
+
+    if (!artist) return <Navigate to="/music/artists" replace />;
+
+    return (
+        <ArtistItem
+            artist={artist}
+            tracks={tracks.filter(t => t.artistId === artist.id)}
+            albums={albums}
+            setCurrentTrack={setCurrentTrack}
+            RollBack={() => navigate(-1)}
+        />
+    );
+};
+
+const ArtistMenu = ({ artists, albums, tracks, setCurrentTrack, RollBack }) => {
+    return (
+        <Routes>
+            <Route
+                index
+                element={
+                    <ArtistList
+                        artists={artists}
+                        tracks={tracks}
+                        RollBack={RollBack}
+                    />
+                }
+            />
+            <Route
+                path=":artistName/*"
+                element={
+                    <ArtistDetail
+                        artists={artists}
+                        tracks={tracks}
+                        albums={albums}
+                        setCurrentTrack={setCurrentTrack}
+                    />
+                }
+            />
+        </Routes>
     );
 };
 
