@@ -3,6 +3,9 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import io from "../server.js"
+import {getTracksBySecret} from "./TrackController.js";
+import {Track} from "../models/Track.ts";
+import {sequelize} from "../models/index.js";
 
 dotenv.config();
 
@@ -82,7 +85,35 @@ const auth = async (req, res) => {
         return res.status(400).json({})
     }
 
-    res.status(201).send(sendVerificationLink(authData.email))
+    const token = jwt.sign(
+        { id: user.id, email: user.email },
+        process.env.SECRET_KEY
+    )
+
+    res.cookie("token", token, {
+        httpOnly: true,
+        sameSite: "strict",
+    })
+
+    res.status(200).send({
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname
+    })
+}
+
+export const getUser = async (req, res) => {
+    const email = req.user.email;
+
+    const user = await User.findOne({
+        where: { email }
+    })
+
+    if (!user) {
+        return res.status(404).json({})
+    }
+
+    return user
 }
 
 const getUsersByNickname = async (req, res) => {
@@ -102,4 +133,72 @@ const getUsersByNickname = async (req, res) => {
     }
 }
 
-export default {reg, auth, verifyEmail, getUsersByNickname}
+const getReleases = async (req, res) => {
+    const user = await getUser(req, res)
+
+    const result = await user.getFavoriteReleases({
+        order: [["createdAt", "DESC"]],
+        attributes: {
+            exclude: ['createdAt', 'updatedAt', 'icpn']
+        }
+    }).then(releases => releases.map(release => ({
+        ...release.toJSON(),
+        date: new Date(release.date).getFullYear()
+    })))
+
+    res.status(200).send(result)
+}
+
+const getTracks = async (req, res) => {
+    const user = await getUser(req, res)
+
+    const result = await user.getFavoriteTracks({
+        order: [["createdAt", "DESC"]],
+        attributes: {
+            exclude: ['createdAt', 'updatedAt', 'isrc']
+        }
+    }).then(tracks => getTracksBySecret(req, res, tracks, user));
+
+    res.status(200).send(result)
+}
+
+const addFavoriteTrack = async (req, res) => {
+    const user = await getUser(req, res)
+    const trackId = req.params['trackId'];
+
+    try {
+        await sequelize.transaction(async t => {
+            await user.addFavoriteTrack(trackId, { transaction: t });
+        });
+
+        return res.status(200).send({});
+    } catch {
+        return res.status(500).send({});
+    }
+}
+
+const removeFavoriteTrack = async (req, res) => {
+    const user = await getUser(req, res)
+    const trackId = req.params['trackId'];
+
+    try {
+        await sequelize.transaction(async t => {
+            await user.removeFavoriteTrack(trackId, { transaction: t });
+        });
+
+        return res.status(200).send({});
+    } catch {
+        return res.status(500).send({});
+    }
+}
+
+export default {
+    reg,
+    auth,
+    verifyEmail,
+    getUsersByNickname,
+    getReleases,
+    getTracks,
+    addFavoriteTrack,
+    removeFavoriteTrack
+}

@@ -1,12 +1,13 @@
 import React from "react";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
-import { ListMusic, LayoutList, CircleUserRound, Disc3, Heart } from "lucide-react";
+import {ListMusic, LayoutList, CircleUserRound, Disc3, Heart, Search} from "lucide-react";
 import TrackList from "../UI/TrackList/TrackList";
 import Liked from "./MusicPages/Liked";
 import PlaylistMenu from "./MusicPages/PlaylistMenu";
 import AlbumMenu from "./MusicPages/AlbumMenu";
 import ArtistMenu from "./MusicPages/ArtistMenu";
 import "./MusicPage.css";
+import SearchBar from "../SearchBar";
 
 const MENU_ITEMS = [
     { id: "liked",     path: "/music/liked",       label: "Избранное",   sub: "Вам понравилось", Icon: Heart,           color: "info" },
@@ -19,24 +20,27 @@ const MusicHome = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="music-home">
-            <h1 className="music-home__title">Куда отправимся?</h1>
-            <div className="music-grid">
-                {MENU_ITEMS.map(({ id, path, label, sub, Icon, color }) => (
-                    <button
-                        key={id}
-                        className={`music-tile music-tile--${color}`}
-                        onClick={() => navigate(path)}
-                    >
-                        <div className={`music-tile__icon music-tile__icon--${color}`}>
-                            <Icon size={22} />
-                        </div>
-                        <span className="music-tile__label">{label}</span>
-                        <span className="music-tile__sub">{sub}</span>
-                    </button>
-                ))}
+        <>
+            <SearchBar />
+            <div className="music-home">
+                <h1 className="music-home__title">Куда отправимся?</h1>
+                <div className="music-grid">
+                    {MENU_ITEMS.map(({ id, path, label, sub, Icon, color }) => (
+                        <button
+                            key={id}
+                            className={`music-tile music-tile--${color}`}
+                            onClick={() => navigate(path)}
+                        >
+                            <div className={`music-tile__icon music-tile__icon--${color}`}>
+                                <Icon size={22} />
+                            </div>
+                            <span className="music-tile__label">{label}</span>
+                            <span className="music-tile__sub">{sub}</span>
+                        </button>
+                    ))}
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 
@@ -53,7 +57,6 @@ const MusicPage = ({ trackList, ALBUM_ITEMS, artists, setCurrentTrack }) => {
                 path="liked"
                 element={
                     <Liked
-                        Tracks={trackList}
                         setCurrentTrack={setCurrentTrack}
                         RollBack={rollBack}
                     />

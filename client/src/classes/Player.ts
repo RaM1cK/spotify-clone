@@ -1,7 +1,7 @@
 import {Track} from "../../../models/Track";
 import {Observer} from "./observers/Observer";
 import {Subject} from "./Subject";
-import {LoadingState, PlayerState, PlayingState, StoppedState} from "./PlayerState.ts";
+import {LoadingState, PausedState, PlayerState, PlayingState, StoppedState} from "./PlayerState.ts";
 import {Howl} from "howler";
 import {
     ShufflePlayerStrategy,
@@ -19,6 +19,9 @@ export class Player implements Subject {
     private _state: PlayerState;
     private _strategy: StrategyLoopDecorator;
     private _currentIndex: number = 0;
+    private _bufferCheckInterval: ReturnType<typeof setInterval> | null = null;
+    private _lastPosition: number = 0;
+    private _lastPositionOnLoading: number = -1;
 
     public get currentIndex(): number {
         return this._currentIndex;
@@ -40,16 +43,114 @@ export class Player implements Subject {
         this.howl?.unload()
     }
 
-    private setHowl(track: Track): void {
+    private updateMediaSession(track: Track) {
+        if (!('mediaSession' in navigator)) return;
+
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: track.title,
+            artist: track.artist,
+            artwork: [
+                {
+                    src: `/api/files/${track.cover}`
+                }
+            ]
+        })
+
+        navigator.mediaSession.setActionHandler('play', () => this.play())
+        navigator.mediaSession.setActionHandler('pause', () => {
+            this.pause()
+            navigator.mediaSession.playbackState = 'paused'
+        })
+        navigator.mediaSession.setActionHandler('stop', () => {
+            this.pause()
+            navigator.mediaSession.playbackState = 'none'
+        })
+        navigator.mediaSession.setActionHandler('nexttrack', () => this.next())
+        navigator.mediaSession.setActionHandler('previoustrack', () => this.previous())
+        navigator.mediaSession.setActionHandler('seekforward', (e) => {
+            const skipTime = e.seekOffset ?? 10
+            // @ts-ignore
+            this.seek(this.seek() + skipTime)
+            this.updatePositionState()
+        })
+        navigator.mediaSession.setActionHandler('seekbackward', (e) => {
+            const skipTime = e.seekOffset ?? 10
+            // @ts-ignore
+            this.seek(this.seek() - skipTime)
+            this.updatePositionState()
+        })
+        navigator.mediaSession.setActionHandler('seekto', (e) => {
+            this.seek(e.seekTime)
+            this.updatePositionState()
+        })
+    }
+
+    private updateMediaSessionState(state: MediaSessionPlaybackState) {
+        if (!('mediaSession' in navigator)) return;
+
+        navigator.mediaSession.playbackState = state;
+        this.updatePositionState()
+    }
+
+    private updatePositionState() {
+        if (!('mediaSession' in navigator) || !this.howl) return;
+
+        navigator.mediaSession.setPositionState({
+            duration: this.track.duration || 0,
+            position: this.seek() || 0,
+            playbackRate: 1
+        })
+    }
+
+    private startBufferWatch() {
+        this.stopBufferWatch()
+
+        this._bufferCheckInterval = setInterval(() => {
+            if (!this.howl || this.isStopped() || this.isPaused()) return;
+
+            const current = this.howl.seek()
+
+            if (current === this._lastPosition) {
+                this.state = new LoadingState()
+                this.notify()
+            } else {
+                if (this.isLoading()) {
+                    this.state = new PlayingState()
+                    this.notify()
+                }
+
+                this._lastPosition = current
+            }
+        }, 500)
+    }
+
+    private stopBufferWatch() {
+        if (this._bufferCheckInterval) {
+            clearInterval(this._bufferCheckInterval);
+            this._bufferCheckInterval = null;
+        }
+    }
+
+    private handleError(track: any) {
+        const position = this.howl?.seek() ?? 0
+
+        setTimeout(() => {
+            this.setHowl(track, position)
+        }, 2000)
+    }
+
+    private setHowl(track: any, startFrom: number = 0): void {
         this.stop()
 
         if (this.howl) this.howl.unload()
+        this._lastPositionOnLoading = -1
+        this.stopBufferWatch()
 
         this.state = new LoadingState()
         this.notify()
 
         this.howl = new Howl({
-            src: [`/api/tracks/getTrackFile/${track.id}`],
+            src: [`/api/tracks?token=${track.token}`],
             format: ['mp3', 'flac'],
             volume: 0.06,
             loop: false,
@@ -57,19 +158,33 @@ export class Player implements Subject {
             autoplay: true,
             onload: () => {
                 this.state = new PlayingState();
+
+                if (startFrom > 0) this.howl!.seek(startFrom)
+                else if (this._lastPositionOnLoading !== -1) this.howl!.seek(this._lastPositionOnLoading)
+
+                this.notify()
+                this.updateMediaSession(track)
+                this.startBufferWatch()
+            },
+            onplay: () => {
+                this.updateMediaSessionState('playing')
+                this.state = new PlayingState();
                 this.notify()
             },
+            onpause: () => this.updateMediaSessionState('paused'),
             onend: () => {
+                this.updateMediaSessionState('none')
                 this._strategy.onTrackEnd()
             },
             onloaderror: (e) => {
                 console.log('Load error')
                 console.error(e)
+                this.handleError(track)
             },
             onplayerror: (e) => {
-                console.log('PLay error')
-                console.log('Load error')
+                console.log('Play error')
                 console.error(e)
+                this.handleError(track)
             }
         })
     }
@@ -77,44 +192,29 @@ export class Player implements Subject {
     public seek(num?: number) {
         if (this.howl) {
             if (num !== undefined) {
-                this.howl.seek(num)
-
-                if (!this.isLoading()) {
+                if (this.howl.state() === 'loaded') {
+                    this.howl.seek(num)
+                    this._lastPositionOnLoading = -1
                     this.play()
+                } else {
+                    this._lastPositionOnLoading = num;
                 }
             }
-            else return Math.floor(this.howl.seek() as number);
+            else return Math.round(this.howl.seek())
         }
     }
 
     private constructor() {
-        const intervalCheckLoading = setInterval(() => {
-            const loadingStatus = this.howl?.state()
-
-            switch (loadingStatus) {
-                case undefined:
-                case "unloaded":
-                case "loading":
-                    if (!this.isLoading()){
-                        this.state = new LoadingState();
-                        this.notify()
-                    }
-                    break;
-                case "loaded":
-                    if (this.isLoading()) {
-                        this.state = new PlayingState();
-                        this.notify()
-                    }
-                    break;
-            }
-        }, 100)
-
         this._state = new StoppedState();
         this._strategy = new NoneLoopDecorator(new SimplePlayerStrategy());
     }
 
     public isPlaying(): boolean {
         return this.state instanceof PlayingState;
+    }
+
+    public isPaused(): boolean {
+        return this.state instanceof PausedState;
     }
 
     public isLoading(): boolean {
@@ -146,7 +246,6 @@ export class Player implements Subject {
     }
 
     public notify(): void {
-        console.log(this.state)
         this.observers.forEach(async (o) => o.update())
     }
 
@@ -199,8 +298,6 @@ export class Player implements Subject {
         }
 
         this._strategy.execute(tempTrack, tempQueue);
-
-        console.log(this._strategy)
     }
 
     public next(): void {

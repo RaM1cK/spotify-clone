@@ -9,7 +9,7 @@ import {PlayerUI} from "../../../classes/observers/PlayerUI.ts";
 const RangeTrack = ({duration, playing, intervalRef}) => {
     const isDraggingRef = useRef(false);
     const player = useRef(pl.getInstance()).current
-    const [rangeDisabled, setRangeDisabled] = useState(true);
+    // const [rangeDisabled, setRangeDisabled] = useState(true);
     const [rangeValue, setRangeValue] = useState(0);
 
     useEffect(() => {
@@ -20,13 +20,6 @@ const RangeTrack = ({duration, playing, intervalRef}) => {
 
             if (player.isStopped()) {
                 setRangeValue(0)
-            }
-
-            if (player.isLoading() && player.seek() === 0) {
-                // setRangeValue(player.seek())
-                setRangeDisabled(true);
-            } else {
-                setRangeDisabled(false);
             }
         },[])
 
@@ -42,7 +35,7 @@ const RangeTrack = ({duration, playing, intervalRef}) => {
     useEffect(() => {
         if (playing) {
             intervalRef.current = setInterval(() => {
-                if (!isDraggingRef.current) setRangeValue(prev => prev + 1);
+                if (!isDraggingRef.current) setRangeValue(player.seek());
             }, 1000)
         } else {
             clearInterval(intervalRef.current);
@@ -61,11 +54,9 @@ const RangeTrack = ({duration, playing, intervalRef}) => {
 
     const handleMouseUp = (e) => {
         if (isDraggingRef.current) {
-            if (!rangeDisabled) {
-                const newValue = parseInt(e.target.value);
-                player.seek(newValue);
-                setRangeValue(newValue);
-            }
+            const newValue = parseInt(e.target.value);
+            player.seek(newValue);
+            setRangeValue(newValue);
 
             isDraggingRef.current = false;
         }
@@ -83,7 +74,6 @@ const RangeTrack = ({duration, playing, intervalRef}) => {
                 max={duration || 0}
                 value={rangeValue}
                 onInput={handleChange}
-                disabled={rangeDisabled}
                 onMouseDown={handleMouseDown}
                 onMouseUp={handleMouseUp}
                 onPointerDown={handleMouseDown}

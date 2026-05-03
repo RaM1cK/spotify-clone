@@ -1,10 +1,11 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import myLikeIcon from '../../../images/MYLIKEDICON.png';
 import TrackList from "../../UI/TrackList/TrackList";
 import './Liked.css';
 import {MoreHorizontal, Pause, Play} from "lucide-react";
 import {Player} from "../../../classes/Player.ts";
 import usePlayerState from '../../../hooks/usePlayerState';
+import axios from "axios";
 
 const getWordForm = (count) => {
     const lastTwo = count % 100;
@@ -36,63 +37,81 @@ const getSum = (Tracks) => {
 
 
 
-const Liked = ({Tracks, setCurrentTrack, RollBack}) => {
+const Liked = ({setCurrentTrack, RollBack}) => {
     const player = React.useRef(Player.getInstance()).current;
+    const [Tracks, setTracks] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
     const isPlaying = usePlayerState(player, Tracks);
 
+    useEffect(() => {
+        (async () => {
+            await axios.post('/api/users/favoriteTracks')
+                .then(res =>  setTracks(res.data))
+                .catch(err => console.error(err))
+                .finally(() => setLoading(false));
+        })()
+    }, []);
 
-    const handlePlay = () => {
-        const queue = player.queue;
-        const isSameQueue = queue.length === Tracks.length &&
-            queue.every((t, i) => t.id === Tracks[i]?.id);
-
-        if (!isSameQueue) {
-            player.setTrack(Tracks[0], Tracks);
-            setCurrentTrack(Tracks[0]);
-        } else {
-            if (player.isPlaying()) {
-                player.pause();
-            } else {
-                player.play();
-            }
+    const onFavoriteChange = (trackId, isFavorite) => {
+        if (!isFavorite) {
+            setTracks(tracks => tracks.filter(track => track.id !== trackId));
         }
-    };
+    }
 
-    return (
-        <div className={"liked"}>
-            <button className="music-back" onClick={() => RollBack(null)}>
-                ← Назад
-            </button>
-            <div className="liked-header">
-                <img src={myLikeIcon} className="logo" alt="logo" />
-                <div className="liked-header-info">
-                    <p>Плейлист</p>
-                    <h2>Избранное</h2>
-                    <p className="liked-composer">Составитель: NULL</p>
-                    <div className="liked-count-time">
-                        <div>{Tracks.length} {getWordForm(Tracks.length)}</div>
-                        <span>·</span>
-                        <div>{getSum(Tracks)}</div>
-                    </div>
-                    <div className="liked-buttons-action">
-                        <button
-                            className="liked-play-btn"
-                            onClick={handlePlay}
-                            disabled={Tracks.length === 0}
-                        >
-                            {isPlaying? <Pause size={18}/> : <Play size={18}/>}
-                            <span>Слушать</span>
-                        </button>
-                        <button className="liked-props-btn">
-                            <MoreHorizontal size={18}/>
-                        </button>
+    if (!loading) {
+        const handlePlay = () => {
+            const queue = player.queue;
+            const isSameQueue = queue.length === Tracks.length &&
+                queue.every((t, i) => t.id === Tracks[i]?.id);
+
+            if (!isSameQueue) {
+                player.setTrack(Tracks[0], Tracks);
+                setCurrentTrack(Tracks[0]);
+            } else {
+                if (player.isPlaying()) {
+                    player.pause();
+                } else {
+                    player.play();
+                }
+            }
+        };
+
+        return (
+            <div className={"liked"}>
+                <button className="music-back" onClick={() => RollBack(null)}>
+                    ← Назад
+                </button>
+                <div className="liked-header">
+                    <img src={myLikeIcon} className="logo" alt="logo" />
+                    <div className="liked-header-info">
+                        <p>Плейлист</p>
+                        <h2>Избранное</h2>
+                        <p className="liked-composer">Составитель: NULL</p>
+                        <div className="liked-count-time">
+                            <div>{Tracks.length} {getWordForm(Tracks.length)}</div>
+                            <span>·</span>
+                            <div>{getSum(Tracks)}</div>
+                        </div>
+                        <div className="liked-buttons-action">
+                            <button
+                                className="liked-play-btn"
+                                onClick={handlePlay}
+                                disabled={Tracks.length === 0}
+                            >
+                                {isPlaying? <Pause size={18}/> : <Play size={18}/>}
+                                <span>Слушать</span>
+                            </button>
+                            <button className="liked-props-btn">
+                                <MoreHorizontal size={18}/>
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <TrackList tracks={Tracks} setCurrentTrack={setCurrentTrack}/>
-        </div>
-    );
+                <TrackList tracks={Tracks} setCurrentTrack={setCurrentTrack} onFavoriteChange={onFavoriteChange}/>
+            </div>
+        );
+    }
 };
 
 export default Liked;

@@ -59,6 +59,7 @@ for (const r of releases) {
     const releaseTitle = r.DisplayTitle?.TitleText || r.DisplayTitleText;
     const releaseDisplayArtistName = r.DisplayArtistName;
     const releaseParentalWarning = r.ParentalWarningType;
+    const releaseDate = new Date(r.ReleaseDate);
 
     await sequelize.transaction(async t => {
         const releaseLinkedResource = r.ResourceGroup.LinkedReleaseResourceReference
@@ -73,8 +74,9 @@ for (const r of releases) {
             icpn,
             type: releaseType,
             title: releaseTitle,
-            displayArtist: releaseDisplayArtistName,
-            cover: releaseCoverURI,
+            artist: releaseDisplayArtistName,
+            date: releaseDate,
+            cover: `${icpn}/${releaseCoverURI}`,
             parentalWarning: releaseParentalWarning,
         }, { transaction: t });
 
@@ -124,11 +126,11 @@ for (const r of releases) {
                 isrc,
                 releaseId: release.id,
                 title,
-                displayArtist,
+                artist: displayArtist,
                 duration,
                 parentalWarning,
-                uri: audioURI,
-                cover: coverURI,
+                uri: `${icpn}/${audioURI}`,
+                cover: `${icpn}/${coverURI}`,
             }, { transaction: t });
 
             await release.addTrack(track, { transaction: t });

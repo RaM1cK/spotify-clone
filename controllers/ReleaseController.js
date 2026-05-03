@@ -1,14 +1,16 @@
 import {Release} from "../models/Release.ts";
-import {Track} from "../models/Track.ts";
-import path from "path";
-import {__dirname} from "../server.js";
+import {getUser} from "./UserController.js";
+import {getTracksBySecret} from "./TrackController.js";
 
 const getRelease = async (req, res) => {
     const releaseId = req.params['releaseId'];
 
     const release = await Release.findOne({
         where: {
-            id: releaseId,
+            id: releaseId
+        },
+        attributes: {
+            exclude: ['createdAt', 'updatedAt', 'icpn']
         }
     });
 
@@ -16,11 +18,15 @@ const getRelease = async (req, res) => {
         return res.status(404).send({})
     }
 
-    return res.status(200).send(release);
+    return res.status(200).send({
+        ...release.dataValues,
+        date: new Date(release.date).getFullYear()
+    });
 }
 
-export const getCover = async (req, res) => {
+export const getReleaseTracks = async (req, res) => {
     const releaseId = req.params['releaseId'];
+    const user = await getUser(req, res);
 
     const release = await Release.findOne({
         where: { id: releaseId }
@@ -30,7 +36,14 @@ export const getCover = async (req, res) => {
         return res.status(404).send({})
     }
 
-    res.sendFile(path.join(__dirname, 'music', release.icpn, release.cover));
+    const result = await release.getTracks({
+        order: [['id', 'ASC']],
+        attributes: {
+            exclude: ['createdAt', 'updatedAt', 'isrc']
+        }
+    }).then(tracks => getTracksBySecret(req, res, tracks, user));
+
+    res.status(200).send(result)
 }
 
-export default {getRelease, getCover}
+export default {getRelease, getReleaseTracks}
