@@ -2,25 +2,6 @@ import { useState } from "react";
 import "./css/auth.css";
 import axios from "axios";
 
-const USERS_KEY = "app_users";
-const SESSION_KEY = "app_session";
-
-// function saveUsers(users) {
-//     localStorage.setItem(USERS_KEY, JSON.stringify(users));
-// }
-
-export function getSession() {
-    try {
-        return JSON.parse(localStorage.getItem(SESSION_KEY)) || null;
-    } catch {
-        return null;
-    }
-}
-
-export function clearSession() {
-    localStorage.removeItem(SESSION_KEY);
-}
-
 export default function AuthPage({ onAuth }) {
     const [mode, setMode] = useState("login");
     const [form, setForm] = useState({nickname: "" , email: "", password: "", confirm: "" });
@@ -28,16 +9,11 @@ export default function AuthPage({ onAuth }) {
     const [shake, setShake] = useState(false);
     const [sending, setSending] = useState(false);
 
-    function setLocal(token) {
-        // localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-        onAuth(token);
-    }
-
     function register(regUserData) {
         setSending(true);
 
         axios.post("/api/users/reg", regUserData).then(
-            res => setLocal(res.data)
+            res => onAuth()
         ).catch(err => {
             if (err.response) {
                 const status = err.response.status;
@@ -64,9 +40,7 @@ export default function AuthPage({ onAuth }) {
     function authenticate(authUserData) {
         setSending(true);
 
-        axios.post("/api/users/auth", authUserData).then(
-            res => setLocal(res.data)
-        ).catch(err => {
+        axios.post("/api/users/auth", authUserData).then(() => onAuth()).catch(err => {
             if (err.response) {
                 setError("Неверный e-mail или пароль");
                 triggerShake()

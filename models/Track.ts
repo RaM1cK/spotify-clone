@@ -44,7 +44,7 @@ export class Track extends Model<InferAttributes<Track>, InferCreationAttributes
 
     @Attribute(DataTypes.STRING(140))
     @NotNull
-    declare displayArtist: string
+    declare artist: string
 
     @Attribute(DataTypes.FLOAT)
     @NotNull

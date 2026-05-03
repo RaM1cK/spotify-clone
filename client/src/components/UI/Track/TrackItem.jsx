@@ -5,9 +5,10 @@ import "./trackitem.css";
 import {TrackUI} from "../../../classes/observers/TrackUI.ts";
 import axios from "axios";
 
-function TrackItem({ number, track, tracks, setCurrentTrack }) {
+function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange }) {
     const [isPlaying, setIsPlaying] = React.useState(false);
     const [isCurrent, setIsCurrent] = React.useState(false);
+    const [isFavorite, setIsFavorite] = React.useState(track.hasInFavorite);
     const player = React.useRef(Player.getInstance()).current;
 
     const formatTime = (seconds) => {
@@ -57,6 +58,16 @@ function TrackItem({ number, track, tracks, setCurrentTrack }) {
         }
     }
 
+    const toFavorite = () => {
+        axios.post(`/api/users/${isFavorite ? 'remove' : 'add'}FavoriteTrack/${track.id}`)
+            .then(() => {
+                const newValue = !isFavorite
+                setIsFavorite(newValue)
+                onFavoriteChange?.(track.id, newValue);
+            })
+            .catch(err => console.error(err));
+    }
+
         return (
             <div className="track-item">
                 {/* Left section */}
@@ -65,7 +76,7 @@ function TrackItem({ number, track, tracks, setCurrentTrack }) {
                     <span className="track-number">{number}</span>
                     <div className="track-item__cover-wrapper">
                         <img
-                            src={`/api/tracks/getCover/${track.id}`}
+                            src={`/api/files/${track.cover}`}
                             alt={track.title}
                             className="track-item__cover"
                         />
@@ -75,7 +86,7 @@ function TrackItem({ number, track, tracks, setCurrentTrack }) {
                     </div>
                     <div className="d-flex flex-column justify-content-between">
                         <span className="track-item__title">{track.title}</span>
-                        <span className="track-item__artist">{track.displayArtist}</span>
+                        <span className="track-item__artist">{track.artist}</span>
                     </div>
                 </div>
 
@@ -83,8 +94,8 @@ function TrackItem({ number, track, tracks, setCurrentTrack }) {
                 <div className="track-item__actions">
                     <span className="time">{formatTime(track.duration)}</span>
 
-                    <button className="track-item__button">
-                        <Heart size={20} color={"white"}/>
+                    <button onClick={toFavorite} className="track-item__button">
+                        <Heart size={20} color={"white"} fill={isFavorite ? "white" : "none"}/>
                     </button>
 
                     <button className="track-item__button">

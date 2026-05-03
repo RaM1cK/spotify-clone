@@ -20,17 +20,17 @@ const AlbumList = ({ albums, UsingContext, RollBack }) => {
                 }
             </div>
             <div className="playlist-grid">
-                {albums.map(({ id, label, sub, sub2, img, tracks }) => (
+                {albums.map(({ id, title, artist, date, cover}) => (
                     <button
                         key={id}
                         onClick={() => navigate(id)}
                     >
                         <div className="album-imagediv">
-                            <img src={img} alt="" />
+                            <img src={`/api/files/${cover}`} alt={`${title}`} />
                         </div>
-                        <span className="music-tile__label">{label}</span>
-                        {UsingContext === "menu" && <span className="album-autor">{sub}</span>}
-                        <span className="date-issingle">{sub2}{(tracks ?? []).length === 1 ? " · сингл" : ""}</span>
+                        <span className="music-tile__label">{title}</span>
+                        {UsingContext === "menu" && <span className="album-autor">{artist}</span>}
+                        <span className="date-issingle">{date}</span>
                     </button>
                 ))}
             </div>
@@ -41,48 +41,74 @@ const AlbumList = ({ albums, UsingContext, RollBack }) => {
 const AlbumDetail = ({ albums, setCurrentTrack }) => {
     const { albumId } = useParams();
     const navigate = useNavigate();
+    const [tracks, setTracks] = useState(null);
+
+    useEffect(() => {
+        (async () => {
+            const result = await axios.post(`/api/releases/${albumId}/tracks`)
+                .then(res => res.data);
+
+            setTracks(result);
+        })()
+    }, [])
 
     const album = albums.find(a => a.id === albumId);
     if (!album) return <Navigate to=".." relative="path" replace />;
 
-    return (
-        <PlaylistItem
-            Tracks={album.tracks ?? []}
-            title={album.label}
-            type="Альбом"
-            image={album.img}
-            setCurrentTrack={setCurrentTrack}
-            AutName={album.sub}
-            year={album.sub2}
-            RollBack={() => navigate(-1)}
-        />
-    );
+    if (tracks)
+        return (
+            <PlaylistItem
+                Tracks={tracks}
+                title={album.title}
+                type="Альбом"
+                image={`/api/files/${album.cover}`}
+                setCurrentTrack={setCurrentTrack}
+                AutName={album.artist}
+                year={album.date}
+                RollBack={() => navigate(-1)}
+            />
+        );
 };
 
-const AlbumMenu = ({ albums, setCurrentTrack, RollBack, UsingContext }) => {
-    return (
-        <Routes>
-            <Route
-                index
-                element={
-                    <AlbumList
-                        albums={albums}
-                        UsingContext={UsingContext}
-                        RollBack={RollBack}
-                    />
-                }
-            />
-            <Route
-                path=":albumId"
-                element={
-                    <AlbumDetail
-                        albums={albums}
-                        setCurrentTrack={setCurrentTrack}
-                    />
-                }
-            />
-        </Routes>
-    );
+const AlbumMenu = ({ setCurrentTrack, RollBack, UsingContext }) => {
+    const [albumsData, setAlbumsData] = useState(null);
+
+    useEffect(() => {
+        (async () => {
+            const result =
+                await axios.post(`/api/users/favoriteReleases`)
+                    .then(res => res.data)
+
+            console.log(result)
+
+            setAlbumsData(result)
+        })()
+    }, [])
+
+    if (albumsData)
+        return (
+            <Routes>
+                <Route
+                    index
+                    element={
+                        <AlbumList
+                            albums={albumsData}
+                            UsingContext={UsingContext}
+                            RollBack={RollBack}
+                        />
+                    }
+                />
+                <Route
+                    path=":albumId"
+                    element={
+                        <AlbumDetail
+                            albums={albumsData}
+                            setCurrentTrack={setCurrentTrack}
+                        />
+                    }
+                />
+            </Routes>
+        );
 };
 
 export default AlbumMenu;

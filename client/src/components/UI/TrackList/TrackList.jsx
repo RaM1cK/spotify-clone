@@ -2,7 +2,7 @@ import React from "react"
 import TrackItem from "../Track/TrackItem";
 import "./TrackList.css"
 
-function TrackList({tracks, setCurrentTrack, UsingContext, RollBack}) {
+function TrackList({tracks, setCurrentTrack, UsingContext, RollBack, onFavoriteChange}) {
     return (
         <div className="track-list">
             {RollBack && (
@@ -15,11 +15,12 @@ function TrackList({tracks, setCurrentTrack, UsingContext, RollBack}) {
                 {tracks.map((track, index) => (
                     <TrackItem
                         number={index+1}
-                        key={index}
+                        key={track.id}
                         index={index}
                         track={track}
                         tracks={tracks}
                         setCurrentTrack = {setCurrentTrack}
+                        onFavoriteChange = {onFavoriteChange}
                     />
                 ))}
             </div>

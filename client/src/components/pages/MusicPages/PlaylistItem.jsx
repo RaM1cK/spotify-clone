@@ -35,8 +35,7 @@ const getSum = (Tracks) => {
 };
 
 
-const PlaylistItem = ({Tracks = [], setCurrentTrack, title, type, AutName, year, image, RollBack}) => {
-
+const PlaylistItem = ({Tracks, setCurrentTrack, title, type, AutName, year, image, RollBack}) => {
     const player = useRef(pl.getInstance()).current
     const isPlaying = usePlayerState(player, Tracks);
 

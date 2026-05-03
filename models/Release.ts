@@ -1,6 +1,7 @@
 import {
     DataTypes, HasManyAddAssociationMixin,
-    HasManyAddAssociationsMixin, InferAttributes, InferCreationAttributes, Model
+    HasManyAddAssociationsMixin, HasManyGetAssociationsMixinOptions, InferAttributes, InferCreationAttributes, Model,
+    sql
 } from "@sequelize/core";
 import type {
     NonAttribute
@@ -8,7 +9,7 @@ import type {
 import {
     Attribute,
     AutoIncrement,
-    BelongsToMany,
+    BelongsToMany, Default,
     HasMany,
     NotNull,
     PrimaryKey,
@@ -42,7 +43,7 @@ export class Release extends Model<InferAttributes<Release>, InferCreationAttrib
 
     @Attribute(DataTypes.STRING(140))
     @NotNull
-    declare displayArtist: string
+    declare artist: string
 
     @Attribute(DataTypes.TEXT)
     @NotNull
@@ -52,6 +53,10 @@ export class Release extends Model<InferAttributes<Release>, InferCreationAttrib
     @NotNull
     declare parentalWarning: string
 
+    @Attribute(DataTypes.DATEONLY)
+    @NotNull
+    declare date: Date;
+
     @BelongsToMany(() => Artist, {
         through: 'ArtistRelease',
     })
@@ -60,10 +65,8 @@ export class Release extends Model<InferAttributes<Release>, InferCreationAttrib
     @HasMany(() => Track, 'releaseId')
     declare tracks?: Track[];
 
-    getTracks(): Track[] | undefined {
-        return this.tracks;
-    }
-
     declare addTrack: HasManyAddAssociationMixin<Track, Track['id']>;
     declare addTracks: HasManyAddAssociationsMixin<Track, Track['id']>
+
+    declare getTracks: HasManyGetAssociationsMixinOptions<Track>;
 }
