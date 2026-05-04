@@ -2,105 +2,118 @@ import React, {useEffect, useMemo, useState} from "react";
 import axios from "axios";
 import PlaylistItem from "./PlaylistItem";
 import "./AlbumMenu.css"
+import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
 
-const music = [
-    "morgenshtern-cvetok-(allmusic.kz).mp3",
-    "morgenshtern-уфф-деньги.mp3",
-    "MORGENSHTERN_-_Novyjj_merin_66404393.mp3"
-]
+const AlbumList = ({ artistId, UsingContext, RollBack }) => {
+    const navigate = useNavigate();
+    const [albums, setAlbums] = useState(null);
+    const [error, setError] = useState(null);
 
-const getWordForm = (count) => {
-    const lastTwo = count % 100;
-    const last = count % 10;
+    useEffect(() => {
+        axios.get(artistId ? `/api/artists/${artistId}/releases` : `/api/users/favoriteReleases`)
+            .then(res => setAlbums(res.data))
+            .catch(() => setError('Ошибка загрузки'));
+    }, [artistId]);
 
-    if (lastTwo >= 11 && lastTwo <= 14) {
-        return "треков";
-    }
-    if (last === 1) {
-        return "трек";
-    }
-    if (last >= 2 && last <= 4) {
-        return "трека";
-    }
-    return "треков";
+    if (!albums && !error) return <div>Загрузка...</div>;
+    if (error) return <div>{error}</div>;
+
+    return (
+        <div className="playlist-home">
+            <div className="menuHeader">
+                {UsingContext !== "menu" ?
+                    <>
+                        <button className="music-back" onClick={() => RollBack(null)}>← Назад</button>
+                        <h1>Все альбомы: {UsingContext}</h1>
+                    </>
+                    :
+                    <button className="music-back" onClick={() => RollBack(null)}>← Назад</button>
+                }
+            </div>
+            <div className="playlist-grid">
+                {albums.map(({ id, title, artist, date, cover }) => (
+                    <button key={id} onClick={() => navigate(id)}>
+                        <div className="album-imagediv">
+                            <img src={`/api/files/${cover}`} alt={title} />
+                        </div>
+                        <span className="music-tile__label">{title}</span>
+                        {UsingContext === "menu" && <span className="album-autor">{artist}</span>}
+                        <span className="date-issingle">{date}</span>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
 };
 
+const AlbumDetail = ({ setCurrentTrack }) => {
+    const { albumId } = useParams();
+    const navigate = useNavigate();
+    const [tracks, setTracks] = useState(null);
+    const [album, setAlbum] = useState(null);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-const AlbumMenu = ({setCurrentTrack, RollBack, albums, UsingContext}) => {
+    useEffect(() => {
+        Promise.all([
+            axios.get(`/api/releases/${albumId}`),
+            axios.get(`/api/releases/${albumId}/tracks`)
+        ])
+            .then(([albumRes, tracksRes]) => {
+                if (!albumRes.data) {
+                    setError('Альбом не найден');
+                    return;
+                }
+                setAlbum(albumRes.data);
+                setTracks(tracksRes.data);
+            })
+            .catch((err) => {
+                if (err.response?.status === 404) setError('Альбом не найден');
+                else setError('Ошибка загрузки');
+            })
+            .finally(() => setLoading(false));
+    }, [albumId]);
 
-    const [activePageId, setActivePageId] = useState(() => localStorage.getItem("musicActivePage"));
+    if (loading) return <div>Загрузка...</div>;
+    if (error) return <div>{error}</div>;
 
-    const activePage = activePageId ? albums.find(p => p.id === activePageId) || null : null;
-    const handleSetPage = (page) => {
-        if (page) {
-            setActivePageId(page.id);
-            localStorage.setItem("musicActivePage", page.id);
-        } else {
-            setActivePageId(null);
-            localStorage.removeItem("musicActivePage");
-        }
-    };
-
-    const getTrack = async (trackId) => {
-        try {
-            const res =  await axios.post(`/api/tracks/getTrack/${trackId}`)
-
-            return res.data;
-        } catch (error) {
-            console.error(error);
-            return null;
-        }
-    }
-
-    // useEffect(() => {
-    //     (async () => {
-    //         const tracks = await Promise.all(music.map(async name => {
-    //             return await getTrack(name);
-    //         }));
-    //         const filtered = tracks.filter(track => track !== null);
-    //         setTrackList(tracks.filter(track => track !== null));
-    //     })();
-    // }, []);
-
-    if (!activePage) {
+    if (album && tracks)
         return (
-            <div className="playlist-home">
-
-                <div className="menuHeader">
-                    {UsingContext !== "menu" ?
-                        <>
-                            <button className="music-back" onClick={() => RollBack(null)}>
-                                ← Назад
-                            </button>
-                            <h1>Все альбомы: {UsingContext}</h1>
-                        </>
-                        :
-                        <button className="music-back" onClick={() => RollBack(null)}>
-                            ← Назад
-                        </button>
-                    }
-                </div>
-                <div className="playlist-grid">
-                    {albums.map(({ id, label, sub, sub2, img, tracks }) => (
-                        <button
-                            key={id}
-                            onClick={() => handleSetPage({ id, label, sub, sub2, img, tracks })}
-                        >
-                            <div className="album-imagediv">
-                                <img src={img} alt="" />
-                            </div>
-                            <span className="music-tile__label">{label}</span>
-                            {UsingContext === "menu" && <span className="album-autor">{sub}</span>}
-                            <span className="date-issingle">{sub2} {tracks.length === 1 ? " · сингл" : ""}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
+            <PlaylistItem
+                Tracks={tracks}
+                title={album.title}
+                type="Альбом"
+                image={`/api/files/${album.cover}`}
+                setCurrentTrack={setCurrentTrack}
+                AutName={album.artist}
+                year={album.date}
+                RollBack={() => navigate(-1)}
+            />
         );
-    }
+};
 
-    else return (
-        <PlaylistItem Tracks={activePage.tracks} title={activePage.label} type = {"Альбом"} image={activePage.img} setCurrentTrack={setCurrentTrack} AutName={activePage.sub} year={activePage.sub2} RollBack = {handleSetPage}/>
+const AlbumMenu = ({ setCurrentTrack, RollBack, UsingContext }) => {
+    const { artistId } = useParams();
+
+    return (
+        <Routes>
+            <Route
+                index
+                element={
+                    <AlbumList
+                        artistId={artistId}
+                        UsingContext={UsingContext}
+                        RollBack={RollBack}
+                    />
+                }
+            />
+            <Route
+                path=":albumId"
+                element={
+                    <AlbumDetail setCurrentTrack={setCurrentTrack} />
+                }
+            />
+        </Routes>
     );
 };
 

@@ -3,14 +3,25 @@ import {
     DataTypes,
     InferAttributes,
     InferCreationAttributes,
-    sql
+    sql, BelongsToGetAssociationMixinOptions, BelongsToManyGetAssociationsMixin, BelongsToManyAddAssociationMixin,
+    BelongsToManyRemoveAssociationMixin, BelongsToManyHasAssociationMixin, BelongsToManyCreateAssociationMixin
 } from "@sequelize/core";
 
-import type {
-    CreationOptional
-} from "@sequelize/core";
-
-import {Attribute, Default, NotNull, PrimaryKey, Table, Unique} from "@sequelize/core/decorators-legacy";
+import type {NonAttribute} from "@sequelize/core";
+import {
+    Attribute,
+    BelongsToMany,
+    Default,
+    NotNull,
+    PrimaryKey,
+    Table,
+    Unique
+} from "@sequelize/core/decorators-legacy";
+import {Track} from "./Track.ts";
+import {Artist} from "./Artist.ts";
+import {Release} from "./Release.ts";
+import {Playlist} from "./Playlist.ts";
+// import {Playlist} from "./Playlist.ts";
 
 @Table({
     underscored: true,
@@ -36,6 +47,45 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
 
     @Attribute(DataTypes.UUID)
     declare avatar: string;
+    
+    @BelongsToMany(() => Track, {
+        through: 'FavoriteTracks'
+    })
+    declare favoriteTracks: NonAttribute<Track[]>
+    declare addFavoriteTrack: BelongsToManyAddAssociationMixin<Track, Track['id']>
+    declare removeFavoriteTrack: BelongsToManyRemoveAssociationMixin<Track, Track['id']>
+    declare getFavoriteTracks: BelongsToManyGetAssociationsMixin<Track>
+    declare hasFavoriteTrack: BelongsToManyHasAssociationMixin<Track, Track['id']>
+
+    @BelongsToMany(() => Artist, {
+        through: 'FavoriteArtists',
+    })
+    declare favoriteArtists?: NonAttribute<Artist[]>
+    declare addFavoriteArtist: BelongsToManyAddAssociationMixin<Artist, Artist['id']>
+    declare removeFavoriteArtist: BelongsToManyRemoveAssociationMixin<Artist, Artist['id']>
+    declare getFavoriteArtists: BelongsToManyGetAssociationsMixin<Artist>
+    declare hasFavoriteArtist: BelongsToManyHasAssociationMixin<Artist, Artist['id']>
+
+    @BelongsToMany(() => Release, {
+        through: 'FavoriteReleases',
+    })
+    declare favoriteReleases?: NonAttribute<Release[]>
+    declare addFavoriteRelease: BelongsToManyAddAssociationMixin<Release, Release['id']>
+    declare removeFavoriteRelease: BelongsToManyRemoveAssociationMixin<Release, Release['id']>
+    declare getFavoriteReleases: BelongsToManyGetAssociationsMixin<Release>
+    declare hasFavoriteRelease: BelongsToManyHasAssociationMixin<Release, Release['id']>
+
+    @BelongsToMany(() => Playlist, {
+        through: 'FavoritePlaylists'
+    })
+    declare favoritePlaylists?: NonAttribute<Playlist[]>
+    declare addFavoritePlaylist: BelongsToManyAddAssociationMixin<Playlist, Playlist['id']>
+    declare removeFavoritePlaylist: BelongsToManyRemoveAssociationMixin<Playlist, Playlist['id']>
+    declare getFavoritePlaylists: BelongsToManyGetAssociationsMixin<Playlist>
+    declare hasFavoritePlaylist: BelongsToManyHasAssociationMixin<Playlist, Playlist['id']>
+    declare createFavoritePlaylist: BelongsToManyCreateAssociationMixin<Playlist>
+
+    declare playlists?: NonAttribute<Playlist[]>
 
     // @Attribute(DataTypes.UUID)
     // @NotNull

@@ -1,4 +1,3 @@
-import io from 'socket.io-client';
 import React, {useEffect, useState} from "react";
 import Player from "../../UI/Player/Player";
 import {Button, Nav, NavLink} from "react-bootstrap";
@@ -10,14 +9,7 @@ import "./PlaylistMenu.css"
 import playlistItem from "./PlaylistItem";
 import PlaylistItem from "./PlaylistItem";
 import trackList from "../../UI/TrackList/TrackList";
-
-// const socket = io("http://localhost:8080");
-
-const music = [
-    "morgenshtern-cvetok-(allmusic.kz).mp3",
-    "morgenshtern-уфф-деньги.mp3",
-    "MORGENSHTERN_-_Novyjj_merin_66404393.mp3"
-]
+import {Routes, Route, useNavigate, useParams, Navigate} from "react-router-dom";
 
 const getWordForm = (count) => {
     const lastTwo = count % 100;
@@ -36,81 +28,114 @@ const getWordForm = (count) => {
 };
 
 
-const PLaylistMenu = ({setCurrentTrack, RollBack}) => {
-    const [trackList, setTrackList] = useState([]);
 
-    const PLAYLIST_ITEMS = [
-        { id: "morgen", label: "MORGENSHTERN: лучшее", tracks: trackList, img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
-        { id: "morgen1", label: "MORGENSHTERN: лучшее", tracks: trackList, img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
-        { id: "morgen2", label: "MORGENSHTERN: лучшее", tracks: trackList, img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
-        { id: "morgen3", label: "MORGENSHTERN: лучшее", tracks: trackList, img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
-        { id: "morgen4", label: "MORGENSHTERN: худшее", tracks: [], img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
-    ];
+const PlaylistMenu = ({setCurrentTrack, RollBack }) => {
+    const navigate = useNavigate();
 
-    const [activePage, setActivePage] = useState(() => {
-        const savedId = localStorage.getItem("musicActivePage");
-        return savedId ? PLAYLIST_ITEMS.find(p => p.id === savedId) || null : null;
-    });
-
-    const handleSetPage = (page) => {
-        setActivePage(page);
-        if (page) {
-            localStorage.setItem("musicActivePage", page.id);
-        } else {
-            localStorage.removeItem("musicActivePage");
-        }
-    };
-
-    const getTrack = async (trackId) => {
-        try {
-            const res =  await axios.post(`/api/tracks/getTrack/${trackId}`)
-
-            return res.data;
-        } catch (error) {
-            console.error(error);
-            return null;
-        }
-    }
-
-
-    console.log(Intl.DateTimeFormat().resolvedOptions().timeZone)
-
-    useEffect(() => {
-        (async () => {
-            const tracks = await Promise.all(music.map(async name => {
-                return await getTrack(name);
-            }));
-            setTrackList(tracks.filter(track => track !== null));
-        })();
-    }, []);
-
-    if (!activePage) {
-        return (
-            <div className="playlist-home">
-                <button className="music-back" onClick={() => RollBack(null)}>
-                    ← Назад
-                </button>
-                <div className="playlist-grid">
-                    {PLAYLIST_ITEMS.map(({ id, label, img, tracks }) => (
-                        <button
-                            key={id}
-                            onClick={() => handleSetPage({ id, label, img, tracks })}
-                        >
-                            <div className="album-imagediv">
-                                <img src={img} alt="" />
-                            </div>
-                            <span className="music-tile__label">{label}</span>
-                            <span className="playlist-track-count">{tracks.length} {getWordForm(tracks.length)}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
-    else return (
-        <PlaylistItem Tracks={activePage.tracks} title={activePage.label} type="Плейлист" image={activePage.img} setCurrentTrack={setCurrentTrack} RollBack = {handleSetPage}/>
+    return (
+        <Routes>
+            <Route
+                index
+                element={
+                    <PlaylistList
+                        onSelect={(item) => navigate(item.id)}
+                        RollBack={RollBack}
+                    />
+                }
+            />
+            <Route
+                path=":playlistId"
+                element={
+                    <PlaylistDetail
+                        setCurrentTrack={setCurrentTrack}
+                        RollBack={() => navigate(-1)}
+                    />
+                }
+            />
+        </Routes>
     );
 };
 
-export default PLaylistMenu;
+// Список плейлистов
+const PlaylistList = ({ onSelect, RollBack }) => {
+    const [playlists, setPlaylists] = useState(null);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        axios.get("/api/users/favoritePlaylists")
+            .then(res => setPlaylists(res.data))
+            .catch(() => setError('Ошибка загрузки'))
+            .finally(() => setLoading(false));
+    }, [])
+
+    if (loading) return <div>Загрузка...</div>
+    if (error) return <div>{error}</div>;
+
+    return (
+        <div className="playlist-home">
+            <button className="music-back" onClick={RollBack}>← Назад</button>
+            <div className="playlist-grid">
+                {playlists.map((item) => (
+                    <button key={item.id} onClick={() => onSelect(item)}>
+                        <div className="album-imagediv">
+                            <img src={item.cover} alt=""/>
+                        </div>
+                        <span className="music-tile__label">{item.name}</span>
+                        <span className="playlist-track-count">
+                            {item.trackCount} {getWordForm(item.trackCount)}
+                        </span>
+                    </button>
+                ))}
+            </div>
+        </div>
+    )
+};
+
+// Открытый плейлист
+const PlaylistDetail = ({ setCurrentTrack, RollBack }) => {
+    const { playlistId } = useParams();
+    const [playlist, setPlaylist] = useState(null);
+    const [tracks, setTracks] = useState(null);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        Promise.all([
+            axios.get(`/api/playlists/${playlistId}`),
+            axios.get(`/api/playlists/${playlistId}/tracks`)
+        ])
+            .then(([playlistRes, tracksRes]) => {
+                if (!playlistRes.data) {
+                    setError('Плейлист не найден');
+                    return
+                }
+
+                setPlaylist(playlistRes.data);
+                setTracks(tracksRes.data);
+            })
+            .catch((err) => {
+                if (err.response?.status === 404) setError('Плейлист не найден')
+                else setError('Ошибка загрузки');
+            })
+            .finally(() => setLoading(false));
+    }, [])
+
+    if (loading) return <div>Загрузка...</div>
+    if (error) return <div>{error}</div>;
+
+    if (playlist && tracks)
+        return (
+            <PlaylistItem
+                Tracks={tracks}
+                title={playlist.name}
+                AutName={playlist.creator}
+                type="Плейлист"
+                image={playlist.cover}
+                setCurrentTrack={setCurrentTrack}
+                RollBack={RollBack}
+            />
+        );
+};
+
+export default PlaylistMenu;

@@ -1,111 +1,105 @@
 import io from 'socket.io-client';
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Player from "./components/UI/Player/Player";
-import {Button, Nav, NavLink} from "react-bootstrap";
-import {CircleUserRound, ListMusic, MessageCircleMore} from 'lucide-react'
 import axios from "axios";
 import "./App.css";
-import TrackList from "./components/UI/TrackList/TrackList";
-import AuthPage, { getSession, clearSession } from "./AuthPage";
+import AuthPage from "./AuthPage";
 import MusicPage from "./components/pages/MusicPage";
 import ContextMenu from "./components/ContextMenu";
 import testpage from "./components/pages/testpage";
 import MenuButton from "./components/MenuButton";
+import Messages from "./components/pages/Messager/Messages";
+import SearchBar from "./components/SearchBar";
 
 const SESSION_KEY = "app_session";
 
-const IP_APP = process.env.REACT_APP_IP_APP
-const SERVER_PORT = process.env.REACT_APP_SERVER_PORT
+axios.defaults.withCredentials = true;
 
-//Страницы, которые будут посередине
 const PAGES = [
-    {id: "testTrack", component: MusicPage, label: "Музыка"},
-    {id: "testPage", component: testpage, label: "Газан"},
-]
+    { id: "testTrack",   path: "/music/*",  navPath: "/music",    component: MusicPage, label: "Музыка" },
+    { id: "messagePage", path: "/messages", navPath: "/messages", component: Messages,  label: "Сообщения" },
+    { id: "testPage",    path: "/gazan",    navPath: "/gazan",    component: testpage,  label: "Газан" },
+];
 
+function AppLayout({ setCurrentTrack, currentTrack, menuOpen, setMenuOpen }) {
+    return (
+        <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+            <MenuButton menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+            <div style={{ display: "flex", flex: 1, overflow: "hidden", minHeight: 0 }}>
+                <ContextMenu
+                    PAGES={PAGES}
+                    menuOpen={menuOpen}
+                    setMenuOpen={setMenuOpen}
+                />
+                <main style={{ flex: 1, overflowY: "auto" }}>
+                    <Routes>
+                        {PAGES.map(({ path, component: Component }) => (
+                            <Route
+                                key={path}
+                                path={path}
+                                element={
+                                    <Component
+                                        setCurrentTrack={setCurrentTrack}
+                                    />
+                                }
+                            />
+                        ))}
+                        <Route path="*" element={<Navigate to="/music" replace />} />
+                    </Routes>
+                </main>
+            </div>
+            <Player track={currentTrack} setTrack={setCurrentTrack} />
+        </div>
+    );
+}
 
 function App() {
-    const [session, setSession] = useState(() => getSession());
-    const [activePage, setActivePage] = useState("testTrack");
-    const [sessionToken, setSessionToken] = useState(() => {
-        return getSession()?.token;
-    });
-
+    const [session, setSession] = useState(null);
     const [currentTrack, setCurrentTrack] = useState(null);
-
     const [menuOpen, setMenuOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    //Строчка ниже очищает локальную сессию - если удалишь, при обновлении страницы форма бл
-    // clearSession();
+    // const initializeSocket = (token) => {
+    //     const socket = io('ws://localhost:8080', { auth: { token } });
+    //     socket.on('connect', () => console.log('Socket.IO connected'));
+    //     socket.on('connect_error', (err) => {
+    //         console.error('Socket connection failed:', err.message);
+    //         if (err.message === 'USER_DOESNT_EXISTS') handleLogout();
+    //     });
+    //     return socket;
+    // };
 
-    const initializeSocket = (token) => {
-        const socket = io('ws://localhost:8080', { //при деплое изменить
-            auth: {token}
-        });
-
-        socket.on('connect', () => console.log('Socket.IO connected'));
-        socket.on('connect_error', (err) => {
-            console.error('Socket connection failed:', err.message)
-
-            if (err.message === 'USER_DOESNT_EXISTS') {
-                handleLogout()
-            }
-        });
-
-        return socket;
-    };
-
-    const handleAuth = (token) => {
-        setSessionToken(token)
+    const handleAuth = () => {
+        axios.get(`/api/users/me`)
+            .then(res => setSession(res.data));
     };
 
     const handleLogout = () => {
-        clearSession();
-        setSession(null);
+        axios.post('/api/users/logout')
+            .then(() => setSession(null));
     };
 
     useEffect(() => {
-        if (sessionToken) {
-            const socket = initializeSocket(sessionToken);
+        axios.get(`/api/users/me`)
+            .then(res => setSession(res.data))
+            .catch(() => setSession(null))
+            .finally(() => setLoading(false));
+    }, []);
 
-            socket.on('email-verified', () => {
-                const _session = {token: sessionToken};
+    if (loading) return <div>Загрузка...</div>;
+    if (!session) return <AuthPage onAuth={handleAuth} />;
 
-                localStorage.setItem(SESSION_KEY, JSON.stringify(_session));
-                setSession(_session);
-
-                socket.off('email-verified');
-            })
-
-            return () => {
-                socket.off('email-verified');
-                socket.disconnect();
-            }
-        }
-    }, [sessionToken])
-
-    if (!session) {
-        return <AuthPage onAuth={handleAuth} />;
-    }
-
-    //Функция ищет активную страницу в массиве страниц и возвращает ее
-    const { component: PageComponent } = PAGES.find(p => p.id === activePage);
     return (
-        <div style={{ display: "flex", flexDirection: "column", height: "100vh"}}>
-            <MenuButton menuOpen={menuOpen} setMenuOpen={setMenuOpen}/>
-            <div style={{ display: "flex", flex: 1, overflow: "hidden", minHeight: 0 }}>
-                <ContextMenu PAGES={PAGES} activePage={activePage} setActivePage={setActivePage} menuOpen={menuOpen} setMenuOpen={setMenuOpen}/>
-                <main style={{ flex: 1, overflowY: "auto" }}>
-                    <PageComponent setCurrentTrack={setCurrentTrack} />
-                </main>
-            </div>
-            <Player
-                track={currentTrack}
-                setTrack={setCurrentTrack}
+        <BrowserRouter>
+            <AppLayout
+                setCurrentTrack={setCurrentTrack}
+                currentTrack={currentTrack}
+                menuOpen={menuOpen}
+                setMenuOpen={setMenuOpen}
             />
-        </div>
-    )
-
+        </BrowserRouter>
+    );
 }
 
 export default App;

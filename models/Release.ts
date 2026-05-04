@@ -1,12 +1,23 @@
 import {
     DataTypes, HasManyAddAssociationMixin,
-    HasManyAddAssociationsMixin, InferAttributes, InferCreationAttributes, Model
+    HasManyAddAssociationsMixin, HasManyGetAssociationsMixinOptions, InferAttributes, InferCreationAttributes, Model,
+    sql
 } from "@sequelize/core";
 import type {
-    CreationOptional
+    NonAttribute
 } from "@sequelize/core";
-import {Attribute, AutoIncrement, HasMany, NotNull, PrimaryKey, Table, Unique} from "@sequelize/core/decorators-legacy";
+import {
+    Attribute,
+    AutoIncrement,
+    BelongsToMany, Default,
+    HasMany,
+    NotNull,
+    PrimaryKey,
+    Table,
+    Unique
+} from "@sequelize/core/decorators-legacy";
 import {Track} from "./Track.ts";
+import {Artist} from "./Artist.ts";
 
 @Table({
     underscored: true,
@@ -34,17 +45,28 @@ export class Release extends Model<InferAttributes<Release>, InferCreationAttrib
     @NotNull
     declare artist: string
 
+    @Attribute(DataTypes.TEXT)
+    @NotNull
+    declare cover: string
+
     @Attribute(DataTypes.STRING(50))
     @NotNull
     declare parentalWarning: string
 
+    @Attribute(DataTypes.DATEONLY)
+    @NotNull
+    declare date: Date;
+
+    @BelongsToMany(() => Artist, {
+        through: 'ArtistRelease',
+    })
+    declare artists?: NonAttribute<Artist[]>
+
     @HasMany(() => Track, 'releaseId')
     declare tracks?: Track[];
 
-    getTracks(): Track[] | undefined {
-        return this.tracks;
-    }
-
     declare addTrack: HasManyAddAssociationMixin<Track, Track['id']>;
     declare addTracks: HasManyAddAssociationsMixin<Track, Track['id']>
+
+    declare getTracks: HasManyGetAssociationsMixinOptions<Track>;
 }
