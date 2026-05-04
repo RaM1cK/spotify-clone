@@ -13,13 +13,12 @@ userRouter.use(authMiddleware)
 userRouter.get('/me', (req, res) => {
     res.json({ id: req.user.id, email: req.user.email });
 })
-userRouter.post('/logout', (req, res) => {
-    res.clearCookie('token');
-    res.status(200).send({});
-});
+userRouter.post('/logout', UserController.logout);
 userRouter.post("/get-users", UserController.getUsersByNickname);
-userRouter.post("/favoriteReleases", UserController.getReleases);
-userRouter.post("/favoriteTracks", UserController.getTracks);
+userRouter.get("/favoriteReleases", UserController.getReleases);
+userRouter.get("/favoriteTracks", UserController.getTracks);
 userRouter.post('/removeFavoriteTrack/:trackId', userController.removeFavoriteTrack);
 userRouter.post('/addFavoriteTrack/:trackId', userController.addFavoriteTrack);
+userRouter.get("/favoriteArtists", UserController.getFavoriteArtists);
+userRouter.get("/favoritePlaylists", UserController.getFavoritePlaylists);
 export default userRouter;

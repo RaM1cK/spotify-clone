@@ -1,5 +1,6 @@
 import {
-    BelongsToManyAddAssociationMixin, BelongsToManyAddAssociationsMixin,
+    BelongsToManyAddAssociationMixin, BelongsToManyAddAssociationsMixin, BelongsToManyCountAssociationsMixin,
+    BelongsToManyGetAssociationsMixin,
     DataTypes,
     InferAttributes,
     InferCreationAttributes,
@@ -44,6 +45,8 @@ export class Artist extends Model<InferAttributes<Artist>, InferCreationAttribut
 
     declare addTrack: BelongsToManyAddAssociationMixin<Track, Track['id']>
     declare addTracks: BelongsToManyAddAssociationsMixin<Track, Track['id']>
+    declare getTracks: BelongsToManyGetAssociationsMixin<Track>
+    declare countTracks: BelongsToManyCountAssociationsMixin<Track>
 
     @BelongsToMany(() => Release, {
         through: 'ArtistRelease'
@@ -52,4 +55,5 @@ export class Artist extends Model<InferAttributes<Artist>, InferCreationAttribut
 
     declare addRelease: BelongsToManyAddAssociationMixin<Release, Release['id']>
     declare addReleases: BelongsToManyAddAssociationsMixin<Release, Release['id']>
+    declare getReleases: BelongsToManyGetAssociationsMixin<Release>
 }

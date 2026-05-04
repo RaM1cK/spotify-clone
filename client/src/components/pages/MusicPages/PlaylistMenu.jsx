@@ -1,4 +1,3 @@
-import io from 'socket.io-client';
 import React, {useEffect, useState} from "react";
 import Player from "../../UI/Player/Player";
 import {Button, Nav, NavLink} from "react-bootstrap";
@@ -11,14 +10,6 @@ import playlistItem from "./PlaylistItem";
 import PlaylistItem from "./PlaylistItem";
 import trackList from "../../UI/TrackList/TrackList";
 import {Routes, Route, useNavigate, useParams, Navigate} from "react-router-dom";
-
-// const socket = io("http://localhost:8080");
-
-const music = [
-    1,
-    "morgenshtern-уфф-деньги.mp3",
-    "MORGENSHTERN_-_Novyjj_merin_66404393.mp3"
-]
 
 const getWordForm = (count) => {
     const lastTwo = count % 100;
@@ -38,16 +29,8 @@ const getWordForm = (count) => {
 
 
 
-const PlaylistMenu = ({trackList, setCurrentTrack, RollBack }) => {
+const PlaylistMenu = ({setCurrentTrack, RollBack }) => {
     const navigate = useNavigate();
-
-    const PLAYLIST_ITEMS = [
-        { id: "morgen", label: "MORGENSHTERN: лучшее", tracks: trackList ?? [] , img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
-        { id: "morgen1", label: "MORGENSHTERN: лучшее", tracks: trackList ?? [], img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
-        { id: "morgen2", label: "MORGENSHTERN: лучшее", tracks: trackList ?? [], img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
-        { id: "morgen3", label: "MORGENSHTERN: лучшее", tracks: trackList ?? [], img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
-        { id: "morgen4", label: "MORGENSHTERN: худшее", tracks: [], img:  "https://icdn.lenta.ru/images/2020/07/02/15/20200702153912245/square_320_fe036ec8f91d554ea933c79675902800.png"},
-    ];
 
     return (
         <Routes>
@@ -55,7 +38,6 @@ const PlaylistMenu = ({trackList, setCurrentTrack, RollBack }) => {
                 index
                 element={
                     <PlaylistList
-                        items={PLAYLIST_ITEMS}
                         onSelect={(item) => navigate(item.id)}
                         RollBack={RollBack}
                     />
@@ -65,7 +47,6 @@ const PlaylistMenu = ({trackList, setCurrentTrack, RollBack }) => {
                 path=":playlistId"
                 element={
                     <PlaylistDetail
-                        items={PLAYLIST_ITEMS}
                         setCurrentTrack={setCurrentTrack}
                         RollBack={() => navigate(-1)}
                     />
@@ -76,43 +57,85 @@ const PlaylistMenu = ({trackList, setCurrentTrack, RollBack }) => {
 };
 
 // Список плейлистов
-const PlaylistList = ({ items, onSelect, RollBack }) => (
-    <div className="playlist-home">
-        <button className="music-back" onClick={RollBack}>← Назад</button>
-        <div className="playlist-grid">
-            {items.map((item) => (
-                <button key={item.id} onClick={() => onSelect(item)}>
-                    <div className="album-imagediv">
-                        <img src={item.img} alt="" />
-                    </div>
-                    <span className="music-tile__label">{item.label}</span>
-                    <span className="playlist-track-count">
-                        {item.tracks.length} {getWordForm(item.tracks.length)}
-                    </span>
-                </button>
-            ))}
+const PlaylistList = ({ onSelect, RollBack }) => {
+    const [playlists, setPlaylists] = useState(null);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        axios.get("/api/users/favoritePlaylists")
+            .then(res => setPlaylists(res.data))
+            .catch(() => setError('Ошибка загрузки'))
+            .finally(() => setLoading(false));
+    }, [])
+
+    if (loading) return <div>Загрузка...</div>
+    if (error) return <div>{error}</div>;
+
+    return (
+        <div className="playlist-home">
+            <button className="music-back" onClick={RollBack}>← Назад</button>
+            <div className="playlist-grid">
+                {playlists.map((item) => (
+                    <button key={item.id} onClick={() => onSelect(item)}>
+                        <div className="album-imagediv">
+                            <img src={item.cover} alt=""/>
+                        </div>
+                        <span className="music-tile__label">{item.name}</span>
+                        <span className="playlist-track-count">
+                            {item.trackCount} {getWordForm(item.trackCount)}
+                        </span>
+                    </button>
+                ))}
+            </div>
         </div>
-    </div>
-);
+    )
+};
 
 // Открытый плейлист
-const PlaylistDetail = ({ items, setCurrentTrack, RollBack }) => {
+const PlaylistDetail = ({ setCurrentTrack, RollBack }) => {
     const { playlistId } = useParams();
-    const item = items.find((p) => p.id === playlistId);
+    const [playlist, setPlaylist] = useState(null);
+    const [tracks, setTracks] = useState(null);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    if (!item) return <Navigate to="/music/playlists" replace />;
-    console.log(item.tracks)
-    return (
-        <PlaylistItem
-            Tracks={item.tracks}
-            title={item.label}
-            type="Плейлист"
-            image={item.img}
-            setCurrentTrack={setCurrentTrack}
-            RollBack={RollBack}
-        />
+    useEffect(() => {
+        Promise.all([
+            axios.get(`/api/playlists/${playlistId}`),
+            axios.get(`/api/playlists/${playlistId}/tracks`)
+        ])
+            .then(([playlistRes, tracksRes]) => {
+                if (!playlistRes.data) {
+                    setError('Плейлист не найден');
+                    return
+                }
 
-    );
+                setPlaylist(playlistRes.data);
+                setTracks(tracksRes.data);
+            })
+            .catch((err) => {
+                if (err.response?.status === 404) setError('Плейлист не найден')
+                else setError('Ошибка загрузки');
+            })
+            .finally(() => setLoading(false));
+    }, [])
+
+    if (loading) return <div>Загрузка...</div>
+    if (error) return <div>{error}</div>;
+
+    if (playlist && tracks)
+        return (
+            <PlaylistItem
+                Tracks={tracks}
+                title={playlist.name}
+                AutName={playlist.creator}
+                type="Плейлист"
+                image={playlist.cover}
+                setCurrentTrack={setCurrentTrack}
+                RollBack={RollBack}
+            />
+        );
 };
 
 export default PlaylistMenu;

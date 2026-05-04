@@ -1,9 +1,10 @@
 // ArtistMenu.jsx
-import React from "react";
+import React, {useEffect, useState} from "react";
 import { CircleUserRound } from "lucide-react";
 import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
 import "./ArtistMenu.css";
 import ArtistItem from "./ArtistItem";
+import axios from "axios";
 
 const declension = (n) => {
     if (n % 10 === 1 && n % 100 !== 11) return "трек";
@@ -11,82 +12,71 @@ const declension = (n) => {
     return "треков";
 };
 
-const ArtistList = ({ artists, tracks, RollBack }) => {
+const ArtistList = ({ RollBack }) => {
     const navigate = useNavigate();
+    const [artists, setArtists] = useState(null);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        axios.get('/api/users/favoriteArtists')
+            .then(res => setArtists(res.data))
+            .catch(() => setError("Ошибка загрузки"))
+            .finally(() => setLoading(false));
+    }, [])
 
     const getCount = (artistId) =>
-        tracks.filter(t => t.artistId === artistId).length;
+        artists.find(artist => artist.id === artistId).trackCount;
 
-    return (
-        <div className="playlist-home">
-            <button className="music-back" onClick={() => RollBack(null)}>
-                ← Назад
-            </button>
-            <div className="playlist-grid">
-                {artists.map((artist) => (
-                    <button
-                        key={artist.id}
-                        onClick={() => navigate(encodeURIComponent(artist.name))}
-                    >
-                        <div className="artist-avatar">
-                            {artist.photo
-                                ? <img src={artist.photo} alt={artist.name} />
-                                : <CircleUserRound size={64} color="#b4b2a9" />
-                            }
-                        </div>
-                        <span className="music-tile__label">{artist.name}</span>
-                        <span className="playlist-track-count">
-                            {getCount(artist.id)} {declension(getCount(artist.id))}
-                        </span>
-                    </button>
-                ))}
+    if (loading) return <div>Загрузка...</div>
+    if (error) return <div>{error}</div>;
+
+    if (artists)
+        return (
+            <div className="playlist-home">
+                <button className="music-back" onClick={() => RollBack(null)}>
+                    ← Назад
+                </button>
+                <div className="playlist-grid">
+                    {artists.map((artist) => (
+                        <button
+                            key={artist.id}
+                            onClick={() => navigate(artist.id)}
+                        >
+                            <div className="artist-avatar">
+                                {artist.photo
+                                    ? <img src={artist.photo} alt={artist.name} />
+                                    : <CircleUserRound size={64} color="#b4b2a9" />
+                                }
+                            </div>
+                            <span className="music-tile__label">{artist.name}</span>
+                            <span className="playlist-track-count">
+                                {getCount(artist.id)} {declension(getCount(artist.id))}
+                            </span>
+                        </button>
+                    ))}
+                </div>
             </div>
-        </div>
-    );
+        );
 };
 
-const ArtistDetail = ({ artists, tracks, albums, setCurrentTrack }) => {
-    const { artistName } = useParams();
-    const navigate = useNavigate();
-
-    const artist = artists.find(
-        a => a.name === decodeURIComponent(artistName)
-    );
-
-    if (!artist) return <Navigate to="/music/artists" replace />;
-
-    return (
-        <ArtistItem
-            artist={artist}
-            tracks={tracks.filter(t => t.artistId === artist.id)}
-            albums={albums}
-            setCurrentTrack={setCurrentTrack}
-            RollBack={() => navigate(-1)}
-        />
-    );
-};
-
-const ArtistMenu = ({ artists, albums, tracks, setCurrentTrack, RollBack }) => {
+const ArtistMenu = ({ setCurrentTrack, RollBack }) => {
     return (
         <Routes>
             <Route
                 index
                 element={
                     <ArtistList
-                        artists={artists}
-                        tracks={tracks}
                         RollBack={RollBack}
                     />
                 }
             />
             <Route
-                path=":artistName/*"
+                path=":artistId/*"
                 element={
-                    <ArtistDetail
-                        artists={artists}
-                        tracks={tracks}
-                        albums={albums}
+                    <ArtistItem
                         setCurrentTrack={setCurrentTrack}
+                        RollBack={RollBack}
                     />
                 }
             />

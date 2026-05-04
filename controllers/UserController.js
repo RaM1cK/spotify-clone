@@ -6,6 +6,7 @@ import io from "../server.js"
 import {getTracksBySecret} from "./TrackController.js";
 import {Track} from "../models/Track.ts";
 import {sequelize} from "../models/index.js";
+import {literal, sql} from "@sequelize/core";
 
 dotenv.config();
 
@@ -102,16 +103,40 @@ const auth = async (req, res) => {
     })
 }
 
-export const getUser = async (req, res) => {
-    const email = req.user.email;
+const users_cache = new Map()
 
-    const user = await User.findOne({
-        where: { email }
-    })
+export const logout = async (req, res) => {
+    res.clearCookie('token');
+    res.status(200).send({});
+}
+
+export const updateUser = async (req, res) => {
+    const id = req.user.id;
+
+    users_cache.delete(id)
+
+    const user = await User.findByPk(id)
 
     if (!user) {
+        res.clearCookie('token');
         return res.status(404).json({})
     }
+
+    users_cache.set(id, {user, expiresOn: Date.now() + 5 * 60 * 1000})
+
+    return user
+}
+
+export const getUser = async (req, res) => {
+    const id = req.user.id;
+
+    const user_cache = users_cache.get(id)
+
+    if (!user_cache) return updateUser(req, res);
+
+    const { user, expiresOn } = user_cache
+
+    if (expiresOn <= Date.now()) return updateUser(req, res);
 
     return user
 }
@@ -137,10 +162,10 @@ const getReleases = async (req, res) => {
     const user = await getUser(req, res)
 
     const result = await user.getFavoriteReleases({
-        order: [["createdAt", "DESC"]],
         attributes: {
             exclude: ['createdAt', 'updatedAt', 'icpn']
-        }
+        },
+        order: [[literal('"userFavoriteRelease.createdAt"'), 'DESC']]
     }).then(releases => releases.map(release => ({
         ...release.toJSON(),
         date: new Date(release.date).getFullYear()
@@ -153,10 +178,10 @@ const getTracks = async (req, res) => {
     const user = await getUser(req, res)
 
     const result = await user.getFavoriteTracks({
-        order: [["createdAt", "DESC"]],
         attributes: {
             exclude: ['createdAt', 'updatedAt', 'isrc']
-        }
+        },
+        order: [[literal('"userFavoriteTrack.createdAt"'), 'DESC']]
     }).then(tracks => getTracksBySecret(req, res, tracks, user));
 
     res.status(200).send(result)
@@ -192,13 +217,48 @@ const removeFavoriteTrack = async (req, res) => {
     }
 }
 
+const getFavoriteArtists = async (req, res) => {
+    const user = await getUser(req, res)
+
+    const result = await user.getFavoriteArtists({
+        attributes: {
+            exclude: ['createdAt', 'updatedAt']
+        },
+        order: [[literal('"userFavoriteArtist.createdAt"'), 'DESC']]
+    }).then(artists => Promise.all(artists.map(async artist => ({
+        ...artist.toJSON(),
+        trackCount: await artist.countTracks()
+    }))))
+
+    res.status(200).send(result)
+}
+
+const getFavoritePlaylists = async (req, res) => {
+    const user = await getUser(req, res)
+
+    const result = await user.getFavoritePlaylists({
+        attributes: {
+            exclude: ['createdAt', 'updatedAt', 'userFavoritePlaylist']
+        },
+        order: [[literal('"userFavoritePlaylist.createdAt"'), 'DESC']]
+    }).then(playlists => Promise.all(playlists.map(async playlist => ({
+        ...playlist.toJSON(),
+        trackCount: await playlist.countTracks()
+    }))))
+
+    res.status(200).send(result)
+}
+
 export default {
     reg,
     auth,
+    logout,
     verifyEmail,
     getUsersByNickname,
     getReleases,
     getTracks,
     addFavoriteTrack,
-    removeFavoriteTrack
+    removeFavoriteTrack,
+    getFavoriteArtists,
+    getFavoritePlaylists
 }

@@ -19,7 +19,7 @@ const getRelease = async (req, res) => {
     }
 
     return res.status(200).send({
-        ...release.dataValues,
+        ...release.toJSON(),
         date: new Date(release.date).getFullYear()
     });
 }

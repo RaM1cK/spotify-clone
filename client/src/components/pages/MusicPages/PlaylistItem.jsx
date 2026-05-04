@@ -39,7 +39,6 @@ const PlaylistItem = ({Tracks, setCurrentTrack, title, type, AutName, year, imag
     const player = useRef(pl.getInstance()).current
     const isPlaying = usePlayerState(player, Tracks);
 
-
     const handlePlay = () => {
         const queue = player.queue;
         const isSameQueue = queue.length === Tracks.length &&

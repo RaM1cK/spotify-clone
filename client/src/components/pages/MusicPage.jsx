@@ -12,7 +12,7 @@ import SearchBar from "../SearchBar";
 const MENU_ITEMS = [
     { id: "liked",     path: "/music/liked",       label: "Избранное",   sub: "Вам понравилось", Icon: Heart,           color: "info" },
     { id: "playlists", path: "/music/playlists",   label: "Плейлисты",   sub: "Ваши подборки",   Icon: LayoutList,      color: "success" },
-    { id: "artists",   path: "/music/artists/*",     label: "Исполнители", sub: "По артистам",     Icon: CircleUserRound, color: "warning" },
+    { id: "artists",   path: "/music/artists",     label: "Исполнители", sub: "По артистам",     Icon: CircleUserRound, color: "warning" },
     { id: "albums",    path: "/music/albums",      label: "Альбомы",     sub: "Дискография",     Icon: Disc3,           color: "danger" },
 ];
 
