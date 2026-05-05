@@ -44,12 +44,10 @@ const Liked = ({setCurrentTrack, RollBack}) => {
     const isPlaying = usePlayerState(player, Tracks);
 
     useEffect(() => {
-        (async () => {
-            await axios.post('/api/users/favoriteTracks')
-                .then(res =>  setTracks(res.data))
-                .catch(err => console.error(err))
-                .finally(() => setLoading(false));
-        })()
+        axios.get('/api/users/me/favoriteTracks')
+            .then(res =>  setTracks(res.data))
+            .catch(err => console.error(err))
+            .finally(() => setLoading(false));
     }, []);
 
     const onFavoriteChange = (trackId, isFavorite) => {
@@ -86,7 +84,6 @@ const Liked = ({setCurrentTrack, RollBack}) => {
                     <div className="liked-header-info">
                         <p>Плейлист</p>
                         <h2>Избранное</h2>
-                        <p className="liked-composer">Составитель: NULL</p>
                         <div className="liked-count-time">
                             <div>{Tracks.length} {getWordForm(Tracks.length)}</div>
                             <span>·</span>

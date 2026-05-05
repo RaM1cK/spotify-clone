@@ -17,6 +17,9 @@ import {Release} from "./models/Release.ts";
 import axios from "axios";
 import jwt from "jsonwebtoken";
 import authMiddleware from "./routers/authMiddleware.js";
+import ArtistRouter from "./routers/ArtistRouter.js";
+import {Playlist} from "./models/Playlist.ts";
+import PlaylistRouter from "./routers/PlaylistRouter.js";
 //import {Composition, Track} from "./models/Track.ts";
 
 dotenv.config();
@@ -41,6 +44,8 @@ app.use("/users", UserRouter);
 app.use(authMiddleware)
 app.use("/tracks", TrackRouter);
 app.use("/releases", ReleaseRouter);
+app.use('/artists', ArtistRouter)
+app.use('/playlists', PlaylistRouter);
 
 const server = http.createServer(app);
 
@@ -57,32 +62,16 @@ try {
     // await sequelize.sync({alter: true});
     //
     // await sequelize.transaction(async t => {
-    //     const user = await User.findOne({
-    //         where: {
-    //             email: 'grigorijgorbunov5@gmail.com',
-    //         }
-    //     })
+    //     const user = await User.findByPk('e9743d48-96c9-44e3-91ce-fb87399f0435');
     //
-    //     const track = await Track.findByPk(1)
+    //     const playlist = await user.createFavoritePlaylist({
+    //         creatorId: 'e9743d48-96c9-44e3-91ce-fb87399f0435',
+    //         name: 'Введите текст'
+    //     }, { transaction: t })
     //
-    //     await user.addFavoriteTrack(track, { transaction: t})
-    // })
-
-    // await sequelize.transaction(async t => {
-    //     const track = await Track.create({
-    //         isrc: 'US1234567892',
-    //         title: 'Transactional Song',
-    //         duration: 200.0,
-    //         url: 'https://cdn.example.com/track3.mp3'
-    //     }, { transaction: t });
-    //
-    //     const composition = await Composition.create({
-    //         iswc: 'T987654321B'
-    //     }, {transaction: t});
-    //
-    //     await track.addComposition(composition);
-    //
-    //
+    //     await playlist.addTrack(1, { transaction: t})
+    //     await playlist.addTrack(2, { transaction: t})
+    //     await playlist.addTrack(3, { transaction: t})
     // })
 
 } catch (err) {

@@ -11,8 +11,7 @@ dotenv.config();
 export const getTrack = async (req, res)=> {
     const id = req.params['trackId'];
 
-    const track = await Track.findOne({
-        where: { id },
+    const track = await Track.findByPk(id,{
         attributes: {
             exclude: ['isrc', 'createdAt', 'updatedAt', 'releaseId']
         },
