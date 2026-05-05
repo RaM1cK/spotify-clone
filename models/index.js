@@ -5,6 +5,9 @@ import {User} from "./User.ts";
 import {Track} from "./Track.ts";
 import {Composition} from "./Composition.ts";
 import {Release} from "./Release.ts";
+import {Artist} from "./Artist.ts";
+import {Playlist} from "./Playlist.ts";
+import {Friendship} from "./Friendship.ts";
 
 dotenv.config();
 
@@ -19,7 +22,10 @@ export const sequelize = new Sequelize({
     models: [
         User,
         Composition,
+        Friendship,
         Track,
-        Release
+        Playlist,
+        Release,
+        Artist
     ]
 })

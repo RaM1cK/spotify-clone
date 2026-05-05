@@ -58,14 +58,12 @@ const Player = ({track, setTrack}) => {
                 id={"playerView"}
                 className="rounded-3 d-flex flex-column"
                 style={{
-                    bottom: 0,
                     paddingTop: 0,
                     backgroundColor: "black",
                     visibility: track ? "visible" : "hidden",
                     height: track ? "auto" : 0,
                     width: '100%',
-                    overflow: "hidden",
-                    paddingBottom: "env(safe-area-inset-bottom)"
+                    overflow: "hidden"
             }}
             >
                 <RangeTrack

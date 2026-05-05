@@ -3,6 +3,10 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import io from "../server.js"
+import {getTracksBySecret} from "./TrackController.js";
+import {Track} from "../models/Track.ts";
+import {sequelize} from "../models/index.js";
+import {literal, sql} from "@sequelize/core";
 
 dotenv.config();
 
@@ -82,7 +86,62 @@ const auth = async (req, res) => {
         return res.status(400).json({})
     }
 
-    res.status(201).send(sendVerificationLink(authData.email))
+    const token = jwt.sign(
+        { id: user.id, email: user.email },
+        process.env.SECRET_KEY
+    )
+
+    res.cookie("token", token, {
+        httpOnly: true,
+        sameSite: "strict",
+    })
+
+    res.status(200).send({
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname
+    })
+}
+
+const users_cache = new Map()
+
+export const logout = async (req, res) => {
+    res.clearCookie('token');
+    res.status(200).send({});
+}
+
+export const updateUser = async (req, res) => {
+    const id = req.user.id;
+
+    users_cache.delete(id)
+
+    const user = await User.findByPk(id)
+
+    if (!user) {
+        res.clearCookie('token');
+        return res.status(404).json({})
+    }
+
+    users_cache.set(id, {user, expiresOn: Date.now() + 5 * 60 * 1000})
+
+    return user
+}
+
+export const getUser = async (req, res) => {
+    let id;
+    const userId = req.params.userId
+
+    userId === 'me' ? id = req.user.id : id = userId;
+
+    const user_cache = users_cache.get(id)
+
+    if (!user_cache) return updateUser(req, res);
+
+    const { user, expiresOn } = user_cache
+
+    if (expiresOn <= Date.now()) return updateUser(req, res);
+
+    return user
 }
 
 const getUsersByNickname = async (req, res) => {
@@ -102,4 +161,107 @@ const getUsersByNickname = async (req, res) => {
     }
 }
 
-export default {reg, auth, verifyEmail, getUsersByNickname}
+const getReleases = async (req, res) => {
+    const user = await getUser(req, res)
+
+    const result = await user.getFavoriteReleases({
+        attributes: {
+            exclude: ['createdAt', 'updatedAt', 'icpn']
+        },
+        order: [[literal('"userFavoriteRelease.createdAt"'), 'DESC']]
+    }).then(releases => releases.map(release => ({
+        ...release.toJSON(),
+        date: new Date(release.date).getFullYear()
+    })))
+
+    res.status(200).send(result)
+}
+
+const getTracks = async (req, res) => {
+    const user = await getUser(req, res)
+
+    const result = await user.getFavoriteTracks({
+        attributes: {
+            exclude: ['createdAt', 'updatedAt', 'isrc']
+        },
+        order: [[literal('"userFavoriteTrack.createdAt"'), 'DESC']]
+    }).then(tracks => getTracksBySecret(req, res, tracks, user));
+
+    res.status(200).send(result)
+}
+
+const addFavoriteTrack = async (req, res) => {
+    const user = await getUser(req, res)
+    const trackId = req.params['trackId'];
+
+    try {
+        await sequelize.transaction(async t => {
+            await user.addFavoriteTrack(trackId, { transaction: t });
+        });
+
+        return res.status(200).send({});
+    } catch {
+        return res.status(500).send({});
+    }
+}
+
+const removeFavoriteTrack = async (req, res) => {
+    const user = await getUser(req, res)
+    const trackId = req.params['trackId'];
+
+    try {
+        await sequelize.transaction(async t => {
+            await user.removeFavoriteTrack(trackId, { transaction: t });
+        });
+
+        return res.status(200).send({});
+    } catch {
+        return res.status(500).send({});
+    }
+}
+
+const getFavoriteArtists = async (req, res) => {
+    const user = await getUser(req, res)
+
+    const result = await user.getFavoriteArtists({
+        attributes: {
+            exclude: ['createdAt', 'updatedAt']
+        },
+        order: [[literal('"userFavoriteArtist.createdAt"'), 'DESC']]
+    }).then(artists => Promise.all(artists.map(async artist => ({
+        ...artist.toJSON(),
+        trackCount: await artist.countTracks()
+    }))))
+
+    res.status(200).send(result)
+}
+
+const getFavoritePlaylists = async (req, res) => {
+    const user = await getUser(req, res)
+
+    const result = await user.getFavoritePlaylists({
+        attributes: {
+            exclude: ['createdAt', 'updatedAt', 'userFavoritePlaylist']
+        },
+        order: [[literal('"userFavoritePlaylist.createdAt"'), 'DESC']]
+    }).then(playlists => Promise.all(playlists.map(async playlist => ({
+        ...playlist.toJSON(),
+        trackCount: await playlist.countTracks()
+    }))))
+
+    res.status(200).send(result)
+}
+
+export default {
+    reg,
+    auth,
+    logout,
+    verifyEmail,
+    getUsersByNickname,
+    getReleases,
+    getTracks,
+    addFavoriteTrack,
+    removeFavoriteTrack,
+    getFavoriteArtists,
+    getFavoritePlaylists
+}
