@@ -11,7 +11,7 @@ import type {
 } from "@sequelize/core";
 import {
     Attribute,
-    AutoIncrement, BelongsToMany,
+    AutoIncrement, BelongsToMany, Default,
     NotNull,
     PrimaryKey,
     Table, Unique
@@ -34,9 +34,10 @@ export class Artist extends Model<InferAttributes<Artist>, InferCreationAttribut
     @NotNull
     declare name: string;
 
-    // @Attribute(DataTypes.STRING(140))
-    // @NotNull
-    // declare name_normalized: string;
+    @Attribute(DataTypes.STRING(140))
+    @NotNull
+    @Default('')
+    declare nameNormalized: string;
 
     @BelongsToMany(() => Track, {
         through: 'ArtistTrack'

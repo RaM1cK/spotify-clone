@@ -8,8 +8,11 @@ import {sequelize} from "./models/index.js";
 import {Track} from "./models/Track.ts";
 import {Release} from "./models/Release.ts";
 import {Artist} from "./models/Artist.ts";
+import {Attribute, NotNull} from "@sequelize/core/decorators-legacy";
+import {DataTypes} from "@sequelize/core";
+import {normalizeString} from "./searchUtils.js";
 
-let xml = fs.readFileSync("music/1234567890123/metadata.xml", 'utf8');
+let xml = fs.readFileSync("music/123456789012/metadata.xml", 'utf8');
 
 const parser = new XMLParser({
     ignoreAttributes: false,
@@ -57,6 +60,7 @@ for (const r of releases) {
     const icpn = r.ReleaseId.ICPN.toString();
     const releaseType = r.ReleaseType;
     const releaseTitle = r.DisplayTitle?.TitleText || r.DisplayTitleText;
+    const releaseTitleNormalized = normalizeString(releaseTitle)
     const releaseDisplayArtistName = r.DisplayArtistName;
     const releaseParentalWarning = r.ParentalWarningType;
     const releaseDate = new Date(r.ReleaseDate);
@@ -74,6 +78,7 @@ for (const r of releases) {
             icpn,
             type: releaseType,
             title: releaseTitle,
+            titleNormalized: releaseTitleNormalized,
             artist: releaseDisplayArtistName,
             date: releaseDate,
             cover: `${icpn}/${releaseCoverURI}`,
@@ -82,7 +87,8 @@ for (const r of releases) {
 
         for (const { ArtistPartyReference } of r.DisplayArtist) {
             const [artist, _] = await Artist.upsert({
-                name: partyMap.get(ArtistPartyReference)
+                name: partyMap.get(ArtistPartyReference),
+                nameNormalized: normalizeString(partyMap.get(ArtistPartyReference))
             }, {transaction: t });
 
             artistsMap.set(
@@ -104,6 +110,7 @@ for (const r of releases) {
 
             const isrc = audio.SoundRecordingEdition?.ResourceId?.ISRC;
             const title = audio.DisplayTitle?.TitleText || audio.DisplayTitleText;
+            const titleNormalized = normalizeString(title);
             const displayArtist = audio.DisplayArtistName;
             const parentalWarning = audio.ParentalWarningType;
 
@@ -127,6 +134,7 @@ for (const r of releases) {
                 releaseId: release.id,
                 title,
                 artist: displayArtist,
+                titleNormalized,
                 duration,
                 parentalWarning,
                 uri: `${icpn}/${audioURI}`,

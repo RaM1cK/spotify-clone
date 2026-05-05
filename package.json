@@ -36,7 +36,8 @@
     "nodemailer": "^8.0.5",
     "react-router-dom": "^7.14.2",
     "socket.io": "^4.8.3",
-    "ssh2-sftp-client": "^12.1.1"
+    "ssh2-sftp-client": "^12.1.1",
+    "transliteration": "^2.6.1"
   },
   "devDependencies": {
     "@types/howler": "^2.2.12",
