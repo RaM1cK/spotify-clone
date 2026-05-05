@@ -1,6 +1,7 @@
 import {Artist} from "../models/Artist.ts";
 import {getTracksBySecret} from "./TrackController.js";
 import {getUser} from "./UserController.js";
+import {Track} from "../models/Track.ts";
 
 const getArtist = async (req, res) => {
     const artistId = req.params['artistId'];
@@ -8,7 +9,8 @@ const getArtist = async (req, res) => {
     const artist = await Artist.findByPk(artistId, {
         attributes: {
             exclude: ['createdAt', 'updatedAt']
-        }
+        },
+        include: {model: Track, as: 'tracks'}
     })
 
     if (!artist) return res.status(404).send('Not Found');
@@ -16,7 +18,7 @@ const getArtist = async (req, res) => {
     res.status(200).send(
         {
             ...artist.toJSON(),
-            trackCount: await artist.countTracks()
+            trackCount: artist.tracks.length
         }
     );
 }

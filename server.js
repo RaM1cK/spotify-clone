@@ -59,7 +59,7 @@ const io = new Server(server, {
 try {
     await sequelize.authenticate();
     console.log('Connected');
-    // await sequelize.sync({alter: true});
+    await sequelize.sync({alter: true});
     //
     // await sequelize.transaction(async t => {
     //     const user = await User.findByPk('e9743d48-96c9-44e3-91ce-fb87399f0435');
