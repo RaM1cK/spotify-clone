@@ -19,7 +19,7 @@ const ArtistList = ({ RollBack }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        axios.get('/api/users/favoriteArtists')
+        axios.get('/api/users/me/favoriteArtists')
             .then(res => setArtists(res.data))
             .catch(() => setError("Ошибка загрузки"))
             .finally(() => setLoading(false));

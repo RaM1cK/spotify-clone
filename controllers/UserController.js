@@ -128,7 +128,10 @@ export const updateUser = async (req, res) => {
 }
 
 export const getUser = async (req, res) => {
-    const id = req.user.id;
+    let id;
+    const userId = req.params.userId
+
+    userId === 'me' ? id = req.user.id : id = userId;
 
     const user_cache = users_cache.get(id)
 

@@ -15,10 +15,10 @@ userRouter.get('/me', (req, res) => {
 })
 userRouter.post('/logout', UserController.logout);
 userRouter.post("/get-users", UserController.getUsersByNickname);
-userRouter.get("/favoriteReleases", UserController.getReleases);
-userRouter.get("/favoriteTracks", UserController.getTracks);
+userRouter.get("/:userId/favoriteReleases", UserController.getReleases);
+userRouter.get("/:userId/favoriteTracks", UserController.getTracks);
 userRouter.post('/removeFavoriteTrack/:trackId', userController.removeFavoriteTrack);
 userRouter.post('/addFavoriteTrack/:trackId', userController.addFavoriteTrack);
-userRouter.get("/favoriteArtists", UserController.getFavoriteArtists);
-userRouter.get("/favoritePlaylists", UserController.getFavoritePlaylists);
+userRouter.get("/:userId/favoriteArtists", UserController.getFavoriteArtists);
+userRouter.get("/:userId/favoritePlaylists", UserController.getFavoritePlaylists);
 export default userRouter;

@@ -44,7 +44,7 @@ const Liked = ({setCurrentTrack, RollBack}) => {
     const isPlaying = usePlayerState(player, Tracks);
 
     useEffect(() => {
-        axios.get('/api/users/favoriteTracks')
+        axios.get('/api/users/me/favoriteTracks')
             .then(res =>  setTracks(res.data))
             .catch(err => console.error(err))
             .finally(() => setLoading(false));

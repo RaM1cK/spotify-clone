@@ -63,7 +63,7 @@ const PlaylistList = ({ onSelect, RollBack }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        axios.get("/api/users/favoritePlaylists")
+        axios.get("/api/users/me/favoritePlaylists")
             .then(res => setPlaylists(res.data))
             .catch(() => setError('Ошибка загрузки'))
             .finally(() => setLoading(false));

@@ -10,7 +10,7 @@ const AlbumList = ({ artistId, UsingContext, RollBack }) => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        axios.get(artistId ? `/api/artists/${artistId}/releases` : `/api/users/favoriteReleases`)
+        axios.get(artistId ? `/api/artists/${artistId}/releases` : `/api/users/me/favoriteReleases`)
             .then(res => setAlbums(res.data))
             .catch(() => setError('Ошибка загрузки'));
     }, [artistId]);

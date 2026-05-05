@@ -1,5 +1,5 @@
 import io from 'socket.io-client';
-import React, { useEffect, useMemo, useState } from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Player from "./components/UI/Player/Player";
 import axios from "axios";
@@ -23,33 +23,44 @@ const PAGES = [
 ];
 
 function AppLayout({ setCurrentTrack, currentTrack, menuOpen, setMenuOpen }) {
+    const playerRef = useRef(null);
+    const [playerHeight, setPlayerHeight] = useState(0);
+
+    useEffect(() => {
+        if (!playerRef.current) return;
+        const observer = new ResizeObserver(entries => {
+            setPlayerHeight(entries[0].contentRect.height);
+        });
+        observer.observe(playerRef.current);
+        return () => observer.disconnect();
+    }, []);
+
     return (
-        <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+        <div style={{ display: "flex", flexDirection: "column", height: "100dvh" }}>
             <MenuButton menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-            <div style={{ display: "flex", flex: 1, overflow: "hidden", minHeight: 0 }}>
-                <ContextMenu
-                    PAGES={PAGES}
-                    menuOpen={menuOpen}
-                    setMenuOpen={setMenuOpen}
-                />
-                <main style={{ flex: 1, overflowY: "auto" }}>
+            <div style={{ display: "flex", flex: 1 }}>
+                <ContextMenu PAGES={PAGES} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+                <main style={{
+                    flex: 1,
+                    paddingBottom: currentTrack
+                        ? `calc(${playerHeight}px + env(safe-area-inset-bottom))`
+                        : "env(safe-area-inset-bottom)"
+                }}>
                     <Routes>
                         {PAGES.map(({ path, component: Component }) => (
                             <Route
                                 key={path}
                                 path={path}
-                                element={
-                                    <Component
-                                        setCurrentTrack={setCurrentTrack}
-                                    />
-                                }
+                                element={<Component setCurrentTrack={setCurrentTrack} />}
                             />
                         ))}
                         <Route path="*" element={<Navigate to="/music" replace />} />
                     </Routes>
                 </main>
             </div>
-            <Player track={currentTrack} setTrack={setCurrentTrack} />
+            <div ref={playerRef} style={{ position: "fixed", bottom: 0, left: 0, right: 0 }}>
+                <Player track={currentTrack} setTrack={setCurrentTrack} />
+            </div>
         </div>
     );
 }
