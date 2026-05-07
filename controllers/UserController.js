@@ -88,7 +88,12 @@ const auth = async (req, res) => {
     }
 
     const token = jwt.sign(
-        { id: user.id, email: user.email, nickname: user.nickname },
+        {
+            id: user.id,
+            email: user.email,
+            nickname: user.nickname,
+            avatar: user.avatar
+        },
         process.env.SECRET_KEY
     )
 
@@ -132,10 +137,7 @@ export const updateUser = async (req, res, id) => {
 export const getUser = async (req, res) => {
     let id;
     const userId = req.params.userId
-
-    console.log(userId);
-
-    userId === 'me' ? id = req.user.id : id = userId;
+    userId === 'me' || userId === undefined ? id = req.user.id : id = userId;
 
     const user_cache = users_cache.get(id)
 
@@ -143,7 +145,7 @@ export const getUser = async (req, res) => {
 
     const { user, expiresOn } = user_cache
 
-    if (expiresOn <= Date.now()) return updateUser(req, res);
+    if (expiresOn <= Date.now()) return updateUser(req, res, id);
 
     return user;
 }
