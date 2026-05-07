@@ -7,6 +7,7 @@ import {getTracksBySecret} from "./TrackController.js";
 import {Track} from "../models/Track.ts";
 import {sequelize} from "../models/index.js";
 import {literal, sql} from "@sequelize/core";
+import {Message} from "../models/Message.ts";
 
 dotenv.config();
 
@@ -87,7 +88,7 @@ const auth = async (req, res) => {
     }
 
     const token = jwt.sign(
-        { id: user.id, email: user.email },
+        { id: user.id, email: user.email, nickname: user.nickname },
         process.env.SECRET_KEY
     )
 
@@ -110,15 +111,16 @@ export const logout = async (req, res) => {
     res.status(200).send({});
 }
 
-export const updateUser = async (req, res) => {
-    const id = req.user.id;
-
+export const updateUser = async (req, res, id) => {
     users_cache.delete(id)
 
-    const user = await User.findByPk(id)
+    const user = await User.findByPk(id, {
+        attributes: {
+            exclude: ['password_hash', 'createdAt', 'updatedAt'],
+        }
+    })
 
     if (!user) {
-        res.clearCookie('token');
         return res.status(404).json({})
     }
 
@@ -131,17 +133,19 @@ export const getUser = async (req, res) => {
     let id;
     const userId = req.params.userId
 
+    console.log(userId);
+
     userId === 'me' ? id = req.user.id : id = userId;
 
     const user_cache = users_cache.get(id)
 
-    if (!user_cache) return updateUser(req, res);
+    if (!user_cache) return updateUser(req, res, id);
 
     const { user, expiresOn } = user_cache
 
     if (expiresOn <= Date.now()) return updateUser(req, res);
 
-    return user
+    return user;
 }
 
 const getUsersByNickname = async (req, res) => {
@@ -241,7 +245,7 @@ const getFavoritePlaylists = async (req, res) => {
 
     const result = await user.getFavoritePlaylists({
         attributes: {
-            exclude: ['createdAt', 'updatedAt', 'userFavoritePlaylist']
+            exclude: ['createdAt', 'updatedAt']
         },
         order: [[literal('"userFavoritePlaylist.createdAt"'), 'DESC']]
     }).then(playlists => Promise.all(playlists.map(async playlist => ({
@@ -252,16 +256,33 @@ const getFavoritePlaylists = async (req, res) => {
     res.status(200).send(result)
 }
 
+const getChats = async (req, res) => {
+    const user = await getUser(req, res)
+
+    const result = await user.getChats({
+        attributes: {
+            exclude: ['createdAt', 'updatedAt']
+        },
+        include: {
+            model: Message, as: 'messages'
+        }
+    })
+
+    res.status(200).send(result)
+}
+
 export default {
     reg,
     auth,
     logout,
     verifyEmail,
+    getUser,
     getUsersByNickname,
     getReleases,
     getTracks,
     addFavoriteTrack,
     removeFavoriteTrack,
     getFavoriteArtists,
-    getFavoritePlaylists
+    getFavoritePlaylists,
+    getChats
 }
