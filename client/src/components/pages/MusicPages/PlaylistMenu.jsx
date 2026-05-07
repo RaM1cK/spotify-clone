@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from "react";
 import Player from "../../UI/Player/Player";
 import {Button, Nav, NavLink} from "react-bootstrap";
-import { ListMusic, LayoutList, CircleUserRound, Disc3, Heart, Clock } from "lucide-react";
+import {ListMusic, LayoutList, CircleUserRound, Disc3, Heart, Clock, ChevronLeft} from "lucide-react";
 import axios from "axios";
 import "../../../App.css";
 import TrackList from "../../UI/TrackList/TrackList";
@@ -74,7 +74,7 @@ const PlaylistList = ({ onSelect, RollBack }) => {
 
     return (
         <div className="playlist-home">
-            <button className="music-back" onClick={RollBack}>← Назад</button>
+            <button className="music-back" onClick={RollBack}><ChevronLeft size={20} /></button>
             <div className="playlist-grid">
                 {playlists.map((item) => (
                     <button key={item.id} onClick={() => onSelect(item)}>

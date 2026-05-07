@@ -43,7 +43,7 @@ const verifyEmail = async (req, res) => {
 
     try {
         const email = jwt.verify(token, process.env.SECRET_KEY).email;
-        console.log(email)
+
 
         io.to(`user:${email}`).emit('email-verified', { message: email });
         return res.status(200).send({})
@@ -234,10 +234,7 @@ const getFavoriteArtists = async (req, res) => {
             exclude: ['createdAt', 'updatedAt']
         },
         order: [[literal('"userFavoriteArtist.createdAt"'), 'DESC']]
-    }).then(artists => Promise.all(artists.map(async artist => ({
-        ...artist.toJSON(),
-        trackCount: await artist.countTracks()
-    }))))
+    })
 
     res.status(200).send(result)
 }

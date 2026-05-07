@@ -1,4 +1,8 @@
-.music-home { padding: 32px; padding-top: 60px; }
+.music-home {
+    padding: 32px;
+    padding-top: 60px;
+    padding-bottom: 0;
+}
 .music-home__title { font-size: 22px; font-weight: 500; margin-bottom: 60px; color: #a0a0a0; }
 
 .music-grid {
@@ -47,6 +51,31 @@
 .music-tile__icon--danger   { background: rgba(24, 95, 165, 0.25); color: #85b7eb; }
 
 .music-subpage { padding: 32px; }
-.music-back { background: none; border: none; color: #888; cursor: pointer; font-size: 13px; margin-bottom: 20px; }
-.music-back:hover { color: #d4d4d4; }
+
+.music-back {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: transparent;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+    padding: 0;
+    margin-bottom: 30px;
+}
+
+.music-back svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.music-back:hover {
+    background: rgba(99, 102, 241, 0.3);
+}
+
 .music-subpage__title { font-size: 20px; font-weight: 500; margin-bottom: 20px; }

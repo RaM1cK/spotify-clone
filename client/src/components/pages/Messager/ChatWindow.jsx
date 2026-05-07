@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useRef, useState} from "react";
 import { Music } from "lucide-react";
 import TrackMessage from "./TrackMessage";
 import {useSession} from "../../../AppContext";
@@ -8,6 +8,7 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
 }) => {
     const [showTrackPicker, setShowTrackPicker] = useState(false);
     const session = useSession();
+    const textareaRef = useRef(null);
 
     if (!activeChat) {
         return (
@@ -82,6 +83,7 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
                 </button>
 
                 <textarea
+                    ref={textareaRef}
                     className="messages-input"
                     placeholder="Написать сообщение..."
                     value={input}
@@ -95,10 +97,27 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
                         if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
                             handleSend();
+
+                            requestAnimationFrame(() => {
+                                if (textareaRef.current) {
+                                    textareaRef.current.style.height = "auto";
+                                }
+                            });
                         }
                     }}
                 />
-                <button className="messages-send-btn" onClick={() => handleSend()}>
+                <button
+                    className="messages-send-btn"
+                    onClick={() => {
+                    handleSend();
+
+                    requestAnimationFrame(() => {
+                        if (textareaRef.current) {
+                            textareaRef.current.style.height = "auto";
+                        }
+                    });
+                }}
+                    >
                     →
                 </button>
             </div>

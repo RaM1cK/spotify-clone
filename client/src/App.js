@@ -12,16 +12,24 @@ import MenuButton from "./components/MenuButton";
 import Messages from "./components/pages/Messager/Messages";
 import SearchBar from "./components/SearchBar";
 import {AppProvider, useSession, useSocket} from "./AppContext";
+import MyProfile from "./components/pages/MyProfile";
+
 
 const PAGES = [
-    { id: "testTrack",   path: "/music/*",  navPath: "/music",    component: MusicPage, label: "Музыка" },
+    { id: "testTrack",   path: "/music/*",  navPath: "/music",    component: MusicPage, label: "Коллекция" },
     { id: "messagePage", path: "/messages", navPath: "/messages", component: Messages,  label: "Сообщения" },
     { id: "testPage",    path: "/gazan",    navPath: "/gazan",    component: testpage,  label: "Газан" },
 ];
 
-function AppLayout({ setCurrentTrack, currentTrack, menuOpen, setMenuOpen }) {
-    const socket = useSocket();
-    const session = useSession();
+const ROUTES_PAGES = [
+    { id: "testTrack",   path: "/music/*",  navPath: "/music",    component: MusicPage, label: "Коллекция" },
+    { id: "messagePage", path: "/messages", navPath: "/messages", component: Messages,  label: "Сообщения" },
+    { id: "testPage",    path: "/gazan",    navPath: "/gazan",    component: testpage,  label: "Газан" },
+
+    { id: "myProfile", path: "/me", component: MyProfile },
+]
+
+function AppLayout({ setCurrentTrack, currentTrack, menuOpen, setMenuOpen, onLogout }) {
     const playerRef = useRef(null);
     const [playerHeight, setPlayerHeight] = useState(0);
 
@@ -31,34 +39,72 @@ function AppLayout({ setCurrentTrack, currentTrack, menuOpen, setMenuOpen }) {
             setPlayerHeight(entries[0].contentRect.height);
         });
         observer.observe(playerRef.current);
-
         return () => observer.disconnect();
     }, []);
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", height: "100dvh" }}>
+        <div
+            style={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100vh",
+                overflow: "hidden",
+            }}
+        >
             <MenuButton menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-            <div style={{ display: "flex", flex: 1 }}>
-                <ContextMenu PAGES={PAGES} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-                <main style={{
+
+            <div
+                style={{
+                    display: "flex",
                     flex: 1,
-                    paddingBottom: currentTrack
-                        ? `calc(${playerHeight}px + env(safe-area-inset-bottom))`
-                        : "env(safe-area-inset-bottom)"
-                }}>
-                    <Routes>
-                        {PAGES.map(({ path, component: Component }) => (
-                            <Route
-                                key={path}
-                                path={path}
-                                element={<Component setCurrentTrack={setCurrentTrack} />}
-                            />
-                        ))}
-                        <Route path="*" element={<Navigate to="/music" replace />} />
-                    </Routes>
+                    overflow: "hidden",
+                    minHeight: 0,
+                }}
+            >
+                <ContextMenu
+                    PAGES={PAGES}
+                    ROUTES_PAGES = {ROUTES_PAGES}
+                    menuOpen={menuOpen}
+                    setMenuOpen={setMenuOpen}
+                    onLogout={onLogout}
+                />
+
+                <main
+                    style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        flex: 1,
+                        minHeight: 0,
+                        overflow: "hidden",
+                    }}
+                >
+                    <div
+                        style={{
+                            margin: "12px",
+                            border: "1px solid rgba(255, 255, 255, 0.2)",
+                            borderRadius: "12px",
+                            backgroundColor: "rgba(255, 255, 255, 0.07)",
+                            flex: 1,
+                            minHeight: 0,
+                            overflowY: "auto",
+                        }}
+                    >
+                        <Routes>
+                            {ROUTES_PAGES.map(({ path, component: Component }) => (
+                                <Route
+                                    key={path}
+                                    path={path}
+                                    element={<Component setCurrentTrack={setCurrentTrack} />}
+                                />
+                            ))}
+
+                            <Route path="*" element={<Navigate to="/music" replace />} />
+                        </Routes>
+                    </div>
                 </main>
             </div>
-            <div ref={playerRef} style={{ position: "fixed", bottom: 0, left: 0, right: 0 }}>
+
+            <div ref={playerRef}>
                 <Player track={currentTrack} setTrack={setCurrentTrack} />
             </div>
         </div>
@@ -71,17 +117,7 @@ function App() {
     const [menuOpen, setMenuOpen] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // const initializeSocket = (token) => {
-    //     const socket = io('ws://localhost:8080', { auth: { token } });
-    //     socket.on('connect', () => console.log('Socket.IO connected'));
-    //     socket.on('connect_error', (err) => {
-    //         console.error('Socket connection failed:', err.message);
-    //         if (err.message === 'USER_DOESNT_EXISTS') handleLogout();
-    //     });
-    //     return socket;
-    // };
-
-    const handleAuth = async () => {
+    const handleAuth = () => {
         axios.get(`/api/users/me`)
             .then(res => setSession(res.data));
     };
@@ -109,8 +145,11 @@ function App() {
                     currentTrack={currentTrack}
                     menuOpen={menuOpen}
                     setMenuOpen={setMenuOpen}
+                    session={session}
+                    onLogout={handleLogout}
                 />
             </AppProvider>
+
         </BrowserRouter>
     );
 }

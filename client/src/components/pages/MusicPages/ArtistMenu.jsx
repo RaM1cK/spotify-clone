@@ -1,6 +1,6 @@
 // ArtistMenu.jsx
 import React, {useEffect, useState} from "react";
-import { CircleUserRound } from "lucide-react";
+import {ChevronLeft, CircleUserRound} from "lucide-react";
 import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
 import "./ArtistMenu.css";
 import ArtistItem from "./ArtistItem";
@@ -35,7 +35,7 @@ const ArtistList = ({ RollBack }) => {
         return (
             <div className="playlist-home">
                 <button className="music-back" onClick={() => RollBack(null)}>
-                    ← Назад
+                    <ChevronLeft size={20} />
                 </button>
                 <div className="playlist-grid">
                     {artists.map((artist) => (
