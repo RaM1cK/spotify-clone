@@ -1,12 +1,13 @@
 import React, {useState} from "react";
 import { Music } from "lucide-react";
 import TrackMessage from "./TrackMessage";
+import {useSession} from "../../../AppContext";
 
 const ChatWindow = ({ activeChat, input, setInput, handleSend,
                         // tracks, onOpenAlbum
 }) => {
     const [showTrackPicker, setShowTrackPicker] = useState(false);
-
+    const session = useSession();
 
     if (!activeChat) {
         return (
@@ -29,7 +30,7 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
                 {activeChat.messages.map((msg) => (
                     <div
                         key={msg.id}
-                        className={`messages-bubble ${msg.from === "me" ? "me" : "them"}`}
+                        className={`messages-bubble ${msg.senderId === session.id ? "me" : "them"}`}
                     >
                         {/*{msg.track ? (*/}
                         {/*    <TrackMessage*/}
@@ -38,9 +39,15 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
                         {/*    />*/}
                         {/*) : (*/}
                         {/*    */}
-                            <span className="messages-bubble__text">{msg.text}</span>
+                            <span className="messages-bubble__text">{msg.data}</span>
                         {/*)}*/}
-                        <span className="messages-bubble__time">{msg.time}</span>
+                        <span className="messages-bubble__time">{
+                            new Date(msg.createdAt)
+                                .toLocaleTimeString(navigator.language, {
+                                    hour: "2-digit",
+                                    minute: "2-digit"
+                                })}
+                        </span>
                     </div>
                 ))}
             </div>

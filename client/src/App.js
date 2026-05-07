@@ -11,10 +11,7 @@ import testpage from "./components/pages/testpage";
 import MenuButton from "./components/MenuButton";
 import Messages from "./components/pages/Messager/Messages";
 import SearchBar from "./components/SearchBar";
-
-const SESSION_KEY = "app_session";
-
-axios.defaults.withCredentials = true;
+import {AppProvider, useSession, useSocket} from "./AppContext";
 
 const PAGES = [
     { id: "testTrack",   path: "/music/*",  navPath: "/music",    component: MusicPage, label: "Музыка" },
@@ -23,6 +20,8 @@ const PAGES = [
 ];
 
 function AppLayout({ setCurrentTrack, currentTrack, menuOpen, setMenuOpen }) {
+    const socket = useSocket();
+    const session = useSession();
     const playerRef = useRef(null);
     const [playerHeight, setPlayerHeight] = useState(0);
 
@@ -32,6 +31,7 @@ function AppLayout({ setCurrentTrack, currentTrack, menuOpen, setMenuOpen }) {
             setPlayerHeight(entries[0].contentRect.height);
         });
         observer.observe(playerRef.current);
+
         return () => observer.disconnect();
     }, []);
 
@@ -81,7 +81,7 @@ function App() {
     //     return socket;
     // };
 
-    const handleAuth = () => {
+    const handleAuth = async () => {
         axios.get(`/api/users/me`)
             .then(res => setSession(res.data));
     };
@@ -103,12 +103,14 @@ function App() {
 
     return (
         <BrowserRouter>
-            <AppLayout
-                setCurrentTrack={setCurrentTrack}
-                currentTrack={currentTrack}
-                menuOpen={menuOpen}
-                setMenuOpen={setMenuOpen}
-            />
+            <AppProvider session={session}>
+                <AppLayout
+                    setCurrentTrack={setCurrentTrack}
+                    currentTrack={currentTrack}
+                    menuOpen={menuOpen}
+                    setMenuOpen={setMenuOpen}
+                />
+            </AppProvider>
         </BrowserRouter>
     );
 }

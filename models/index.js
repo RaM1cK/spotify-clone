@@ -8,6 +8,8 @@ import {Release} from "./Release.ts";
 import {Artist} from "./Artist.ts";
 import {Playlist} from "./Playlist.ts";
 import {Friendship} from "./Friendship.ts";
+import {Message} from "./Message.ts";
+import {Chat} from "./Chat.ts";
 
 dotenv.config();
 
@@ -18,11 +20,12 @@ export const sequelize = new Sequelize({
     password: process.env.DB_PASSWORD,
     host: process.env.DB_HOST,
     port: 5432,
-    logging: console.log,
+    // logging: console.log,
     models: [
         User,
         Composition,
         Friendship,
+        Message, Chat,
         Track,
         Playlist,
         Release,

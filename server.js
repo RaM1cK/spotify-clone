@@ -21,6 +21,7 @@ import ArtistRouter from "./routers/ArtistRouter.js";
 import {Playlist} from "./models/Playlist.ts";
 import PlaylistRouter from "./routers/PlaylistRouter.js";
 import {Friendship} from "./models/Friendship.ts";
+import {Chat} from "./models/Chat.ts";
 //import {Composition, Track} from "./models/Track.ts";
 
 dotenv.config();
@@ -35,13 +36,14 @@ export const __dirname = path.dirname(__filename);
 axios.defaults.withCredentials = true;
 
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: "http://localhost:3000",
     credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());
 app.use('/files', express.static(path.join(__dirname, 'music')));
 app.use("/users", UserRouter);
+
 app.use(authMiddleware)
 app.use("/tracks", TrackRouter);
 app.use("/releases", ReleaseRouter);
@@ -54,7 +56,9 @@ const io = new Server(server, {
     cors: {
         origin: "http://localhost:3000", //при деплое изменить
         methods: ["GET", "POST"],
-    }
+    },
+    pingInterval: 25000,
+    pingTimeout: 60000
 });
 
 try {
@@ -63,33 +67,31 @@ try {
     // await sequelize.sync({alter: true});
 
     // await sequelize.transaction(async t => {
-    //     const user2 = await User.findOne({
-    //         where: {
-    //             email: 'spiridonow044@gmail.com'
-    //         }
-    //     });
-    //
-    //     const user1 = await User.findOne({
-    //         where: {
-    //             email: 'grigorijgorbunov5@gmail.com'
-    //         }
-    //     });
-    //
-    //     // await Friendship.create({
-    //     //     senderId: user1.id,
-    //     //     receiverId: user2.id,
-    //     // }, { transaction: t})
-    //
-    //     // await Friendship.update(
-    //     //     { request_accepted: true},
-    //     //     {
-    //     //         where: {
-    //     //             senderId: user1.id,
-    //     //             receiverId: user2.id,
-    //     //         },
-    //     //         transaction: t
-    //     //     }
-    //     // )
+        // // await Friendship.create({
+        // //     senderId: user1.id,
+        // //     receiverId: user2.id,
+        // // }, { transaction: t})
+        //
+        // // await Friendship.update(
+        // //     { request_accepted: true},
+        // //     {
+        // //         where: {
+        // //             senderId: user1.id,
+        // //             receiverId: user2.id,
+        // //         },
+        // //         transaction: t
+        // //     }
+        // // )
+        //
+
+        // const chat = await Chat.findByPk('adc5f5b0-4a76-485c-9aef-cc903bd92c84')
+        //
+        // await chat.createMessage({
+        //     senderId: 'c76fd9c8-d804-4742-a0f4-a4f169028ed7',
+        //     chatId: 'adc5f5b0-4a76-485c-9aef-cc903bd92c84',
+        //     dataType: 0,
+        //     data: 'Test Message'
+        // }, {transaction: t})
     // })
 
 } catch (err) {
