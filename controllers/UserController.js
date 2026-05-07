@@ -88,7 +88,12 @@ const auth = async (req, res) => {
     }
 
     const token = jwt.sign(
-        { id: user.id, email: user.email, nickname: user.nickname },
+        {
+            id: user.id,
+            email: user.email,
+            nickname: user.nickname,
+            avatar: user.avatar
+        },
         process.env.SECRET_KEY
     )
 
@@ -132,8 +137,6 @@ export const updateUser = async (req, res, id) => {
 export const getUser = async (req, res) => {
     let id;
     const userId = req.params.userId
-
-
     userId === 'me' || userId === undefined ? id = req.user.id : id = userId;
 
     const user_cache = users_cache.get(id)
