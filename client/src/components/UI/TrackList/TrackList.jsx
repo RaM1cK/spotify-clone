@@ -3,6 +3,7 @@ import TrackItem from "../Track/TrackItem";
 import "./TrackList.css"
 import {useParams} from "react-router-dom";
 import axios from "axios";
+import {ChevronLeft} from "lucide-react";
 
 function TrackList({tracks: propTracks, setCurrentTrack, UsingContext, RollBack, onFavoriteChange}) {
     const { artistId} = useParams();
@@ -21,7 +22,7 @@ function TrackList({tracks: propTracks, setCurrentTrack, UsingContext, RollBack,
         return (
             <div className="track-list">
                 {RollBack && (
-                    <button className="music-back" onClick={RollBack}>← Назад</button>
+                    <button className="music-back" onClick={RollBack}><ChevronLeft size={20} /></button>
                 )}
                 {UsingContext != null && (
                     <h1 style={{color: '#fff'}}>Все треки: {UsingContext}</h1>

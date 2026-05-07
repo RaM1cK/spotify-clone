@@ -73,7 +73,11 @@ function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange })
                 {/* Left section */}
 
                 <div onClick={handleClick} className="track-item__left">
-                    <span className="track-number">{number}</span>
+                    <div className="track-number"
+                    style={{ width: `${tracks.length.toString().length}ch` }}
+                    >
+                        {number}
+                    </div>
                     <div className="track-item__cover-wrapper">
                         <img
                             src={`/api/files/${track.cover}`}

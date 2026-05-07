@@ -43,7 +43,7 @@ const verifyEmail = async (req, res) => {
 
     try {
         const email = jwt.verify(token, process.env.SECRET_KEY).email;
-        console.log(email)
+
 
         io.to(`user:${email}`).emit('email-verified', { message: email });
         return res.status(200).send({})
@@ -133,9 +133,8 @@ export const getUser = async (req, res) => {
     let id;
     const userId = req.params.userId
 
-    console.log(userId);
 
-    userId === 'me' ? id = req.user.id : id = userId;
+    userId === 'me' || userId === undefined ? id = req.user.id : id = userId;
 
     const user_cache = users_cache.get(id)
 
@@ -143,7 +142,7 @@ export const getUser = async (req, res) => {
 
     const { user, expiresOn } = user_cache
 
-    if (expiresOn <= Date.now()) return updateUser(req, res);
+    if (expiresOn <= Date.now()) return updateUser(req, res, id);
 
     return user;
 }
@@ -232,10 +231,7 @@ const getFavoriteArtists = async (req, res) => {
             exclude: ['createdAt', 'updatedAt']
         },
         order: [[literal('"userFavoriteArtist.createdAt"'), 'DESC']]
-    }).then(artists => Promise.all(artists.map(async artist => ({
-        ...artist.toJSON(),
-        trackCount: await artist.countTracks()
-    }))))
+    })
 
     res.status(200).send(result)
 }

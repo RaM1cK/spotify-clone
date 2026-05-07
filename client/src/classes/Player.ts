@@ -152,7 +152,7 @@ export class Player implements Subject {
         this.howl = new Howl({
             src: [`/api/tracks?token=${track.token}`],
             format: ['mp3', 'flac'],
-            volume: 0.06,
+            volume: 1,
             loop: false,
             html5: true,
             autoplay: true,

@@ -132,4 +132,9 @@
 .track-number{
     color: #737373;
     font-size: 16px;
+    display: flex;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
 }

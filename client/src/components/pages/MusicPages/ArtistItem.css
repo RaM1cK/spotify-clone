@@ -1,10 +1,20 @@
 .artist-header {
     display: flex;
     flex-direction: row;
-    height: 25vh;
     gap: 64px;
+    height: auto;
     margin-bottom: 24px;
 }
+
+.music-back{
+    padding: 30px;
+}
+
+.artist-item{
+    padding: 32px;
+    overflow-y: auto;
+}
+
 
 .artist-header__image {
     height: 100%;

@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import "./ArtistItem.css"
-import {ChevronRight, Pause, Play} from "lucide-react";
+import {ChevronLeft, ChevronRight, Pause, Play} from "lucide-react";
 import {Routes, Route, useNavigate, useParams} from "react-router-dom";
 import AlbumMenu from "./AlbumMenu";
 import TrackList from "../../UI/TrackList/TrackList";
@@ -60,7 +60,7 @@ const ArtistMain = ({ artist, setCurrentTrack }) => {
     if (tracks && albums)
         return (
             <div className="artist-item">
-                <button className="music-back" onClick={() => navigate(-1)}>← Назад</button>
+                <button className="music-back" onClick={() => navigate(-1)}><ChevronLeft size={20} /></button>
                 <div className="artist-header">
                     <div className="artist-header__image">
                         <img src={artist.photo} alt={artist.name}/>
@@ -164,11 +164,13 @@ const ArtistItem = ({ setCurrentTrack }) => {
                 <Route
                     path="tracks"
                     element={
+                    <div style={{ padding: 32 }}>
                         <TrackList
                             setCurrentTrack={setCurrentTrack}
                             UsingContext={artist.name}
                             RollBack={() => navigate(-1)}
                         />
+                    </div>
                     }
                 />
                 <Route

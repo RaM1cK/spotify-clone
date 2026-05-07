@@ -20,10 +20,10 @@ const MusicHome = () => {
     const navigate = useNavigate();
 
     return (
-        <>
+        <div className="MusicPage">
             <SearchBar />
             <div className="music-home">
-                <h1 className="music-home__title">Куда отправимся?</h1>
+                <h1 className="music-home__title">Коллекция</h1>
                 <div className="music-grid">
                     {MENU_ITEMS.map(({ id, path, label, sub, Icon, color }) => (
                         <button
@@ -40,7 +40,7 @@ const MusicHome = () => {
                     ))}
                 </div>
             </div>
-        </>
+        </div>
     );
 };
 
