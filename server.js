@@ -20,6 +20,7 @@ import authMiddleware from "./routers/authMiddleware.js";
 import ArtistRouter from "./routers/ArtistRouter.js";
 import {Playlist} from "./models/Playlist.ts";
 import PlaylistRouter from "./routers/PlaylistRouter.js";
+import {Friendship} from "./models/Friendship.ts";
 //import {Composition, Track} from "./models/Track.ts";
 
 dotenv.config();
@@ -59,19 +60,36 @@ const io = new Server(server, {
 try {
     await sequelize.authenticate();
     console.log('Connected');
-    await sequelize.sync({alter: true});
-    //
+    // await sequelize.sync({alter: true});
+
     // await sequelize.transaction(async t => {
-    //     const user = await User.findByPk('e9743d48-96c9-44e3-91ce-fb87399f0435');
+    //     const user2 = await User.findOne({
+    //         where: {
+    //             email: 'spiridonow044@gmail.com'
+    //         }
+    //     });
     //
-    //     const playlist = await user.createFavoritePlaylist({
-    //         creatorId: 'e9743d48-96c9-44e3-91ce-fb87399f0435',
-    //         name: 'Введите текст'
-    //     }, { transaction: t })
+    //     const user1 = await User.findOne({
+    //         where: {
+    //             email: 'grigorijgorbunov5@gmail.com'
+    //         }
+    //     });
     //
-    //     await playlist.addTrack(1, { transaction: t})
-    //     await playlist.addTrack(2, { transaction: t})
-    //     await playlist.addTrack(3, { transaction: t})
+    //     // await Friendship.create({
+    //     //     senderId: user1.id,
+    //     //     receiverId: user2.id,
+    //     // }, { transaction: t})
+    //
+    //     // await Friendship.update(
+    //     //     { request_accepted: true},
+    //     //     {
+    //     //         where: {
+    //     //             senderId: user1.id,
+    //     //             receiverId: user2.id,
+    //     //         },
+    //     //         transaction: t
+    //     //     }
+    //     // )
     // })
 
 } catch (err) {
