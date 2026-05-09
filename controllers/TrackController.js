@@ -5,8 +5,33 @@ import dotenv from "dotenv";
 import {Track} from "../models/Track.ts";
 import jwt from "jsonwebtoken";
 import * as crypto from "node:crypto";
+import {literal} from "@sequelize/core";
 
 dotenv.config();
+
+export const trackAttributes = [
+    'id',
+    'title',
+    'artist',
+    'duration',
+    'cover',
+    'uri',
+    'releaseId',
+]
+
+export const hasInFavoriteQuery = (userId, alias = 'tracks') => literal(`(
+    select exists (
+        select 1
+        from "FavoriteTracks" ft
+        where ft."trackId" = "${alias}"."id" and ft."userId" = '${userId}'
+    )
+)`)
+
+export const trackCountQuery = (alias) => literal(`(
+    select count(*) 
+    from "${alias}Track"
+    where "${alias}Track"."${alias.toLowerCase()}Id" = "${alias}"."id"
+)`)
 
 export const getTrack = async (req, res)=> {
     const id = req.params['trackId'];
@@ -24,24 +49,30 @@ export const getTrack = async (req, res)=> {
     return res.json(track);
 }
 
-export const getTracksBySecret = (req, res, tracks, user) => {
+export const getTracksBySecret = (req, res, tracks) => {
     const fingerprint = crypto
         .createHash('sha256')
         .update(req.ip + req.headers['user-agent'] + req.user.id)
         .digest('hex')
 
-    return Promise.all(tracks.map(async ({id, title, artist, duration, uri, cover, releaseId}) => ({
-        id,
-        title,
-        artist,
-        duration,
-        cover,
-        releaseId,
-        hasInFavorite: await user.hasFavoriteTrack(id),
-        token: jwt.sign({
-            id, uri, fingerprint
-        }, process.env.SECRET_KEY)
-    })))
+    return tracks.map(track => {
+        const {
+            uri,
+            userFavoriteTrack,
+            artistTrack,
+            PlaylistTrack,
+            ...rest
+        } = track.toJSON()
+
+        return {
+            ...rest,
+            token: jwt.sign({
+                id: rest.id,
+                uri,
+                fingerprint
+            }, process.env.SECRET_KEY)
+        }
+    })
 }
 
 export const getTrackFile = async (req, res)=> {

@@ -79,7 +79,10 @@ const PlaylistList = ({ onSelect, RollBack }) => {
                 {playlists.map((item) => (
                     <button key={item.id} onClick={() => onSelect(item)}>
                         <div className="album-imagediv">
-                            <img src={item.cover} alt=""/>
+                            {item.cover
+                                ? <img src={item.cover} alt=""/>
+                                : <ListMusic size={64} color="#b4b2a9"/>
+                            }
                         </div>
                         <span className="music-tile__label">{item.name}</span>
                         <span className="playlist-track-count">

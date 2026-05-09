@@ -44,8 +44,8 @@ const ArtistList = ({ RollBack }) => {
                             onClick={() => navigate(artist.id)}
                         >
                             <div className="artist-avatar">
-                                {artist.photo
-                                    ? <img src={artist.photo} alt={artist.name} />
+                                {artist.avatar
+                                    ? <img src={`/api/files/${artist.avatar}`} alt={artist.name} />
                                     : <CircleUserRound size={64} color="#b4b2a9" />
                                 }
                             </div>

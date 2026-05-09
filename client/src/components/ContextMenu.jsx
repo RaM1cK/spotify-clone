@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useState, useEffect, useRef, createContext, useContext} from 'react';
 import {useNavigate, useLocation, Routes, Route} from "react-router-dom";
 import './ContextMenuStyle.css';
-import { useSession, useSocket } from "../AppContext";
+import {useFriends, useSession, useSocket} from "../AppContext";
 import {ChevronRight} from "lucide-react";
 
 
@@ -67,21 +67,14 @@ function DotsIcon() {
 
 function ProfileModal({ session, onLogout, onClose, anchorRect, ROUTES_PAGES }) {
     const overlayRef = useRef(null);
+    const setMenuOpen = useContextMenu().setMenuOpen;
+    const friends = useFriends()
 
     const navigate = useNavigate();
 
-    const username  = session?.nickname || "Пользователь";
-    const email     = session?.email    || "user@example.com";
-    const avatarUrl = session?.avatar   || session?.avatarUrl || null;
-    const friends   = session?.friends  || [{avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"},
-        {avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"},
-        {avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"},
-        {avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"},
-        {avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"},
-        {avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"},
-        {avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"}
-
-    ];
+    const username  = session.nickname;
+    const email     = session.email;
+    const avatarUrl = session.avatar;
 
     const visibleFriends = friends.slice(0, friends.length > 6 ? 5 : 6);
     const showDots = friends.length > 6;
@@ -119,7 +112,11 @@ function ProfileModal({ session, onLogout, onClose, anchorRect, ROUTES_PAGES }) 
                             <span className="pm-username">{username}</span>
                             <span className="pm-email">{email}</span>
                         </div>
-                        <div className="to-profile" onClick={() => navigate("/me")}>
+                        <div className="to-profile" onClick={() => {
+                            navigate("/me")
+                            onClose()
+                            setMenuOpen(false)
+                        }}>
                             <ChevronRight size={20}/>
                         </div>
                     </div>
@@ -141,8 +138,8 @@ function ProfileModal({ session, onLogout, onClose, anchorRect, ROUTES_PAGES }) 
                         <p className="pm-no-friends">У вас пока нет друзей. Добавьте первого!</p>
                     ) : (
                         <div className="pm-friends-grid">
-                            {visibleFriends.map((f, i) => (
-                                <div className="pm-friend-item" key={i}>
+                            {friends.slice(0, friends.length > 6 ? 5 : 6).map(f => (
+                                <div className="pm-friend-item" key={f.id}>
                                     <div className="pm-friend-avatar">
                                         {f.avatar
                                             ? <img src={f.avatar} alt={f.nickname} className="avatar-img" />
@@ -152,7 +149,7 @@ function ProfileModal({ session, onLogout, onClose, anchorRect, ROUTES_PAGES }) 
                                     <span className="pm-friend-name">{f.nickname || "User"}</span>
                                 </div>
                             ))}
-                            {showDots && (
+                            {friends.length > 6 && (
                                 <div className="pm-friend-item">
                                     <div className="pm-friend-avatar pm-friend-dots">
                                         <DotsIcon />
@@ -183,6 +180,18 @@ function ProfileModal({ session, onLogout, onClose, anchorRect, ROUTES_PAGES }) 
     );
 }
 
+const ContextMenuContext = createContext(null)
+
+const ContextMenuProvider = ({setProfileOpen, setMenuOpen, children }) => {
+    return (
+        <ContextMenuContext.Provider value={{setProfileOpen, setMenuOpen}}>
+            {children}
+        </ContextMenuContext.Provider>
+    )
+}
+
+const useContextMenu = () => useContext(ContextMenuContext);
+
 export default function ContextMenu({ PAGES, menuOpen, setMenuOpen, onLogout, ROUTES_PAGES }) {
     const socket  = useSocket();
     const session = useSession();
@@ -199,7 +208,7 @@ export default function ContextMenu({ PAGES, menuOpen, setMenuOpen, onLogout, RO
     };
 
     return (
-        <>
+        <ContextMenuProvider setMenuOpen={setMenuOpen} setProfileOpen={setProfileOpen}>
             <aside className={`context-menu MainDiv ${menuOpen ? "open" : ""}`}>
                 <div className="nav-buttons">
                     {PAGES.map(page => (
@@ -251,6 +260,6 @@ export default function ContextMenu({ PAGES, menuOpen, setMenuOpen, onLogout, RO
                     anchorRect={panelRef.current?.getBoundingClientRect()}
                 />
             )}
-        </>
+        </ContextMenuProvider>
     );
 }

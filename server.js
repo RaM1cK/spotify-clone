@@ -67,22 +67,25 @@ try {
     // await sequelize.sync({alter: true});
 
     // await sequelize.transaction(async t => {
-        // // await Friendship.create({
-        // //     senderId: user1.id,
-        // //     receiverId: user2.id,
-        // // }, { transaction: t})
-        //
-        // // await Friendship.update(
-        // //     { request_accepted: true},
-        // //     {
-        // //         where: {
-        // //             senderId: user1.id,
-        // //             receiverId: user2.id,
-        // //         },
-        // //         transaction: t
-        // //     }
-        // // )
-        //
+    //     const user1 = await User.findByPk('e9743d48-96c9-44e3-91ce-fb87399f0435')
+    //     const user2 = await User.findByPk('c76fd9c8-d804-4742-a0f4-a4f169028ed7')
+    //
+    //     await Friendship.create({
+    //         senderId: user1.id,
+    //         receiverId: user2.id,
+    //     }, { transaction: t})
+    //
+    //     await Friendship.update(
+    //         { request_accepted: true},
+    //         {
+    //             where: {
+    //                 senderId: user1.id,
+    //                 receiverId: user2.id,
+    //             },
+    //             transaction: t
+    //         }
+    //     )
+
 
         // const chat = await Chat.findByPk('adc5f5b0-4a76-485c-9aef-cc903bd92c84')
         //
@@ -92,6 +95,13 @@ try {
         //     dataType: 0,
         //     data: 'Test Message'
         // }, {transaction: t})
+
+        // const playlist = await Playlist.findByPk('6dcc864b-02c7-4c8c-8ba2-95a9014bf005')
+        //
+        // await playlist.addTrack(8, {transaction: t})
+        // await playlist.addTrack(1, {transaction: t})
+        // await playlist.addTrack(3, {transaction: t})
+        // await playlist.addTrack(4, {transaction: t})
     // })
 
 } catch (err) {

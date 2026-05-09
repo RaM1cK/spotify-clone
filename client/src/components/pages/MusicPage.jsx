@@ -21,7 +21,6 @@ const MusicHome = () => {
 
     return (
         <div className="MusicPage">
-            <SearchBar />
             <div className="music-home">
                 <h1 className="music-home__title">Коллекция</h1>
                 <div className="music-grid">

@@ -1,0 +1,323 @@
+.mp-root {
+    padding: 32px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    height: 100%;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #e2e2e2;
+}
+
+/* ══ Divider ══ */
+.mp-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.07);
+    margin: 24px 0;
+}
+
+/* ══ Header ══ */
+.mp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.mp-header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.mp-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.25);
+    border: 2px solid rgba(99, 102, 241, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #a5b4fc;
+    overflow: hidden;
+}
+
+.mp-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.mp-identity {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.mp-nickname {
+    font-size: 26px;
+    font-weight: 700;
+    color: #f0f0f0;
+    line-height: 1;
+}
+
+.mp-email {
+    font-size: 15px;
+    color: #6b7280;
+}
+
+.mp-edit-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    color: #c9c9c9;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.mp-edit-btn:hover {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: rgba(99, 102, 241, 0.4);
+    color: #e0e0ff;
+}
+
+/* ══ Sections ══ */
+.mp-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.mp-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mp-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #9ca3af;
+}
+
+.mp-section-count {
+    font-size: 12px;
+    color: #4b5563;
+    margin-left: 2px;
+}
+
+.mp-empty {
+    font-size: 14px;
+    color: #4b5563;
+    margin: 0;
+}
+
+/* ══ Friends row ══ */
+.mp-friends-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: nowrap;
+}
+
+.mp-friend-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+}
+
+.mp-friend-avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: #6b7280;
+    transition: border-color 0.15s ease;
+}
+
+.mp-friend-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.mp-friend-card:hover .mp-friend-avatar {
+    border-color: rgba(99, 102, 241, 0.55);
+}
+
+.mp-friend-avatar--dots {
+    color: #4b5563;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.mp-friend-nick {
+    font-size: 12px;
+    color: #6b7280;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 64px;
+}
+
+/* ══ Switch group ══ */
+.mp-switch-group {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.mp-switch-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    color: #6b7280;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.mp-switch-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #c9c9c9;
+}
+
+.mp-switch-btn--active {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.45);
+    color: #a5b4fc;
+}
+
+.mp-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #6366f1;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* ══ Requests list ══ */
+.mp-requests-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mp-request-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    transition: background 0.15s ease;
+}
+
+.mp-request-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.mp-request-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #a5b4fc;
+    overflow: hidden;
+}
+
+.mp-request-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.mp-request-nick {
+    font-size: 14px;
+    color: #d4d4d4;
+    flex: 1;
+}
+
+.mp-request-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.mp-req-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s ease;
+}
+
+.mp-req-btn--accept {
+    background: rgba(52, 211, 153, 0.15);
+    color: #34d399;
+}
+
+.mp-req-btn--accept:hover {
+    background: rgba(52, 211, 153, 0.28);
+}
+
+.mp-req-btn--decline {
+    background: rgba(248, 113, 113, 0.12);
+    color: #f87171;
+}
+
+.mp-req-btn--decline:hover {
+    background: rgba(248, 113, 113, 0.25);
+}
+
+.mp-req-btn--cancel {
+    background: rgba(255, 255, 255, 0.06);
+    color: #6b7280;
+}
+
+.mp-req-btn--cancel:hover {
+    background: rgba(248, 113, 113, 0.12);
+    color: #f87171;
+}

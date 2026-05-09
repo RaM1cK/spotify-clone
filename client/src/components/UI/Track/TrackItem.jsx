@@ -59,7 +59,11 @@ function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange })
     }
 
     const toFavorite = () => {
-        axios.post(`/api/users/${isFavorite ? 'remove' : 'add'}FavoriteTrack/${track.id}`)
+        const request = () => isFavorite
+            ? axios.delete(`/api/users/removeFavoriteTrack/${track.id}`)
+            : axios.post(`/api/users/addFavoriteTrack/${track.id}`)
+
+        request()
             .then(() => {
                 const newValue = !isFavorite
                 setIsFavorite(newValue)

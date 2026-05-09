@@ -3,13 +3,23 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import io from "../server.js"
-import {getTracksBySecret} from "./TrackController.js";
+import {getTracksBySecret, trackAttributes, trackCountQuery} from "./TrackController.js";
 import {Track} from "../models/Track.ts";
 import {sequelize} from "../models/index.js";
 import {literal, sql} from "@sequelize/core";
 import {Message} from "../models/Message.ts";
+import {artistAttributes} from "./ArtistController.js";
+import {playlistAttributes} from "./PlaylistController.js";
+import {Friendship} from "../models/Friendship.ts";
 
 dotenv.config();
+
+export const userAttributes = [
+    'id',
+    'nickname',
+    'email',
+    'avatar'
+]
 
 function sendVerificationLink(email) {
     const transporter = nodemailer.createTransport({
@@ -37,6 +47,7 @@ function sendVerificationLink(email) {
 
     return tokenAuth;
 }
+
 //TODO: сделать одноразовую ссылку
 const verifyEmail = async (req, res) => {
     const token = req.query.token;
@@ -175,10 +186,14 @@ const getReleases = async (req, res) => {
             exclude: ['createdAt', 'updatedAt', 'icpn']
         },
         order: [[literal('"userFavoriteRelease.createdAt"'), 'DESC']]
-    }).then(releases => releases.map(release => ({
-        ...release.toJSON(),
-        date: new Date(release.date).getFullYear()
-    })))
+    }).then(releases => releases.map(release => {
+        const {userFavoriteRelease, ...rest} = release.toJSON()
+
+        return {
+            ...rest,
+            date: new Date(release.date).getFullYear()
+        }
+    }))
 
     res.status(200).send(result)
 }
@@ -187,18 +202,19 @@ const getTracks = async (req, res) => {
     const user = await getUser(req, res)
 
     const result = await user.getFavoriteTracks({
-        attributes: {
-            exclude: ['createdAt', 'updatedAt', 'isrc']
-        },
+        attributes: [
+            ...trackAttributes,
+            [literal(`true`), 'hasInFavorite']
+        ],
         order: [[literal('"userFavoriteTrack.createdAt"'), 'DESC']]
-    }).then(tracks => getTracksBySecret(req, res, tracks, user));
+    }).then(tracks => getTracksBySecret(req, res, tracks));
 
     res.status(200).send(result)
 }
 
 const addFavoriteTrack = async (req, res) => {
     const user = await getUser(req, res)
-    const trackId = req.params['trackId'];
+    const trackId = req.params.trackId;
 
     try {
         await sequelize.transaction(async t => {
@@ -213,7 +229,7 @@ const addFavoriteTrack = async (req, res) => {
 
 const removeFavoriteTrack = async (req, res) => {
     const user = await getUser(req, res)
-    const trackId = req.params['trackId'];
+    const trackId = req.params.trackId;
 
     try {
         await sequelize.transaction(async t => {
@@ -230,27 +246,34 @@ const getFavoriteArtists = async (req, res) => {
     const user = await getUser(req, res)
 
     const result = await user.getFavoriteArtists({
-        attributes: {
-            exclude: ['createdAt', 'updatedAt']
-        },
+        attributes: [
+            ...artistAttributes,
+            [trackCountQuery('Artist'), 'trackCount']
+        ],
         order: [[literal('"userFavoriteArtist.createdAt"'), 'DESC']]
     })
 
-    res.status(200).send(result)
+    res.status(200).send(result.map(artist => {
+        const {userFavoriteArtist, ...rest} = artist.toJSON();
+
+        return rest;
+    }))
 }
 
 const getFavoritePlaylists = async (req, res) => {
     const user = await getUser(req, res)
 
     const result = await user.getFavoritePlaylists({
-        attributes: {
-            exclude: ['createdAt', 'updatedAt']
-        },
+        attributes: [
+            ...playlistAttributes,
+            [trackCountQuery('Playlist'), 'trackCount']
+        ],
         order: [[literal('"userFavoritePlaylist.createdAt"'), 'DESC']]
-    }).then(playlists => Promise.all(playlists.map(async playlist => ({
-        ...playlist.toJSON(),
-        trackCount: await playlist.countTracks()
-    }))))
+    }).then(playlists => playlists.map(playlist => {
+        const {userFavoritePlaylist, ...rest} = playlist.toJSON();
+
+        return rest
+    }))
 
     res.status(200).send(result)
 }
@@ -270,6 +293,71 @@ const getChats = async (req, res) => {
     res.status(200).send(result)
 }
 
+const acceptFriendRequest = async (req, res) => {
+    const senderId = req.params.senderId
+
+    try {
+        await sequelize.transaction(async t => {
+            await Friendship.update(
+                {
+                    request_accepted: true
+                },
+                {
+                    where: {
+                        senderId,
+                        receiverId: req.user.id
+                    },
+                    transaction: t
+                }
+            )
+        })
+
+        return res.status(200).send({});
+    } catch (error) {
+        return res.status(500).send({});
+    }
+}
+
+const rejectFriendRequest = async (req, res) => {
+    const senderId = req.params.senderId
+
+    try {
+        await sequelize.transaction(async t => {
+            await Friendship.destroy({
+                where: {
+                    senderId,
+                    receiverId: req.user.id
+                },
+                transaction: t
+            })
+        })
+
+        return res.status(200).send({});
+    } catch (error) {
+        return res.status(500).send({});
+    }
+}
+
+const cancelFriendRequest = async (req, res) => {
+    const receiverId = req.params.receiverId
+
+    try {
+        await sequelize.transaction(async t => {
+            await Friendship.destroy({
+                where: {
+                    senderId: req.user.id,
+                    receiverId
+                },
+                transaction: t
+            })
+        })
+
+        return res.status(200).send({});
+    } catch (error) {
+        return res.status(500).send({});
+    }
+}
+
 export default {
     reg,
     auth,
@@ -283,5 +371,8 @@ export default {
     removeFavoriteTrack,
     getFavoriteArtists,
     getFavoritePlaylists,
-    getChats
+    getChats,
+    acceptFriendRequest,
+    rejectFriendRequest,
+    cancelFriendRequest,
 }

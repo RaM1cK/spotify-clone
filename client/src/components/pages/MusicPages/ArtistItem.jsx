@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import "./ArtistItem.css"
-import {ChevronLeft, ChevronRight, Pause, Play} from "lucide-react";
+import {ChevronLeft, ChevronRight, CircleUserRound, Pause, Play} from "lucide-react";
 import {Routes, Route, useNavigate, useParams} from "react-router-dom";
 import AlbumMenu from "./AlbumMenu";
 import TrackList from "../../UI/TrackList/TrackList";
@@ -63,7 +63,10 @@ const ArtistMain = ({ artist, setCurrentTrack }) => {
                 <button className="music-back" onClick={() => navigate(-1)}><ChevronLeft size={20} /></button>
                 <div className="artist-header">
                     <div className="artist-header__image">
-                        <img src={artist.photo} alt={artist.name}/>
+                        {artist.avatar
+                            ? <img src={`/api/files/${artist.avatar}`} alt={artist.name} />
+                            : <CircleUserRound size={64} color="#b4b2a9" />
+                        }
                     </div>
                     <div className="artist-header__info">
                         <h1 className="artist-header__name">{artist.name}</h1>

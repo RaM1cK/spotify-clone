@@ -91,7 +91,7 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
 
     const setLastMessage = (prev, newMessage) =>
         prev.map(chat =>
-            chat?.id !== newMessage?.chatId ? chat.id : {
+            chat?.id !== newMessage?.chatId ? chat : {
                 ...chat,
                 lastMessage: newMessage.data,
             }
