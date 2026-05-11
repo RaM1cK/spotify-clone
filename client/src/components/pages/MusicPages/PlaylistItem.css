@@ -1,38 +1,41 @@
 .liked {
     container-type: inline-size;
-    padding: 32px;
+    padding: clamp(10px, 3vw, 32px);
+    padding-bottom: 0;
+    box-sizing: border-box;
 }
 
 .liked-header {
-    padding: 10px;
+    padding: 10px 0;
     display: flex;
     justify-content: flex-start;
     align-items: flex-end;
-    height: 200px;
-    gap: 30px;
-    margin-bottom: 40px;
+    flex-wrap: wrap;
+    gap: clamp(14px, 4vw, 30px);
+    height: auto;
+    margin-bottom: clamp(20px, 6vw, 40px);
 }
 
-.logo {
-    max-height: 100%;
+.playlist-logo {
     width: auto;
-    flex-shrink: 1;
-    flex-basis: 200px;
+    max-height: min(260px, 42vw);
     min-width: 60px;
+    max-width: min(260px, 42vw);
     aspect-ratio: 1 / 1;
-    object-fit: contain;
+    object-fit: cover;
+    flex-shrink: 0;
 }
 
 .liked-header-info {
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
     gap: 10px;
-    flex-shrink: 1;
+    padding: 10px;
+    padding-top: 20px;
     min-width: 0;
-    word-break: normal;
+    justify-content: flex-start;
+    overflow: hidden;
 }
-
 .liked-header-info p {
     margin: 0;
 }
@@ -40,14 +43,15 @@
 .liked-header-info p:first-child {
     color: #737373;
     font-size: 14px;
+    overflow: hidden;
 }
 
 .liked-header-info h1 {
     color: #e8e6e1;
     max-width: 600px;
     margin: 0;
-    word-break: normal;
-    overflow-wrap: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
     white-space: normal;
 }
 

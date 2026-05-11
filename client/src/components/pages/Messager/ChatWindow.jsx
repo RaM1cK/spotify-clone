@@ -1,12 +1,14 @@
-import React, {useState} from "react";
-import { Music } from "lucide-react";
+import React, {useRef, useState} from "react";
+import { Music, ChevronLeft } from "lucide-react";
 import TrackMessage from "./TrackMessage";
+import {useSession} from "../../../AppContext";
 
 const ChatWindow = ({ activeChat, input, setInput, handleSend,
-                        // tracks, onOpenAlbum
+                        showMobileBack, onMobileBack,
 }) => {
     const [showTrackPicker, setShowTrackPicker] = useState(false);
-
+    const session = useSession();
+    const textareaRef = useRef(null);
 
     if (!activeChat) {
         return (
@@ -21,6 +23,16 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
     return (
         <div className="messages-chat">
             <div className="messages-chat-header">
+                {showMobileBack && (
+                    <button
+                        type="button"
+                        className="messages-chat-back"
+                        aria-label="К списку чатов"
+                        onClick={() => onMobileBack?.()}
+                    >
+                        <ChevronLeft size={22} />
+                    </button>
+                )}
                 <div className="messages-avatar">{activeChat.avatar}</div>
                 <span className="messages-chat-name">{activeChat.name}</span>
             </div>
@@ -29,7 +41,7 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
                 {activeChat.messages.map((msg) => (
                     <div
                         key={msg.id}
-                        className={`messages-bubble ${msg.from === "me" ? "me" : "them"}`}
+                        className={`messages-bubble ${msg.senderId === session.id ? "me" : "them"}`}
                     >
                         {/*{msg.track ? (*/}
                         {/*    <TrackMessage*/}
@@ -38,9 +50,15 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
                         {/*    />*/}
                         {/*) : (*/}
                         {/*    */}
-                            <span className="messages-bubble__text">{msg.text}</span>
+                            <span className="messages-bubble__text">{msg.data}</span>
                         {/*)}*/}
-                        <span className="messages-bubble__time">{msg.time}</span>
+                        <span className="messages-bubble__time">{
+                            new Date(msg.createdAt)
+                                .toLocaleTimeString(navigator.language, {
+                                    hour: "2-digit",
+                                    minute: "2-digit"
+                                })}
+                        </span>
                     </div>
                 ))}
             </div>
@@ -75,6 +93,7 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
                 </button>
 
                 <textarea
+                    ref={textareaRef}
                     className="messages-input"
                     placeholder="Написать сообщение..."
                     value={input}
@@ -88,10 +107,27 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
                         if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
                             handleSend();
+
+                            requestAnimationFrame(() => {
+                                if (textareaRef.current) {
+                                    textareaRef.current.style.height = "auto";
+                                }
+                            });
                         }
                     }}
                 />
-                <button className="messages-send-btn" onClick={() => handleSend()}>
+                <button
+                    className="messages-send-btn"
+                    onClick={() => {
+                    handleSend();
+
+                    requestAnimationFrame(() => {
+                        if (textareaRef.current) {
+                            textareaRef.current.style.height = "auto";
+                        }
+                    });
+                }}
+                    >
                     →
                 </button>
             </div>

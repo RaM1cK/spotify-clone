@@ -1,24 +1,33 @@
-.MainDiv{
-    width: 220px;
+.MainDiv {
     flex-shrink: 0;
     display: flex;
+    background: black;
     flex-direction: column;
     padding-left: 5px;
     padding-top: 22px;
+    padding-bottom: 12px;
 }
 
-.buttons{
+.nav-buttons {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.buttons {
     width: 100%;
     height: 4em;
     color: #d4d4d4;
     background-color: transparent;
     border: none;
     font-family: 'Segoe UI', system-ui, sans-serif;
-    font-size: 22px;
+    font-size: clamp(17px, 2.8vw, 22px);
     position: relative;
-}
-
-.buttons.select {
+    cursor: pointer;
+    text-align: left;
+    padding-left: 16px;
+    border-radius: 8px;
+    transition: background-color 0.15s ease;
 }
 
 .buttons.select::before {
@@ -33,6 +42,353 @@
     border-radius: 0 2px 2px 0;
 }
 
-.buttons:hover{
+.buttons:hover {
+    background-color: rgba(99, 102, 241, 0.2);
+}
+
+/* ── User Panel ── */
+
+.user-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 6px 0 0;
+    padding: 10px 10px 10px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 6px;
+    font-size: clamp(15px, 3.5vw, 22px);
+    height: 4em;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    user-select: none;
+}
+
+.user-panel:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.user-avatar {
+    height: 44px;
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.25);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #a5b4fc;
+    overflow: hidden;
+}
+
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.user-text {
+    display: flex;
+    cursor: auto;
+    flex-direction: column;
+    min-width: 0;
+    gap: 1px;
+}
+
+.user-name {
+    color: #e2e2e2;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: clamp(14px, 3vw, 18px);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-plan {
+    color: #6b7280;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    cursor: auto;
+}
+
+.logout-btn {
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.logout-btn:hover {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.12);
+}
+
+/* ══════════════════════════════════════
+   Profile Modal — Overlay
+══════════════════════════════════════ */
+
+.pm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pm-fade-in 0.15s ease;
+}
+
+.pm-overlay--anchored {
+    display: block;
+}
+
+@keyframes pm-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* ══════════════════════════════════════
+   Profile Modal — Card
+══════════════════════════════════════ */
+
+.pm-card {
+    width: min(340px, calc(100vw - 24px));
+    max-width: 100%;
+    background: #1a1b23;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+    animation: pm-slide-up 0.2s ease;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+@keyframes pm-slide-up {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+
+.pm-section {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pm-section--logout {
+    padding: 10px 16px 14px;
+    gap: 0;
+}
+
+.pm-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.07);
+}
+
+/* User row */
+
+.pm-user-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pm-avatar-lg {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.25);
+    border: 1.5px solid rgba(99, 102, 241, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #a5b4fc;
+    overflow: hidden;
+}
+
+.pm-user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.pm-username {
+    color: #e8e8e8;
+    font-size: 18px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pm-email {
+    color: #6b7280;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Pill buttons */
+
+.pm-pill-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    padding: 9px 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    color: #c9c9c9;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.pm-pill-btn:hover {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: rgba(99, 102, 241, 0.35);
+    color: #e0e0ff;
+}
+
+/* Friends section */
+
+.pm-friends-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #9ca3af;
+    cursor: pointer;
+    width: fit-content;
+}
+
+.pm-friends-header:hover .pm-section-title {
+    color: #d1d5db;
+}
+
+.pm-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: color 0.15s;
+}
+
+.pm-no-friends {
+    color: #4b5563;
+    font-size: 14px;
+    text-align: center;
+    margin: 4px 0 0;
+    line-height: 1.5;
+}
+
+.pm-friends-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px 6px;
+}
+
+.pm-friend-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.pm-friend-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: #6b7280;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+}
+
+.pm-friend-avatar:hover {
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+.pm-friend-dots {
+    color: #4b5563;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.pm-friend-name {
+    color: #6b7280;
+    font-size: 12px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 56px;
+}
+
+/* Wide logout button */
+
+.pm-logout-wide {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 9px 4px;
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: color 0.15s ease, background 0.15s ease;
+    text-align: left;
+}
+
+.pm-logout-wide:hover {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.08);
+}
+
+.to-profile {
+    border: 1px solid rgba(255, 255, 255);
+    border-radius: 50%;
+    color: white;
+    width: 32px;
+    height: 32px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.to-profile:hover {
     background-color: rgba(99, 102, 241, 0.2);
 }

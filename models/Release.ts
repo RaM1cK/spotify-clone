@@ -43,6 +43,11 @@ export class Release extends Model<InferAttributes<Release>, InferCreationAttrib
 
     @Attribute(DataTypes.STRING(140))
     @NotNull
+    @Default('')
+    declare titleNormalized: string
+
+    @Attribute(DataTypes.STRING(140))
+    @NotNull
     declare artist: string
 
     @Attribute(DataTypes.TEXT)
@@ -67,6 +72,4 @@ export class Release extends Model<InferAttributes<Release>, InferCreationAttrib
 
     declare addTrack: HasManyAddAssociationMixin<Track, Track['id']>;
     declare addTracks: HasManyAddAssociationsMixin<Track, Track['id']>
-
-    declare getTracks: HasManyGetAssociationsMixinOptions<Track>;
 }

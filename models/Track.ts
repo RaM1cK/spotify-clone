@@ -10,7 +10,7 @@ import type {
     CreationOptional
 } from "@sequelize/core";
 import {
-    Attribute, AutoIncrement, BelongsTo, BelongsToMany,
+    Attribute, AutoIncrement, BelongsTo, BelongsToMany, Default,
     NotNull,
     PrimaryKey,
     Table,
@@ -41,6 +41,11 @@ export class Track extends Model<InferAttributes<Track>, InferCreationAttributes
     @Attribute(DataTypes.STRING(140))
     @NotNull
     declare title: string
+
+    @Attribute(DataTypes.STRING(140))
+    @NotNull
+    @Default('')
+    declare titleNormalized: string
 
     @Attribute(DataTypes.STRING(140))
     @NotNull

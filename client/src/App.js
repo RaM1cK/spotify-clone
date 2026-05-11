@@ -1,5 +1,5 @@
 import io from 'socket.io-client';
-import React, { useEffect, useMemo, useState } from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Player from "./components/UI/Player/Player";
 import axios from "axios";
@@ -10,46 +10,70 @@ import ContextMenu from "./components/ContextMenu";
 import testpage from "./components/pages/testpage";
 import MenuButton from "./components/MenuButton";
 import Messages from "./components/pages/Messager/Messages";
-import SearchBar from "./components/SearchBar";
+import {AppProvider, useSession, useSocket} from "./AppContext";
+import MyProfile from "./components/pages/MyProfile";
 
-const SESSION_KEY = "app_session";
-
-axios.defaults.withCredentials = true;
 
 const PAGES = [
-    { id: "testTrack",   path: "/music/*",  navPath: "/music",    component: MusicPage, label: "Музыка" },
+    { id: "testTrack",   path: "/music/*",  navPath: "/music",    component: MusicPage, label: "Коллекция" },
     { id: "messagePage", path: "/messages", navPath: "/messages", component: Messages,  label: "Сообщения" },
     { id: "testPage",    path: "/gazan",    navPath: "/gazan",    component: testpage,  label: "Газан" },
 ];
 
-function AppLayout({ setCurrentTrack, currentTrack, menuOpen, setMenuOpen }) {
+const ROUTES_PAGES = [
+    { id: "testTrack",   path: "/music/*",  navPath: "/music",    component: MusicPage, label: "Коллекция" },
+    { id: "messagePage", path: "/messages", navPath: "/messages", component: Messages,  label: "Сообщения" },
+    { id: "testPage",    path: "/gazan",    navPath: "/gazan",    component: testpage,  label: "Газан" },
+
+    { id: "myProfile", path: "/me", component: MyProfile },
+]
+
+function AppLayout({ setCurrentTrack, currentTrack, menuOpen, setMenuOpen, onLogout }) {
+    const playerRef = useRef(null);
+    const [playerHeight, setPlayerHeight] = useState(0);
+
+    useEffect(() => {
+        if (!playerRef.current) return;
+        const observer = new ResizeObserver(entries => {
+            setPlayerHeight(entries[0].contentRect.height);
+        });
+        observer.observe(playerRef.current);
+        return () => observer.disconnect();
+    }, []);
+
     return (
-        <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+        <div className="app-root">
             <MenuButton menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-            <div style={{ display: "flex", flex: 1, overflow: "hidden", minHeight: 0 }}>
+
+            <div className="app-body">
                 <ContextMenu
                     PAGES={PAGES}
+                    ROUTES_PAGES = {ROUTES_PAGES}
                     menuOpen={menuOpen}
                     setMenuOpen={setMenuOpen}
+                    onLogout={onLogout}
                 />
-                <main style={{ flex: 1, overflowY: "auto" }}>
-                    <Routes>
-                        {PAGES.map(({ path, component: Component }) => (
-                            <Route
-                                key={path}
-                                path={path}
-                                element={
-                                    <Component
-                                        setCurrentTrack={setCurrentTrack}
-                                    />
-                                }
-                            />
-                        ))}
-                        <Route path="*" element={<Navigate to="/music" replace />} />
-                    </Routes>
+
+                <main className="app-main">
+                    <div className="app-content">
+                        <Routes>
+                            {ROUTES_PAGES.map(({ path, component: Component }) => (
+                                <Route
+                                    key={path}
+                                    path={path}
+                                    element={<Component setCurrentTrack={setCurrentTrack} />}
+                                />
+                            ))}
+
+                            <Route path="*" element={<Navigate to="/music" replace />} />
+                        </Routes>
+                    </div>
                 </main>
             </div>
-            <Player track={currentTrack} setTrack={setCurrentTrack} />
+
+            <div ref={playerRef}>
+                <Player track={currentTrack} setTrack={setCurrentTrack} />
+            </div>
         </div>
     );
 }
@@ -60,44 +84,47 @@ function App() {
     const [menuOpen, setMenuOpen] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // const initializeSocket = (token) => {
-    //     const socket = io('ws://localhost:8080', { auth: { token } });
-    //     socket.on('connect', () => console.log('Socket.IO connected'));
-    //     socket.on('connect_error', (err) => {
-    //         console.error('Socket connection failed:', err.message);
-    //         if (err.message === 'USER_DOESNT_EXISTS') handleLogout();
-    //     });
-    //     return socket;
-    // };
-
-    const handleAuth = () => {
+    const handleAuth = () =>
         axios.get(`/api/users/me`)
-            .then(res => setSession(res.data));
-    };
+            .then(res => {
+                setSession(res.data)
+                setCurrentTrack(res.data.currentTrack)
+            })
+            .catch(() => setSession(null))
+            .finally(() => setLoading(false));
 
     const handleLogout = () => {
         axios.post('/api/users/logout')
-            .then(() => setSession(null));
+            .then(() => {
+                setSession(null)
+                setCurrentTrack(null);
+            });
     };
 
     useEffect(() => {
-        axios.get(`/api/users/me`)
-            .then(res => setSession(res.data))
-            .catch(() => setSession(null))
-            .finally(() => setLoading(false));
+        handleAuth()
     }, []);
 
     if (loading) return <div>Загрузка...</div>;
-    if (!session) return <AuthPage onAuth={handleAuth} />;
+    if (!session)
+        return <AppProvider session={session}>;
+                <AuthPage onAuth={handleAuth} setSession={setSession} />
+            </AppProvider>
+
 
     return (
         <BrowserRouter>
-            <AppLayout
-                setCurrentTrack={setCurrentTrack}
-                currentTrack={currentTrack}
-                menuOpen={menuOpen}
-                setMenuOpen={setMenuOpen}
-            />
+            <AppProvider session={session}>
+                <AppLayout
+                    setCurrentTrack={setCurrentTrack}
+                    currentTrack={currentTrack}
+                    menuOpen={menuOpen}
+                    setMenuOpen={setMenuOpen}
+                    session={session}
+                    onLogout={handleLogout}
+                />
+            </AppProvider>
+
         </BrowserRouter>
     );
 }

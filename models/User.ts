@@ -4,14 +4,15 @@ import {
     InferAttributes,
     InferCreationAttributes,
     sql, BelongsToGetAssociationMixinOptions, BelongsToManyGetAssociationsMixin, BelongsToManyAddAssociationMixin,
-    BelongsToManyRemoveAssociationMixin, BelongsToManyHasAssociationMixin, BelongsToManyCreateAssociationMixin
+    BelongsToManyRemoveAssociationMixin, BelongsToManyHasAssociationMixin, BelongsToManyCreateAssociationMixin,
+    HasManyGetAssociationsMixin
 } from "@sequelize/core";
 
 import type {NonAttribute} from "@sequelize/core";
 import {
     Attribute,
     BelongsToMany,
-    Default,
+    Default, HasMany,
     NotNull,
     PrimaryKey,
     Table,
@@ -21,6 +22,9 @@ import {Track} from "./Track.ts";
 import {Artist} from "./Artist.ts";
 import {Release} from "./Release.ts";
 import {Playlist} from "./Playlist.ts";
+import {Friendship} from "./Friendship.ts";
+import {Chat} from "./Chat.ts";
+import {Message} from "./Message.ts";
 // import {Playlist} from "./Playlist.ts";
 
 @Table({
@@ -86,6 +90,23 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
     declare createFavoritePlaylist: BelongsToManyCreateAssociationMixin<Playlist>
 
     declare playlists?: NonAttribute<Playlist[]>
+
+    declare sentRequests?: NonAttribute<Friendship[]>
+    declare getSentRequests: HasManyGetAssociationsMixin<Friendship>
+
+    declare receivedRequests?: NonAttribute<Friendship[]>
+    declare getReceivedRequests: HasManyGetAssociationsMixin<Friendship>
+
+    @BelongsToMany(() => Chat, {
+        through: 'UserChats',
+        inverse: {
+            as: 'users'
+        }
+    })
+    declare chats?: NonAttribute<Chat[]>
+    declare getChats: BelongsToManyGetAssociationsMixin<Chat>
+
+    declare messages?: NonAttribute<Message[]>
 
     // @Attribute(DataTypes.UUID)
     // @NotNull

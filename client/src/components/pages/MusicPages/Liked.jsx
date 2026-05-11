@@ -2,7 +2,7 @@ import React, {useEffect} from 'react';
 import myLikeIcon from '../../../images/MYLIKEDICON.png';
 import TrackList from "../../UI/TrackList/TrackList";
 import './Liked.css';
-import {MoreHorizontal, Pause, Play} from "lucide-react";
+import {MoreHorizontal, Pause, Play, ChevronLeft} from "lucide-react";
 import {Player} from "../../../classes/Player.ts";
 import usePlayerState from '../../../hooks/usePlayerState';
 import axios from "axios";
@@ -44,7 +44,7 @@ const Liked = ({setCurrentTrack, RollBack}) => {
     const isPlaying = usePlayerState(player, Tracks);
 
     useEffect(() => {
-        axios.get('/api/users/favoriteTracks')
+        axios.get('/api/users/me/favoriteTracks')
             .then(res =>  setTracks(res.data))
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
@@ -77,7 +77,7 @@ const Liked = ({setCurrentTrack, RollBack}) => {
         return (
             <div className={"liked"}>
                 <button className="music-back" onClick={() => RollBack(null)}>
-                    ← Назад
+                    <ChevronLeft size={20} />
                 </button>
                 <div className="liked-header">
                     <img src={myLikeIcon} className="logo" alt="logo" />

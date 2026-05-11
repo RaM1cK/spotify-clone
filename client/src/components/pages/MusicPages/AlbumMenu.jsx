@@ -3,6 +3,7 @@ import axios from "axios";
 import PlaylistItem from "./PlaylistItem";
 import "./AlbumMenu.css"
 import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
+import {ChevronLeft} from "lucide-react";
 
 const AlbumList = ({ artistId, UsingContext, RollBack }) => {
     const navigate = useNavigate();
@@ -10,7 +11,7 @@ const AlbumList = ({ artistId, UsingContext, RollBack }) => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        axios.get(artistId ? `/api/artists/${artistId}/releases` : `/api/users/favoriteReleases`)
+        axios.get(artistId ? `/api/artists/${artistId}/releases` : `/api/users/me/favoriteReleases`)
             .then(res => setAlbums(res.data))
             .catch(() => setError('Ошибка загрузки'));
     }, [artistId]);
@@ -23,11 +24,11 @@ const AlbumList = ({ artistId, UsingContext, RollBack }) => {
             <div className="menuHeader">
                 {UsingContext !== "menu" ?
                     <>
-                        <button className="music-back" onClick={() => RollBack(null)}>← Назад</button>
+                        <button className="music-back" onClick={() => RollBack(null)}><ChevronLeft size={20} /></button>
                         <h1>Все альбомы: {UsingContext}</h1>
                     </>
                     :
-                    <button className="music-back" onClick={() => RollBack(null)}>← Назад</button>
+                    <button className="music-back" onClick={() => RollBack(null)}><ChevronLeft size={20} /></button>
                 }
             </div>
             <div className="playlist-grid">

@@ -7,7 +7,7 @@ import {fileURLToPath} from 'url';
 import socket from './controllers/ChatController.js'
 import TrackRouter from './routers/TrackRouter.js';
 import dotenv from 'dotenv';
-import {sequelize} from './models/index.js';
+import {redisClient, sequelize} from './models/index.js';
 import {User} from "./models/User.ts";
 import UserRouter from "./routers/UserRouter.js";
 import ReleaseRouter from "./routers/ReleaseRouter.js";
@@ -20,6 +20,8 @@ import authMiddleware from "./routers/authMiddleware.js";
 import ArtistRouter from "./routers/ArtistRouter.js";
 import {Playlist} from "./models/Playlist.ts";
 import PlaylistRouter from "./routers/PlaylistRouter.js";
+import {Friendship} from "./models/Friendship.ts";
+import {Chat} from "./models/Chat.ts";
 //import {Composition, Track} from "./models/Track.ts";
 
 dotenv.config();
@@ -31,16 +33,15 @@ const SERVER_PORT = process.env.SERVER_PORT;
 export const __filename = fileURLToPath(import.meta.url);
 export const __dirname = path.dirname(__filename);
 
-axios.defaults.withCredentials = true;
-
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: IP_APP,
     credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());
 app.use('/files', express.static(path.join(__dirname, 'music')));
 app.use("/users", UserRouter);
+
 app.use(authMiddleware)
 app.use("/tracks", TrackRouter);
 app.use("/releases", ReleaseRouter);
@@ -51,32 +52,23 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: "*", //при деплое изменить
+        origin: IP_APP, //при деплое изменить
         methods: ["GET", "POST"],
-    }
+    },
+    pingInterval: 25000,
+    pingTimeout: 60000
 });
 
 try {
     await sequelize.authenticate();
     console.log('Connected');
     // await sequelize.sync({alter: true});
-    //
-    // await sequelize.transaction(async t => {
-    //     const user = await User.findByPk('e9743d48-96c9-44e3-91ce-fb87399f0435');
-    //
-    //     const playlist = await user.createFavoritePlaylist({
-    //         creatorId: 'e9743d48-96c9-44e3-91ce-fb87399f0435',
-    //         name: 'Введите текст'
-    //     }, { transaction: t })
-    //
-    //     await playlist.addTrack(1, { transaction: t})
-    //     await playlist.addTrack(2, { transaction: t})
-    //     await playlist.addTrack(3, { transaction: t})
-    // })
 
+    await redisClient.connect()
 } catch (err) {
     console.error(err);
     await sequelize.close();
+    await redisClient.close();
 }
 
 socket(io)
