@@ -67,11 +67,21 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
 
     const [chats, setChats] = useState(null);
     const [activeChat, setActiveChat] = useState(null);
+    const [mobileChatOpen, setMobileChatOpen] = useState(false);
     const [input, setInput] = useState("");
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const activeChatRef = useRef(activeChat);
+
+    useEffect(() => {
+        const mq = window.matchMedia("(max-width: 991px)");
+        const onMq = () => {
+            if (!mq.matches) setMobileChatOpen(false);
+        };
+        mq.addEventListener("change", onMq);
+        return () => mq.removeEventListener("change", onMq);
+    }, []);
 
     const chatsSetter = (prev, newMessage) =>
         prev.map(chat =>
@@ -199,7 +209,7 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
 
     if (chats)
         return (
-            <div className="messages-layout">
+            <div className={`messages-layout${mobileChatOpen ? " messages-layout--mobile-chat" : ""}`}>
                 <aside className="messages-sidebar">
                     <div className="messages-sidebar__title">Сообщения</div>
                     <div className="messages-chat-list">
@@ -215,7 +225,10 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
                                         setActiveChat({...fresh, unread: 0});
 
                                         return prev.map(c => c.id === chat.id ? {...c, unread: 0} : c);
-                                    })
+                                    });
+                                    if (window.matchMedia("(max-width: 991px)").matches) {
+                                        setMobileChatOpen(true);
+                                    }
                                 }}
                             />
                         ))}
@@ -228,11 +241,8 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
                     input={input}
                     setInput={setInput}
                     handleSend={handleSend}
-                    // tracks={trackList}
-                    // onOpenAlbum={(albumId) => {
-                    //     const album = ALBUM_ITEMS.find(a => a.id === albumId);
-                    //     if (album) setActiveAlbum(album);
-                    // }}
+                    showMobileBack={mobileChatOpen}
+                    onMobileBack={() => setMobileChatOpen(false)}
                 />
             </div>
         );

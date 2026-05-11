@@ -3,9 +3,9 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import io from "../server.js"
-import {getTracksBySecret, trackAttributes, trackCountQuery} from "./TrackController.js";
+import {getTracksBySecret, getTracksBySecretFromCache, trackAttributes, trackCountQuery} from "./TrackController.js";
 import {Track} from "../models/Track.ts";
-import {sequelize} from "../models/index.js";
+import {redisClient, sequelize} from "../models/index.js";
 import {literal, sql} from "@sequelize/core";
 import {Message} from "../models/Message.ts";
 import {artistAttributes} from "./ArtistController.js";
@@ -21,7 +21,9 @@ export const userAttributes = [
     'avatar'
 ]
 
-function sendVerificationLink(email) {
+function sendVerificationLink(regData) {
+    const {email} = regData;
+
     const transporter = nodemailer.createTransport({
         host: process.env.MAIL_HOST,
         port: 465,
@@ -32,55 +34,71 @@ function sendVerificationLink(email) {
         }
     })
 
-    const tokenEmailVerify = jwt.sign({ email }, process.env.SECRET_KEY, {
+    const tokenEmailVerify = jwt.sign(regData, process.env.SECRET_KEY, {
         expiresIn: '5m', //для тестов
     })
 
-    const tokenAuth = jwt.sign({ email }, process.env.SECRET_KEY)
+    redisClient
+        .set(`verification:${email}`, 1, { EX: 5 * 60})
+        .catch(err => console.log(err))
 
-    const result = transporter.sendMail({
+    transporter.sendMail({
         from: process.env.MAIL_FROM,
         to: email,
         subject: "Spotify Clone",
         html: `Для подтверждения email перейдите по <a href="${process.env.IP_APP}/api/users/verify-email?token=${tokenEmailVerify}">ссылке</a>`
     })
-
-    return tokenAuth;
+        .then(res => console.log(res))
+        .catch(err => console.log(err))
 }
 
 //TODO: сделать одноразовую ссылку
 const verifyEmail = async (req, res) => {
-    const token = req.query.token;
-
     try {
-        const email = jwt.verify(token, process.env.SECRET_KEY).email;
+        const token = jwt.verify(req.query.token, process.env.SECRET_KEY);
 
+        const verification =
+            await redisClient.get(`verification:${token.email}`)
 
-        io.to(`user:${email}`).emit('email-verified', { message: email });
+        if (!verification) return res.status(400).send({ error: "Ссылка не действительна"})
+
+        let user;
+        await sequelize.transaction(async t => {
+            user = await User.create(token, {transaction: t})
+        })
+
+        io.to(`user:${token.email}`).emit('success-verification')
+
+        redisClient
+            .del(`verification:${token.email}`)
+            .catch(err => console.log(err))
+
         return res.status(200).send({})
     } catch (error) {
-        return res.status(500).send({error: "Token verifying error"});
+        return res.status(400).send({error: "Ссылка не действительна"});
     }
 }
 
 const reg = async (req, res) => {
     const regData = req.body;
 
-    const [user, created] = await User.findOrCreate({
+    const verification =
+        await redisClient.get(`verification:${regData.email}`)
+
+    if (verification) return res.status(409).send({ error: "Ссылка на email уже отправлена"})
+
+    const user = await User.findOne({
             where: {
                 email: regData.email,
-            },
-            defaults: regData
+            }
         }
     )
 
-    if (!created) {
-        console.log(created);
+    if (user) return res.status(409).send({error: "User already exists"});
 
-        return res.status(409).json({})
-    }
+    sendVerificationLink(regData);
 
-    res.status(201).send(sendVerificationLink(regData.email))
+    res.status(201).send({})
 }
 
 const auth = async (req, res) => {
@@ -99,18 +117,14 @@ const auth = async (req, res) => {
     }
 
     const token = jwt.sign(
-        {
-            id: user.id,
-            email: user.email,
-            nickname: user.nickname,
-            avatar: user.avatar
-        },
+        { id: user.id },
         process.env.SECRET_KEY
     )
 
     res.cookie("token", token, {
         httpOnly: true,
         sameSite: "strict",
+        maxAge: 1000 * 60 * 60 * 24 * 7
     })
 
     res.status(200).send({
@@ -199,17 +213,48 @@ const getReleases = async (req, res) => {
 }
 
 const getTracks = async (req, res) => {
-    const user = await getUser(req, res)
+    const favoriteTracks =
+        await redisClient.get(`favoriteTracks:${req.user.id}`)
 
-    const result = await user.getFavoriteTracks({
-        attributes: [
-            ...trackAttributes,
-            [literal(`true`), 'hasInFavorite']
-        ],
-        order: [[literal('"userFavoriteTrack.createdAt"'), 'DESC']]
-    }).then(tracks => getTracksBySecret(req, res, tracks));
+    if (!favoriteTracks) {
+        const user = await getUser(req, res)
 
-    res.status(200).send(result)
+        const result = await user.getFavoriteTracks({
+            attributes: [
+                ...trackAttributes,
+                [literal(`true`), 'hasInFavorite']
+            ],
+            order: [[literal('"userFavoriteTrack.createdAt"'), 'DESC']]
+        }).then(tracks => getTracksBySecret(req, res, tracks));
+
+        redisClient
+            .set(`favoriteTracks:${req.user.id}`, JSON.stringify(result.map(track => track.id)))
+            .catch(err => console.log(err));
+
+        res.status(200).send(result)
+    } else {
+        const favoriteTracksIds = JSON.parse(favoriteTracks)
+
+        const result = await Promise.all(
+            favoriteTracksIds.map(async trackId => {
+                const cached =
+                    await redisClient.get(`track:${trackId}`)
+
+                if (cached) return {...JSON.parse(cached), hasInFavorite: true}
+
+                const track = await Track.findByPk(trackId)
+                if (!track) return null
+
+                redisClient
+                    .set(`track:${trackId}`, JSON.stringify(track.toJSON()))
+                    .catch(err => console.log(err));
+
+                return {...track.toJSON(), hasInFavorite: true};
+            })
+        )
+
+        res.status(200).send(getTracksBySecretFromCache(req, res, result.filter(Boolean)))
+    }
 }
 
 const addFavoriteTrack = async (req, res) => {

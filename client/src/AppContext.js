@@ -5,9 +5,9 @@ const socket = io('ws://localhost:8080');
 const AppContext = createContext(null);
 
 export const AppProvider = ({session, children}) => {
-    const [friends, setFriends] = useState(session.friends);
-    const [incomingRequests, setIncomingRequests] = useState(session.incomingRequests);
-    const [outgoingRequests, setOutgoingRequests] = useState(session.outgoingRequests);
+    const [friends, setFriends] = useState(session?.friends);
+    const [incomingRequests, setIncomingRequests] = useState(session?.incomingRequests);
+    const [outgoingRequests, setOutgoingRequests] = useState(session?.outgoingRequests);
 
     const rejectRequest = (senderId) => setIncomingRequests(prev =>
         prev.filter(r => r.id !== senderId)
@@ -24,7 +24,7 @@ export const AppProvider = ({session, children}) => {
         setOutgoingRequests(prev => prev.filter(r => r.id !== receiverId))
 
     useEffect(() => {
-        socket.emit('identity', session.id)
+        if (session) socket.emit('identity', session.id)
     }, [session]);
 
     return (

@@ -1,5 +1,6 @@
 .mp-root {
-    padding: 32px 36px;
+    padding: clamp(16px, 4vw, 32px) clamp(14px, 4vw, 36px);
+    padding-top: max(16px, calc(env(safe-area-inset-top, 0px) + 12px));
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -19,9 +20,10 @@
 /* ══ Header ══ */
 .mp-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 24px;
+    flex-wrap: wrap;
+    gap: 16px 24px;
 }
 
 .mp-header-left {
@@ -58,7 +60,7 @@
 }
 
 .mp-nickname {
-    font-size: 26px;
+    font-size: clamp(20px, 5vw, 26px);
     font-weight: 700;
     color: #f0f0f0;
     line-height: 1;
@@ -102,6 +104,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 .mp-section-title {
@@ -128,7 +131,7 @@
 .mp-friends-row {
     display: flex;
     gap: 16px;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
 }
 
 .mp-friend-card {
@@ -184,6 +187,28 @@
     display: flex;
     gap: 6px;
     margin-left: auto;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 520px) {
+    .mp-header-left {
+        flex: 1 1 100%;
+    }
+
+    .mp-edit-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .mp-switch-group {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .mp-switch-btn {
+        flex: 1;
+        justify-content: center;
+    }
 }
 
 .mp-switch-btn {

@@ -7,6 +7,8 @@ import dotenv from "dotenv";
 import {Friendship} from "../models/Friendship.ts";
 import {Op} from "@sequelize/core";
 import {User} from "../models/User.ts";
+import {redisClient} from "../models/index.js";
+import {getTracksBySecret, getTracksBySecretFromCache} from "../controllers/TrackController.js";
 
 dotenv.config();
 
@@ -18,36 +20,57 @@ userRouter.post("/auth", UserController.auth);
 userRouter.get("/verify-email", UserController.verifyEmail)
 userRouter.use(authMiddleware)
 userRouter.get('/me', async (req, res) => {
-    const friendships = await Friendship.findAll({
-        where: {
-            [Op.or]: [
-                { sender_id: req.user.id },
-                { receiver_id: req.user.id }
-            ]
-        },
-        include: [
-            { model: User, as: 'sender' , attributes: userAttributes },
-            { model: User, as: 'receiver', attributes: userAttributes }
-        ]
-    })
-
-    const { friends, incomingRequests, outgoingRequests } = friendships.reduce((acc, f) => {
-        if (f.request_accepted) acc.friends.push(f.senderId === req.user.id ? f.receiver : f.sender);
-        else if (f.senderId === req.user.id) acc.outgoingRequests.push(f.receiver)
-        else acc.incomingRequests.push(f.sender)
-
-
-        return acc
-    }, { friends: [], incomingRequests: [], outgoingRequests: [] })
+    const userFriendships = await redisClient.get(`friendships:${req.user.id}`);
+    const userCurrentTrack = await redisClient.get(`currentTrack:${req.user.id}`);
 
     const {iat, ...rest} = req.user
+    let currentTrack = undefined;
 
-    res.status(200).send({
-        ...rest,
-        friends,
-        incomingRequests,
-        outgoingRequests
-    });
+    if (userCurrentTrack) currentTrack = getTracksBySecretFromCache(req, res, [JSON.parse(userCurrentTrack)])[0];
+
+    if (!userFriendships) {
+        const friendships = await Friendship.findAll({
+            where: {
+                [Op.or]: [
+                    { sender_id: rest.id },
+                    { receiver_id: rest.id }
+                ]
+            },
+            include: [
+                { model: User, as: 'sender' , attributes: userAttributes },
+                { model: User, as: 'receiver', attributes: userAttributes }
+            ]
+        })
+
+        const { friends, incomingRequests, outgoingRequests } = friendships.reduce((acc, f) => {
+            if (f.request_accepted) acc.friends.push(f.senderId === rest.id ? f.receiver : f.sender);
+            else if (f.senderId === rest.id) acc.outgoingRequests.push(f.receiver)
+            else acc.incomingRequests.push(f.sender)
+
+
+            return acc
+        }, { friends: [], incomingRequests: [], outgoingRequests: [] })
+
+        await redisClient.set(`friendships:${rest.id}`, JSON.stringify({
+            friends,
+            incomingRequests,
+            outgoingRequests
+        }), { EX: 3600 })
+
+        res.status(200).send({
+            ...rest,
+            friends,
+            incomingRequests,
+            outgoingRequests,
+            currentTrack
+        });
+    } else {
+        res.status(200).send({
+            ...rest,
+            ...JSON.parse(userFriendships),
+            currentTrack
+        })
+    }
 })
 userRouter.delete('/reject/:senderId', UserController.rejectFriendRequest);
 userRouter.post('/accept/:senderId', UserController.acceptFriendRequest);

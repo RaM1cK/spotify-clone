@@ -1,5 +1,6 @@
 .playlist-home {
-    padding: 16px;
+    padding: clamp(12px, 3vw, 20px);
+    box-sizing: border-box;
 }
 
 .playlist-grid {

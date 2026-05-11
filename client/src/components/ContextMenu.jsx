@@ -76,9 +76,6 @@ function ProfileModal({ session, onLogout, onClose, anchorRect, ROUTES_PAGES }) 
     const email     = session.email;
     const avatarUrl = session.avatar;
 
-    const visibleFriends = friends.slice(0, friends.length > 6 ? 5 : 6);
-    const showDots = friends.length > 6;
-
     const handleOverlayClick = (e) => {
         if (e.target === overlayRef.current) onClose();
     };
@@ -89,12 +86,19 @@ function ProfileModal({ session, onLogout, onClose, anchorRect, ROUTES_PAGES }) 
         return () => document.removeEventListener('keydown', onKey);
     }, [onClose]);
 
-    const cardStyle = anchorRect ? {
-        position: 'fixed',
-        left: anchorRect.left,
-        bottom: window.innerHeight - anchorRect.top + 8,
-        width: anchorRect.width,
-    } : {};
+    const cardStyle = anchorRect ? (() => {
+        const vw = window.innerWidth;
+        const gap = 12;
+        const width = Math.min(Math.max(anchorRect.width, 260), vw - gap * 2);
+        const left = Math.max(gap, Math.min(anchorRect.left, vw - width - gap));
+        return {
+            position: 'fixed',
+            left,
+            bottom: window.innerHeight - anchorRect.top + 8,
+            width,
+            maxWidth: `calc(100vw - ${gap * 2}px)`,
+        };
+    })() : {};
 
     return (
         <div className="pm-overlay pm-overlay--anchored" ref={overlayRef} onClick={handleOverlayClick}>
@@ -200,8 +204,8 @@ export default function ContextMenu({ PAGES, menuOpen, setMenuOpen, onLogout, RO
     const [profileOpen, setProfileOpen] = useState(false);
     const panelRef = useRef(null);
 
-    const username  = session?.nickname || "Пользователь";
-    const avatarUrl = session?.avatar   || session?.avatarUrl || null;
+    const username  = session?.nickname;
+    const avatarUrl = session?.avatar;
 
     const handleOpenProfile = () => {
         setProfileOpen(true);

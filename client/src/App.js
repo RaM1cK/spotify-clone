@@ -10,7 +10,6 @@ import ContextMenu from "./components/ContextMenu";
 import testpage from "./components/pages/testpage";
 import MenuButton from "./components/MenuButton";
 import Messages from "./components/pages/Messager/Messages";
-import SearchBar from "./components/SearchBar";
 import {AppProvider, useSession, useSocket} from "./AppContext";
 import MyProfile from "./components/pages/MyProfile";
 
@@ -43,24 +42,10 @@ function AppLayout({ setCurrentTrack, currentTrack, menuOpen, setMenuOpen, onLog
     }, []);
 
     return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: "column",
-                height: "100vh",
-                overflow: "hidden",
-            }}
-        >
+        <div className="app-root">
             <MenuButton menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
 
-            <div
-                style={{
-                    display: "flex",
-                    flex: 1,
-                    overflow: "hidden",
-                    minHeight: 0,
-                }}
-            >
+            <div className="app-body">
                 <ContextMenu
                     PAGES={PAGES}
                     ROUTES_PAGES = {ROUTES_PAGES}
@@ -69,26 +54,8 @@ function AppLayout({ setCurrentTrack, currentTrack, menuOpen, setMenuOpen, onLog
                     onLogout={onLogout}
                 />
 
-                <main
-                    style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        flex: 1,
-                        minHeight: 0,
-                        overflow: "hidden",
-                    }}
-                >
-                    <div
-                        style={{
-                            margin: "12px",
-                            border: "1px solid rgba(255, 255, 255, 0.2)",
-                            borderRadius: "12px",
-                            backgroundColor: "rgba(255, 255, 255, 0.07)",
-                            flex: 1,
-                            minHeight: 0,
-                            overflowY: "auto",
-                        }}
-                    >
+                <main className="app-main">
+                    <div className="app-content">
                         <Routes>
                             {ROUTES_PAGES.map(({ path, component: Component }) => (
                                 <Route
@@ -117,25 +84,33 @@ function App() {
     const [menuOpen, setMenuOpen] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    const handleAuth = () => {
+    const handleAuth = () =>
         axios.get(`/api/users/me`)
-            .then(res => setSession(res.data));
-    };
+            .then(res => {
+                setSession(res.data)
+                setCurrentTrack(res.data.currentTrack)
+            })
+            .catch(() => setSession(null))
+            .finally(() => setLoading(false));
 
     const handleLogout = () => {
         axios.post('/api/users/logout')
-            .then(() => setSession(null));
+            .then(() => {
+                setSession(null)
+                setCurrentTrack(null);
+            });
     };
 
     useEffect(() => {
-        axios.get(`/api/users/me`)
-            .then(res => setSession(res.data))
-            .catch(() => setSession(null))
-            .finally(() => setLoading(false));
+        handleAuth()
     }, []);
 
     if (loading) return <div>Загрузка...</div>;
-    if (!session) return <AuthPage onAuth={handleAuth} />;
+    if (!session)
+        return <AppProvider session={session}>;
+                <AuthPage onAuth={handleAuth} setSession={setSession} />
+            </AppProvider>
+
 
     return (
         <BrowserRouter>

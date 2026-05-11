@@ -1,10 +1,10 @@
 import React, {useRef, useState} from "react";
-import { Music } from "lucide-react";
+import { Music, ChevronLeft } from "lucide-react";
 import TrackMessage from "./TrackMessage";
 import {useSession} from "../../../AppContext";
 
 const ChatWindow = ({ activeChat, input, setInput, handleSend,
-                        // tracks, onOpenAlbum
+                        showMobileBack, onMobileBack,
 }) => {
     const [showTrackPicker, setShowTrackPicker] = useState(false);
     const session = useSession();
@@ -23,6 +23,16 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
     return (
         <div className="messages-chat">
             <div className="messages-chat-header">
+                {showMobileBack && (
+                    <button
+                        type="button"
+                        className="messages-chat-back"
+                        aria-label="К списку чатов"
+                        onClick={() => onMobileBack?.()}
+                    >
+                        <ChevronLeft size={22} />
+                    </button>
+                )}
                 <div className="messages-avatar">{activeChat.avatar}</div>
                 <span className="messages-chat-name">{activeChat.name}</span>
             </div>

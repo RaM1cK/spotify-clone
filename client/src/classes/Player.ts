@@ -121,7 +121,7 @@ export class Player implements Subject {
 
                 this._lastPosition = current
             }
-        }, 500)
+        }, 1000)
     }
 
     private stopBufferWatch() {
@@ -132,37 +132,44 @@ export class Player implements Subject {
     }
 
     private handleError(track: any) {
-        const position = this.howl?.seek() ?? 0
+        const position = this.howl?.seek()
 
         setTimeout(() => {
-            this.setHowl(track, position)
+            this.setHowl(track, position, true)
         }, 2000)
     }
 
-    private setHowl(track: any, startFrom: number = 0): void {
+    private setHowl(track: any, startFrom: number = 0, autoplay: boolean = true) {
         this.stop()
 
-        if (this.howl) this.howl.unload()
+        this.howl?.unload()
         this._lastPositionOnLoading = -1
         this.stopBufferWatch()
-
         this.state = new LoadingState()
         this.notify()
 
+        const params = new URLSearchParams({
+            token: track.token,
+            duration: track.duration
+        })
+
         this.howl = new Howl({
-            src: [`/api/tracks?token=${track.token}`],
+            src: [`/api/tracks?${params.toString()}`],
             format: ['mp3', 'flac'],
             volume: 1,
             loop: false,
             html5: true,
-            autoplay: true,
             onload: () => {
-                this.state = new PlayingState();
+                console.log('loaded')
 
                 if (startFrom > 0) this.howl!.seek(startFrom)
                 else if (this._lastPositionOnLoading !== -1) this.howl!.seek(this._lastPositionOnLoading)
 
-                this.notify()
+                if (autoplay) this.play()
+                else {
+                    this.pause()
+                }
+
                 this.updateMediaSession(track)
                 this.startBufferWatch()
             },
@@ -269,9 +276,9 @@ export class Player implements Subject {
         this.notify()
     }
 
-    public setTrack(track: Track, queue: Track[]) {
+    public setTrack(track: any, queue: any[], autoplay: boolean = true) {
         this._strategy.execute(track, queue);
-        this.setHowl(track);
+        this.setHowl(track, track.start ? track.start : 0, autoplay);
     }
 
     public setStrategy(strategy: string) {

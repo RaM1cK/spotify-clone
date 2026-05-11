@@ -1,7 +1,7 @@
 .MainDiv {
-    width: 300px;
     flex-shrink: 0;
     display: flex;
+    background: black;
     flex-direction: column;
     padding-left: 5px;
     padding-top: 22px;
@@ -21,7 +21,7 @@
     background-color: transparent;
     border: none;
     font-family: 'Segoe UI', system-ui, sans-serif;
-    font-size: 22px;
+    font-size: clamp(17px, 2.8vw, 22px);
     position: relative;
     cursor: pointer;
     text-align: left;
@@ -58,7 +58,7 @@
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.08);
     gap: 6px;
-    font-size: 22px;
+    font-size: clamp(15px, 3.5vw, 22px);
     height: 4em;
     cursor: pointer;
     transition: background 0.15s ease;
@@ -108,7 +108,7 @@
 .user-name {
     color: #e2e2e2;
     font-family: 'Segoe UI', system-ui, sans-serif;
-    font-size: 18px;
+    font-size: clamp(14px, 3vw, 18px);
     font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
@@ -171,7 +171,8 @@
 ══════════════════════════════════════ */
 
 .pm-card {
-    width: 340px;
+    width: min(340px, calc(100vw - 24px));
+    max-width: 100%;
     background: #1a1b23;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 16px;

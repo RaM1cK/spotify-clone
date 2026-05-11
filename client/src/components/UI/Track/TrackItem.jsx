@@ -92,7 +92,7 @@ function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange })
                             {isPlaying ? <Pause size={20}/> : <Play size={20}/>}
                         </div>
                     </div>
-                    <div className="d-flex flex-column justify-content-between">
+                    <div className="track-item__info d-flex flex-column justify-content-between">
                         <span className="track-item__title">{track.title}</span>
                         <span className="track-item__artist">{track.artist}</span>
                     </div>
