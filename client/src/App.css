@@ -87,7 +87,7 @@ body {
 }
 
 #root {
-    height: 100%;
+    height: 100dvh;
 }
 
 .context-menu.MainDiv {

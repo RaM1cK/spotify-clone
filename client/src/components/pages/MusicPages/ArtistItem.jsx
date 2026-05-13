@@ -7,6 +7,7 @@ import TrackList from "../../UI/TrackList/TrackList";
 import {Player} from "../../../classes/Player.ts";
 import usePlayerState from "../../../hooks/usePlayerState";
 import axios from "axios";
+import {LoadingPage} from "../LoadingPage";
 
 const declension = (n) => {
     if (n % 10 === 1 && n % 100 !== 11) return "трек";
@@ -54,7 +55,7 @@ const ArtistMain = ({ artist, setCurrentTrack }) => {
         }
     };
 
-    if (loading) return <div>Загрузка...</div>
+    if (loading) return <LoadingPage/>;
     if (error) return <div>{error}</div>;
 
     if (tracks && albums)
@@ -149,7 +150,7 @@ const ArtistItem = ({ setCurrentTrack }) => {
             .finally(() => setLoading(false));
     }, [])
 
-    if (loading) return <div>Загрузка...</div>;
+    if (loading) return <LoadingPage/>;
     if (error) return <div>{error}</div>;
 
     if (artist)

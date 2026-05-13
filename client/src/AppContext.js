@@ -23,6 +23,9 @@ export const AppProvider = ({session, children}) => {
     const cancelRequest = (receiverId) =>
         setOutgoingRequests(prev => prev.filter(r => r.id !== receiverId))
 
+    const sendRequest = (user) =>
+        setOutgoingRequests(prev => [user, ...prev])
+
     useEffect(() => {
         if (session) socket.emit('identity', session.id)
     }, [session]);
@@ -30,7 +33,7 @@ export const AppProvider = ({session, children}) => {
     return (
         <AppContext.Provider value={{
             socket, session, friends, incomingRequests, outgoingRequests,
-            acceptRequest, rejectRequest, cancelRequest
+            acceptRequest, rejectRequest, cancelRequest, sendRequest
         }}>
             {children}
         </AppContext.Provider>
@@ -43,7 +46,7 @@ export const useFriends = () => useContext(AppContext).friends;
 export const useIncomingRequests = () => useContext(AppContext).incomingRequests;
 export const useOutgoingRequests = () => useContext(AppContext).outgoingRequests;
 export const useFriendRequestActions = () => {
-    const {acceptRequest, rejectRequest, cancelRequest} = useContext(AppContext);
+    const {acceptRequest, rejectRequest, cancelRequest, sendRequest} = useContext(AppContext);
 
-    return {acceptRequest, rejectRequest, cancelRequest};
+    return {acceptRequest, rejectRequest, cancelRequest, sendRequest};
 }

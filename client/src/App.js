@@ -12,6 +12,7 @@ import MenuButton from "./components/MenuButton";
 import Messages from "./components/pages/Messager/Messages";
 import {AppProvider, useSession, useSocket} from "./AppContext";
 import MyProfile from "./components/pages/MyProfile";
+import {LoadingPage} from "./components/pages/LoadingPage";
 
 
 const PAGES = [
@@ -88,6 +89,7 @@ function App() {
         axios.get(`/api/users/me`)
             .then(res => {
                 setSession(res.data)
+                console.log(res.data)
                 setCurrentTrack(res.data.currentTrack)
             })
             .catch(() => setSession(null))
@@ -105,7 +107,8 @@ function App() {
         handleAuth()
     }, []);
 
-    if (loading) return <div>Загрузка...</div>;
+    if (loading) return <LoadingPage/>;
+
     if (!session)
         return <AppProvider session={session}>;
                 <AuthPage onAuth={handleAuth} setSession={setSession} />

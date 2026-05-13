@@ -5,6 +5,7 @@ import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-do
 import "./ArtistMenu.css";
 import ArtistItem from "./ArtistItem";
 import axios from "axios";
+import {LoadingPage} from "../LoadingPage";
 
 const declension = (n) => {
     if (n % 10 === 1 && n % 100 !== 11) return "трек";
@@ -28,7 +29,7 @@ const ArtistList = ({ RollBack }) => {
     const getCount = (artistId) =>
         artists.find(artist => artist.id === artistId).trackCount;
 
-    if (loading) return <div>Загрузка...</div>
+    if (loading) return <LoadingPage/>;
     if (error) return <div>{error}</div>;
 
     if (artists)

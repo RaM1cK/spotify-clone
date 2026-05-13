@@ -6,7 +6,7 @@ import io from "../server.js"
 import {getTracksBySecret, getTracksBySecretFromCache, trackAttributes, trackCountQuery} from "./TrackController.js";
 import {Track} from "../models/Track.ts";
 import {redisClient, sequelize} from "../models/index.js";
-import {literal, sql} from "@sequelize/core";
+import {literal, sql, Op} from "@sequelize/core";
 import {Message} from "../models/Message.ts";
 import {artistAttributes} from "./ArtistController.js";
 import {playlistAttributes} from "./PlaylistController.js";
@@ -42,6 +42,8 @@ function sendVerificationLink(regData) {
         .set(`verification:${email}`, 1, { EX: 5 * 60})
         .catch(err => console.log(err))
 
+    console.log(`${process.env.IP_APP}/api/users/verify-email?token=${tokenEmailVerify}`)
+
     transporter.sendMail({
         from: process.env.MAIL_FROM,
         to: email,
@@ -52,7 +54,6 @@ function sendVerificationLink(regData) {
         .catch(err => console.log(err))
 }
 
-//TODO: сделать одноразовую ссылку
 const verifyEmail = async (req, res) => {
     try {
         const token = jwt.verify(req.query.token, process.env.SECRET_KEY);
@@ -178,18 +179,17 @@ export const getUser = async (req, res) => {
 const getUsersByNickname = async (req, res) => {
     const nickname = req.body.nickname
 
-    const user = await User.findAll({
-        where: { nickname },
+    const users = await User.findAll({
+        where: {
+            nickname: { [Op.iLike]: `%${nickname}%` },
+            id: { [Op.ne]: req.user.id }
+        },
         attributes: {
             exclude: ['password_hash', 'createdAt', 'updatedAt'],
         }
     })
 
-    if (!user) {
-        return res.status(404).json({})
-    } else {
-        return res.status(200).send(user)
-    }
+    return res.status(200).send(users)
 }
 
 const getReleases = async (req, res) => {
@@ -228,7 +228,7 @@ const getTracks = async (req, res) => {
         }).then(tracks => getTracksBySecret(req, res, tracks));
 
         redisClient
-            .set(`favoriteTracks:${req.user.id}`, JSON.stringify(result.map(track => track.id)))
+            .set(`favoriteTracks:${req.user.id}`, JSON.stringify(result.map(track => track.id)), { EX: 3600})
             .catch(err => console.log(err));
 
         res.status(200).send(result)
@@ -246,7 +246,7 @@ const getTracks = async (req, res) => {
                 if (!track) return null
 
                 redisClient
-                    .set(`track:${trackId}`, JSON.stringify(track.toJSON()))
+                    .set(`track:${trackId}`, JSON.stringify(track.toJSON()), { EX: 3600 })
                     .catch(err => console.log(err));
 
                 return {...track.toJSON(), hasInFavorite: true};
@@ -266,6 +266,10 @@ const addFavoriteTrack = async (req, res) => {
             await user.addFavoriteTrack(trackId, { transaction: t });
         });
 
+        redisClient
+            .del(`favoriteTracks:${req.user.id}`)
+            .catch(err => console.log(err));
+
         return res.status(200).send({});
     } catch {
         return res.status(500).send({});
@@ -280,6 +284,10 @@ const removeFavoriteTrack = async (req, res) => {
         await sequelize.transaction(async t => {
             await user.removeFavoriteTrack(trackId, { transaction: t });
         });
+
+        redisClient
+            .del(`favoriteTracks:${req.user.id}`)
+            .catch(err => console.log(err));
 
         return res.status(200).send({});
     } catch {
@@ -330,12 +338,33 @@ const getChats = async (req, res) => {
         attributes: {
             exclude: ['createdAt', 'updatedAt']
         },
-        include: {
-            model: Message, as: 'messages'
-        }
+        include: [
+            {
+                model: Message,
+                as: 'messages',
+                separate: true,
+                include: {
+                    model: Message,
+                    as: 'quotedMessage',
+                    attributes: ['id', 'data', 'senderId', 'createdAt', 'dataType']
+                }
+            },
+            {
+                model: User,
+                as: 'users',
+                attributes: userAttributes,
+                through: { attributes: [] }
+            }
+        ]
     })
 
-    res.status(200).send(result)
+    res.status(200).send(
+        result.map(chat => {
+            const {userChat, ...rest} = chat.toJSON();
+
+            return rest;
+        })
+    )
 }
 
 const acceptFriendRequest = async (req, res) => {
@@ -357,6 +386,10 @@ const acceptFriendRequest = async (req, res) => {
             )
         })
 
+        redisClient
+            .del([`friendships:${req.user.id}`, `friendships:${senderId}`])
+            .catch(err => console.log(err));
+
         return res.status(200).send({});
     } catch (error) {
         return res.status(500).send({});
@@ -376,6 +409,10 @@ const rejectFriendRequest = async (req, res) => {
                 transaction: t
             })
         })
+
+        redisClient
+            .del([`friendships:${req.user.id}`, `friendships:${senderId}`])
+            .catch(err => console.log(err));
 
         return res.status(200).send({});
     } catch (error) {
@@ -397,9 +434,35 @@ const cancelFriendRequest = async (req, res) => {
             })
         })
 
+        redisClient
+            .del([`friendships:${req.user.id}`, `friendships:${receiverId}`])
+            .catch(err => console.log(err));
+
         return res.status(200).send({});
     } catch (error) {
         return res.status(500).send({});
+    }
+}
+
+const sendFriendRequest = async (req, res) => {
+    const receiverId = req.params.receiverId
+
+    try {
+        await sequelize.transaction(async t => {
+            await Friendship.create({
+                senderId: req.user.id,
+                receiverId,
+                request_accepted: false
+            }, { transaction: t })
+        })
+
+        redisClient
+            .del([`friendships:${req.user.id}`, `friendships:${receiverId}`])
+            .catch(err => console.log(err))
+
+        return res.status(200).send({})
+    } catch (error) {
+        return res.status(500).send({})
     }
 }
 
@@ -420,4 +483,5 @@ export default {
     acceptFriendRequest,
     rejectFriendRequest,
     cancelFriendRequest,
+    sendFriendRequest,
 }

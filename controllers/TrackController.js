@@ -68,7 +68,7 @@ export const getTracksBySecret = (req, res, tracks) => {
         } = track.toJSON()
 
         redisClient
-            .set(`track:${track.id}`, JSON.stringify({...rest, uri}))
+            .set(`track:${track.id}`, JSON.stringify({...rest, uri}), { EX: 3600})
             .catch(err => console.log(err));
 
         return {

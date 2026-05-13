@@ -43,19 +43,23 @@ userRouter.get('/me', async (req, res) => {
         })
 
         const { friends, incomingRequests, outgoingRequests } = friendships.reduce((acc, f) => {
-            if (f.request_accepted) acc.friends.push(f.senderId === rest.id ? f.receiver : f.sender);
-            else if (f.senderId === rest.id) acc.outgoingRequests.push(f.receiver)
-            else acc.incomingRequests.push(f.sender)
+            if (f.request_accepted)
+                acc.friends.push(f.senderId === rest.id ? f.receiver : f.sender);
+            else if (f.senderId === rest.id)
+                acc.outgoingRequests.push(f.receiver)
+            else
+                acc.incomingRequests.push(f.sender)
 
 
             return acc
         }, { friends: [], incomingRequests: [], outgoingRequests: [] })
 
-        await redisClient.set(`friendships:${rest.id}`, JSON.stringify({
+        redisClient.set(`friendships:${rest.id}`, JSON.stringify({
             friends,
             incomingRequests,
             outgoingRequests
         }), { EX: 3600 })
+            .catch(err => console.log(err));
 
         res.status(200).send({
             ...rest,
@@ -75,6 +79,7 @@ userRouter.get('/me', async (req, res) => {
 userRouter.delete('/reject/:senderId', UserController.rejectFriendRequest);
 userRouter.post('/accept/:senderId', UserController.acceptFriendRequest);
 userRouter.delete('/cancel/:receiverId', UserController.cancelFriendRequest);
+userRouter.post('/send-request/:receiverId', UserController.sendFriendRequest);
 userRouter.post('/logout', UserController.logout);
 userRouter.post("/get-users", UserController.getUsersByNickname);
 userRouter.get('/:userId', async (req, res) => {
