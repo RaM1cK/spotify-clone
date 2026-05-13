@@ -7,7 +7,7 @@ import {fileURLToPath} from 'url';
 import socket from './controllers/ChatController.js'
 import TrackRouter from './routers/TrackRouter.js';
 import dotenv from 'dotenv';
-import {sequelize} from './models/index.js';
+import {redisClient, sequelize} from './models/index.js';
 import {User} from "./models/User.ts";
 import UserRouter from "./routers/UserRouter.js";
 import ReleaseRouter from "./routers/ReleaseRouter.js";
@@ -22,6 +22,7 @@ import {Playlist} from "./models/Playlist.ts";
 import PlaylistRouter from "./routers/PlaylistRouter.js";
 import {Friendship} from "./models/Friendship.ts";
 import {Chat} from "./models/Chat.ts";
+import {Resend} from "resend";
 //import {Composition, Track} from "./models/Track.ts";
 
 dotenv.config();
@@ -33,10 +34,8 @@ const SERVER_PORT = process.env.SERVER_PORT;
 export const __filename = fileURLToPath(import.meta.url);
 export const __dirname = path.dirname(__filename);
 
-axios.defaults.withCredentials = true;
-
 app.use(cors({
-    origin: "http://localhost:3000",
+    origin: IP_APP,
     credentials: true,
 }));
 app.use(express.json());
@@ -54,7 +53,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:3000", //при деплое изменить
+        origin: IP_APP, //при деплое изменить
         methods: ["GET", "POST"],
     },
     pingInterval: 25000,
@@ -66,37 +65,11 @@ try {
     console.log('Connected');
     // await sequelize.sync({alter: true});
 
-    // await sequelize.transaction(async t => {
-        // // await Friendship.create({
-        // //     senderId: user1.id,
-        // //     receiverId: user2.id,
-        // // }, { transaction: t})
-        //
-        // // await Friendship.update(
-        // //     { request_accepted: true},
-        // //     {
-        // //         where: {
-        // //             senderId: user1.id,
-        // //             receiverId: user2.id,
-        // //         },
-        // //         transaction: t
-        // //     }
-        // // )
-        //
-
-        // const chat = await Chat.findByPk('adc5f5b0-4a76-485c-9aef-cc903bd92c84')
-        //
-        // await chat.createMessage({
-        //     senderId: 'c76fd9c8-d804-4742-a0f4-a4f169028ed7',
-        //     chatId: 'adc5f5b0-4a76-485c-9aef-cc903bd92c84',
-        //     dataType: 0,
-        //     data: 'Test Message'
-        // }, {transaction: t})
-    // })
-
+    await redisClient.connect()
 } catch (err) {
     console.error(err);
     await sequelize.close();
+    await redisClient.close();
 }
 
 socket(io)

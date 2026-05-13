@@ -5,6 +5,7 @@ import "./Player.css"
 import {Player as pl} from "../../../classes/Player.ts";
 import RangeTrack from "./rangeTrack";
 import {PlayerUI} from "../../../classes/observers/PlayerUI.ts";
+import axios from "axios";
 
 const Player = ({track, setTrack}) => {
     const intervalRef = useRef(null);
@@ -18,24 +19,35 @@ const Player = ({track, setTrack}) => {
         "loopTrack": "noneLoop"
     }
 
-    //const [track, setTrack] = useState(undefined);
-    //перенес в app чтобы плеера не было, пока нет проигрываемого трека
-
     const [disabledPlayer, setDisabledPlayer] = useState(true);
     const [playing, setPlaying] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [position, setPosition] = useState(0);
+    const positionRef = useRef(0);
     const [duration, setDuration] = useState(0);
+
+    useEffect(() => {
+        positionRef.current = position;
+    }, [position]);
+
 
     useEffect(() => {
         const playerObserver = new PlayerUI(() => {
             setPlaying(player.isPlaying());
             setLoading(player.isLoading())
             setDisabledPlayer(player.isLoading())
+            setPosition(player.seek())
             if (player.track) {
                 setTrack(player.track);
                 setDuration(player.track.duration);
             }
-        },[])
+        })
+
+        if (track) {
+            setDuration(track.duration);
+            setPosition(Math.floor(track.start));
+            player.setTrack(track, [track], false)
+        }
 
         player.attach(playerObserver);
 
@@ -45,6 +57,28 @@ const Player = ({track, setTrack}) => {
             clearInterval(intervalRef.current);
         }
     }, [])
+
+    useEffect(() => {
+        const handleUnload = () => {
+            if (track) {
+                const data = new Blob(
+                    [JSON.stringify({
+                        token: track.token,
+                        position: positionRef.current
+                    })],
+                    { type: "application/json" }
+                );
+
+                navigator.sendBeacon("/api/tracks/position", data);
+            }
+        };
+
+        window.addEventListener("beforeunload", handleUnload);
+
+        return () => {
+            window.removeEventListener("beforeunload", handleUnload);
+        };
+    }, [track]);
 
     const handleRepeat = () => {
         const tempState = chainLoopStates[loopState]
@@ -63,12 +97,15 @@ const Player = ({track, setTrack}) => {
                     visibility: track ? "visible" : "hidden",
                     height: track ? "auto" : 0,
                     width: '100%',
-                    overflow: "hidden"
+                    overflowX: "hidden",
+                    overflowY: "visible"
             }}
             >
                 <RangeTrack
                     duration={duration}
                     playing={playing}
+                    position={position}
+                    setPosition={setPosition}
                     intervalRef={intervalRef}
 
                 />

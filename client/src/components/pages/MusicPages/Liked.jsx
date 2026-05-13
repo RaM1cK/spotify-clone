@@ -6,6 +6,7 @@ import {MoreHorizontal, Pause, Play, ChevronLeft} from "lucide-react";
 import {Player} from "../../../classes/Player.ts";
 import usePlayerState from '../../../hooks/usePlayerState';
 import axios from "axios";
+import {LoadingPage} from "../LoadingPage";
 
 const getWordForm = (count) => {
     const lastTwo = count % 100;
@@ -41,12 +42,13 @@ const Liked = ({setCurrentTrack, RollBack}) => {
     const player = React.useRef(Player.getInstance()).current;
     const [Tracks, setTracks] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState(null);
     const isPlaying = usePlayerState(player, Tracks);
 
     useEffect(() => {
         axios.get('/api/users/me/favoriteTracks')
             .then(res =>  setTracks(res.data))
-            .catch(err => console.error(err))
+            .catch(() =>  setError('Ошибка загрузки'))
             .finally(() => setLoading(false));
     }, []);
 
@@ -56,7 +58,10 @@ const Liked = ({setCurrentTrack, RollBack}) => {
         }
     }
 
-    if (!loading) {
+    if (loading) return <LoadingPage/>;
+    if (error) return <div>{error}</div>
+
+    if (Tracks) {
         const handlePlay = () => {
             const queue = player.queue;
             const isSameQueue = queue.length === Tracks.length &&

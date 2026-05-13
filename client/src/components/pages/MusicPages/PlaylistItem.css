@@ -1,23 +1,26 @@
 .liked {
     container-type: inline-size;
-    padding: 32px;
+    padding: clamp(10px, 3vw, 32px);
     padding-bottom: 0;
+    box-sizing: border-box;
 }
 
 .liked-header {
-    padding: 10px;
+    padding: 10px 0;
     display: flex;
     justify-content: flex-start;
-    align-items: center;
-    gap: 30px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: clamp(14px, 4vw, 30px);
     height: auto;
-    margin-bottom: 40px;
+    margin-bottom: clamp(20px, 6vw, 40px);
 }
 
 .playlist-logo {
     width: auto;
-    max-height: 260px;
+    max-height: min(260px, 42vw);
     min-width: 60px;
+    max-width: min(260px, 42vw);
     aspect-ratio: 1 / 1;
     object-fit: cover;
     flex-shrink: 0;

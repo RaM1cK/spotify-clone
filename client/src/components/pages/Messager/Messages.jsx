@@ -4,6 +4,7 @@ import ChatItem from "./ChatItem";
 import ChatWindow from "./ChatWindow";
 import axios from "axios";
 import {useSession, useSocket} from "../../../AppContext";
+import {LoadingPage} from "../LoadingPage";
 
 const MOCK_CHATS = [
     {
@@ -66,12 +67,23 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
     const session = useSession();
 
     const [chats, setChats] = useState(null);
+    const [replyTo, setReplyTo] = useState(null);
     const [activeChat, setActiveChat] = useState(null);
+    const [mobileChatOpen, setMobileChatOpen] = useState(false);
     const [input, setInput] = useState("");
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const activeChatRef = useRef(activeChat);
+
+    useEffect(() => {
+        const mq = window.matchMedia("(max-width: 991px)");
+        const onMq = () => {
+            if (!mq.matches) setMobileChatOpen(false);
+        };
+        mq.addEventListener("change", onMq);
+        return () => mq.removeEventListener("change", onMq);
+    }, []);
 
     const chatsSetter = (prev, newMessage) =>
         prev.map(chat =>
@@ -91,7 +103,7 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
 
     const setLastMessage = (prev, newMessage) =>
         prev.map(chat =>
-            chat?.id !== newMessage?.chatId ? chat.id : {
+            chat?.id !== newMessage?.chatId ? chat : {
                 ...chat,
                 lastMessage: newMessage.data,
             }
@@ -156,50 +168,26 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
             chatId: activeChat.id,
             data:  text.trim(),
             dataType: 0,
+            quotedId: replyTo?.id,
             createdAt: new Date()
         };
 
         setInput("");
+        setReplyTo(null)
 
         socket.emit('send-message', {
             room: activeChat.id,
             msg: newMessage
         });
 
-        // setTimeout(() => {
-        //     const reply = {
-        //         id: Date.now() + 1,
-        //         from: "them",
-        //         text: "Хорошо",
-        //         time: new Date().toLocaleTimeString(navigator.language, { hour: "2-digit", minute: "2-digit" }),
-        //     };
-        //     setChats((prev) =>
-        //         prev.map((chat) => {
-        //             if (chat.id !== sentChatId) return chat;
-        //
-        //             const isOpen = activeChatRef.current?.id === chat.id;
-        //             console.log(isOpen);
-        //             const updated = {
-        //                 ...chat,
-        //                 messages: [...chat.messages, reply],
-        //                 lastMessage: reply.text,
-        //                 time: reply.time,
-        //                 unread: isOpen ? chat.unread : chat.unread + 1
-        //             };
-        //
-        //             if (isOpen) setActiveChat(updated);
-        //             return updated;
-        //         })
-        //     );
-        // }, 1000);
     };
 
-    if (loading) return <div>Загрузка...</div>
+    if (loading) return <LoadingPage/>;
     if (error) return <div>{error}</div>;
 
     if (chats)
         return (
-            <div className="messages-layout">
+            <div className={`messages-layout${mobileChatOpen ? " messages-layout--mobile-chat" : ""}`}>
                 <aside className="messages-sidebar">
                     <div className="messages-sidebar__title">Сообщения</div>
                     <div className="messages-chat-list">
@@ -215,7 +203,10 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
                                         setActiveChat({...fresh, unread: 0});
 
                                         return prev.map(c => c.id === chat.id ? {...c, unread: 0} : c);
-                                    })
+                                    });
+                                    if (window.matchMedia("(max-width: 991px)").matches) {
+                                        setMobileChatOpen(true);
+                                    }
                                 }}
                             />
                         ))}
@@ -227,12 +218,11 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
                     activeChat={activeChat}
                     input={input}
                     setInput={setInput}
+                    replyTo={replyTo}
+                    setReplyTo={setReplyTo}
                     handleSend={handleSend}
-                    // tracks={trackList}
-                    // onOpenAlbum={(albumId) => {
-                    //     const album = ALBUM_ITEMS.find(a => a.id === albumId);
-                    //     if (album) setActiveAlbum(album);
-                    // }}
+                    showMobileBack={mobileChatOpen}
+                    onMobileBack={() => setMobileChatOpen(false)}
                 />
             </div>
         );

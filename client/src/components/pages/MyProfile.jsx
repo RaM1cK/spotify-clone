@@ -1,6 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useSession } from '../../AppContext';
+import React, {useState, useRef, useEffect} from 'react';
+import {
+    useFriendRequestActions,
+    useFriends,
+    useIncomingRequests,
+    useOutgoingRequests,
+    useSession
+} from '../../AppContext';
 import './MyProfile.css';
+import axios from "axios";
 
 /* ── Icons ── */
 function UserIcon({ size = 40 }) {
@@ -71,13 +78,15 @@ function FriendCard({ friend }) {
                     : <UserIcon size={24} />
                 }
             </div>
-            <span className="mp-friend-nick">{friend.nickname || 'User'}</span>
+            <span className="mp-friend-nick">{friend.nickname}</span>
         </div>
     );
 }
 
 /* ── Request Card ── */
 function RequestCard({ req, type }) {
+    const {acceptRequest, rejectRequest, cancelRequest} = useFriendRequestActions()
+
     return (
         <div className="mp-request-card">
             <div className="mp-request-avatar">
@@ -86,16 +95,43 @@ function RequestCard({ req, type }) {
                     : <UserIcon size={20} />
                 }
             </div>
-            <span className="mp-request-nick">{req.nickname || 'User'}</span>
+            <span className="mp-request-nick">{req.nickname}</span>
             {type === 'incoming' && (
                 <div className="mp-request-actions">
-                    <button className="mp-req-btn mp-req-btn--accept"><CheckIcon /></button>
-                    <button className="mp-req-btn mp-req-btn--decline"><XIcon /></button>
+                    <button
+                        className="mp-req-btn mp-req-btn--accept"
+                        onClick={() => {
+                            axios.post(`/api/users/accept/${req.id}`)
+                                .then(() => acceptRequest(req.id))
+                                .catch(err => console.error(err))
+                        }}
+                    >
+                        <CheckIcon />
+                    </button>
+                    <button
+                        className="mp-req-btn mp-req-btn--decline"
+                        onClick={() => {
+                            axios.delete(`/api/users/reject/${req.id}`)
+                                .then(() => rejectRequest(req.id))
+                                .catch(err => console.error(err));
+                        }}
+                    >
+                        <XIcon />
+                    </button>
                 </div>
             )}
             {type === 'outgoing' && (
                 <div className="mp-request-actions">
-                    <button className="mp-req-btn mp-req-btn--cancel"><XIcon />Отменить</button>
+                    <button
+                        className="mp-req-btn mp-req-btn--cancel"
+                        onClick={() => {
+                            axios.delete(`/api/users/cancel/${req.id}`)
+                                .then(() => cancelRequest(req.id))
+                                .catch(err => console.error(err));
+                        }}
+                    >
+                        <XIcon />Отменить
+                    </button>
                 </div>
             )}
         </div>
@@ -105,24 +141,14 @@ function RequestCard({ req, type }) {
 /* ── Main Component ── */
 export default function MyProfile() {
     const session = useSession();
-    const [requestsTab, setRequestsTab] = useState(null); // null | 'incoming' | 'outgoing'
+    const [requestsTab, setRequestsTab] = useState('incoming'); // null | 'incoming' | 'outgoing'
+    const friends = useFriends()
+    const incomingRequests = useIncomingRequests();
+    const outgoingRequests = useOutgoingRequests()
 
-    const nickname  = session?.nickname || 'Пользователь';
-    const email     = session?.email    || 'user@example.com';
-    const avatarUrl = session?.avatar   || session?.avatarUrl || null;
-    const friends   = session?.friends  || [{avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"},
-        {avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"},
-        {avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"},
-        {avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"},
-        {avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"},
-        {avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"},
-        {avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"},
-        {avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-Vek7QsauspkcdTMgCfRX8TdM_3u0M7NrnQ&s", nickname: "Газан"}
-
-    ];
-    const incomingRequests = session?.incomingRequests || [];
-    const outgoingRequests = session?.outgoingRequests || [];
-
+    const nickname  = session.nickname;
+    const email     = session.email;
+    const avatarUrl = session.avatar;
     const AVATAR_SIZE = 180; // px — фиксированная ширина аватарки
     const GAP = 16;         // px — gap между карточками
     const friendsRowRef = useRef(null);
@@ -140,16 +166,13 @@ export default function MyProfile() {
         return () => observer.disconnect();
     }, []);
 
-    const showDots = friends.length > maxVisible;
-    const visibleFriends = friends.slice(0, showDots ? maxVisible - 1 : maxVisible);
-
     const handleSwitch = (tab) => {
         setRequestsTab(prev => prev === tab ? null : tab);
     };
 
     const activeRequests = requestsTab === 'incoming' ? incomingRequests
-        : requestsTab === 'outgoing' ? outgoingRequests
-            : [];
+                         : requestsTab === 'outgoing' ? outgoingRequests
+                         : [];
 
     return (
         <div className="mp-root">
@@ -186,10 +209,9 @@ export default function MyProfile() {
                     <p className="mp-empty">У вас пока нет друзей. Добавьте первого!</p>
                 ) : (
                     <div className="mp-friends-row" ref={friendsRowRef}>
-                        {visibleFriends.map((f, i) => (
-                            <FriendCard key={i} friend={f} />
-                        ))}
-                        {showDots && (
+                        {friends.slice(0, friends.length > 6 ? 5 : 6).map(f =>
+                            <FriendCard key={f.id} friend={f} />)}
+                        {friends.length > 6 && (
                             <div className="mp-friend-card mp-friend-more">
                                 <div className="mp-friend-avatar mp-friend-avatar--dots">
                                     <DotsIcon />

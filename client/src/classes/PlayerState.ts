@@ -57,9 +57,13 @@ export class StoppedState extends PlayerState {
 
 export class LoadingState extends PlayerState {
     public play(): void {
+        this.player.state = new PlayingState();
+        this.player.howl?.play();
     }
 
     public pause(): void {
+        this.player.state = new PausedState();
+        this.player.howl?.pause();
     }
 
     public stop(): void {

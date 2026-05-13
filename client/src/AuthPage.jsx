@@ -1,19 +1,39 @@
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import "./css/auth.css";
 import axios from "axios";
+import {useSocket} from "./AppContext";
 
-export default function AuthPage({ onAuth }) {
+export default function AuthPage({ onAuth, setSession }) {
+    const socket = useSocket();
+
     const [mode, setMode] = useState("login");
     const [form, setForm] = useState({nickname: "" , email: "", password: "", confirm: "" });
     const [error, setError] = useState("");
     const [shake, setShake] = useState(false);
     const [sending, setSending] = useState(false);
+    const [verification, setVerification] = useState(false);
+
+    useEffect(() => {
+        if (verification) {
+            socket.emit('join-room', `user:${verification.email}`)
+
+            socket.on('success-verification', () =>
+                axios.post(`/api/users/auth`, verification)
+                    .then(() => onAuth())
+                    .catch(err => console.log(err))
+            )
+        }
+
+    }, [verification])
 
     function register(regUserData) {
         setSending(true);
 
         axios.post("/api/users/reg", regUserData).then(
-            res => onAuth()
+            () => {
+                alert("Ссылка для подтверждения отправлена на указанный email")
+                setVerification(regUserData);
+            }
         ).catch(err => {
             if (err.response) {
                 const status = err.response.status;
@@ -32,28 +52,26 @@ export default function AuthPage({ onAuth }) {
                 setError("Ошибка отправки");
                 triggerShake();
             }
-        });
-
-        setSending(false);
+        }).finally(() => setSending(false));
     }
 
     function authenticate(authUserData) {
         setSending(true);
 
-        axios.post("/api/users/auth", authUserData).then(() => onAuth()).catch(err => {
-            if (err.response) {
-                setError("Неверный e-mail или пароль");
-                triggerShake()
-            } else if (err.request) {
-                setError("Нет ответа от сервера");
-                triggerShake();
-            } else {
-                setError("Ошибка отправки");
-                triggerShake();
-            }
-        })
-
-        setSending(false);
+        axios.post("/api/users/auth", authUserData)
+            .then(() => onAuth())
+            .catch(err => {
+                if (err.response) {
+                    setError("Неверный e-mail или пароль");
+                    triggerShake()
+                } else if (err.request) {
+                    setError("Нет ответа от сервера");
+                    triggerShake();
+                } else {
+                    setError("Ошибка отправки");
+                    triggerShake();
+                }
+            }).finally(() => setSending(false));
     }
 
     const triggerShake = () => {

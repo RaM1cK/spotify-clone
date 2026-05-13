@@ -51,7 +51,7 @@ export class Playlist extends Model<InferAttributes<Playlist>, InferCreationAttr
     declare cover: string
 
     @BelongsToMany(() => Track, {
-        through: 'PlaylistTracks',
+        through: 'PlaylistTrack',
     })
     declare tracks?: NonAttribute<Track[]>
     declare getTracks: BelongsToManyGetAssociationsMixin<Track>
