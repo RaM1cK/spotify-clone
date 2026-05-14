@@ -192,7 +192,7 @@ export default function MyProfile() {
                 </div>
                 <button className="mp-edit-btn">
                     <PencilIcon />
-                    Редактировать
+                    <span className="mp-edit-btn-text">Редактировать</span>
                 </button>
             </div>
 
