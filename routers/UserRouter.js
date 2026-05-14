@@ -7,4 +7,6 @@ userRouter.post("/reg", UserController.reg);
 userRouter.post("/auth", UserController.auth);
 userRouter.get("/verify-email", UserController.verifyEmail)
 userRouter.post("/get-users", UserController.getUsersByNickname);
+userRouter.post("/search", UserController.normalizedSearch);
+
 export default userRouter;

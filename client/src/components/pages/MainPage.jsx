@@ -3,7 +3,6 @@ import axios from "axios";
 import "../../App.css";
 import TrackList from "../UI/TrackList/TrackList";
 import SearchBar from "../SearchBar";
-import { filterTracksBySearchTerm } from "../searchUtils";
 
 const MainPage = ({setCurrentTrack}) => {
     const music = [
@@ -38,7 +37,6 @@ const MainPage = ({setCurrentTrack}) => {
         })();
     }, []);
 
-    const filteredTracks = filterTracksBySearchTerm(trackList, searchTerm);
 
     return (
         <>

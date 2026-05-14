@@ -3,6 +3,8 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import io from "../server.js"
+import {sequelize} from "../models/index.js";
+import stringNormalization from "../helpers/stringNormalization.js";
 
 dotenv.config();
 
@@ -102,4 +104,21 @@ const getUsersByNickname = async (req, res) => {
     }
 }
 
-export default {reg, auth, verifyEmail, getUsersByNickname}
+const normalizedSearch = async (req, res) => {
+    const search_query = req.body.search_query;
+    const normalizedQuery = stringNormalization.normalizeString(search_query);
+
+    const result = await Track.findAll({
+        where: sequelize.where(
+            sequelize.fn('similarity', sequelize.col('title'), normalizedQuery),
+            '>=',
+            0.3 // Порог схожести
+        ),
+        order: [[sequelize.fn('similarity', sequelize.col('title'), normalizedQuery), 'DESC']],
+        limit: 10 // Количество вхождений
+    });
+
+    return res.status(200).json(result);
+}
+
+export default {reg, auth, verifyEmail, getUsersByNickname, normalizedSearch}
