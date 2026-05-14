@@ -1,58 +1,46 @@
-import React from "react"
+import React, {useEffect, useState} from "react"
 import TrackItem from "../Track/TrackItem";
 import "./TrackList.css"
+import {useParams} from "react-router-dom";
+import axios from "axios";
 
-function TrackList({tracks, setCurrentTrack, UsingContext, RollBack}) {
+function TrackList({tracks: propTracks, setCurrentTrack, UsingContext, RollBack, onFavoriteChange}) {
+    const { artistId} = useParams();
+    const [localTracks, setLocalTracks] = useState(null);
 
-    const getWordForm = (count) => {
-        const lastTwo = count % 100;
-        const last = count % 10;
+    useEffect(() => {
+        if (!propTracks)
+            axios.get(`/api/artists/${artistId}/tracks`)
+                .then(res => setLocalTracks(res.data))
+                .catch(() => console.error('Ошибка загрузки треков'));
+    }, []);
 
-        if (lastTwo >= 11 && lastTwo <= 14) {
-            return "треков";
-        }
-        if (last === 1) {
-            return "трек";
-        }
-        if (last >= 2 && last <= 4) {
-            return "трека";
-        }
-        return "треков";
-    };
+    const tracks = localTracks ?? propTracks
 
-    const getSum = () => {
-        const totalSeconds = tracks.reduce(
-            (sum, track) => sum + (track.duration || 0),
-            0
-        );
-
-        const m = Math.floor(totalSeconds / 60);
-        const s = Math.floor(totalSeconds % 60).toString().padStart(2, "0");
-
-        return `${m} мин ${s} сек`;
-    };
-    return (
-        <div className="track-list">
-            {RollBack && (
-                <button className="music-back" onClick={RollBack}>← Назад</button>
-            )}
-            {UsingContext != null && (
-                <h1 style={{color: '#fff'}}>Все треки: {UsingContext}</h1>
-            )}
-            <div className="tracks">
-                {tracks.map((track, index) => (
-                    <TrackItem
-                        number={index+1}
-                        key={index}
-                        index={index}
-                        track={track}
-                        tracks={tracks}
-                        setCurrentTrack = {setCurrentTrack}
-                    />
-                ))}
+    if (tracks)
+        return (
+            <div className="track-list">
+                {RollBack && (
+                    <button className="music-back" onClick={RollBack}>← Назад</button>
+                )}
+                {UsingContext != null && (
+                    <h1 style={{color: '#fff'}}>Все треки: {UsingContext}</h1>
+                )}
+                <div className="tracks">
+                    {tracks.map((track, index) => (
+                        <TrackItem
+                            number={index+1}
+                            key={track.id}
+                            index={index}
+                            track={track}
+                            tracks={tracks}
+                            setCurrentTrack = {setCurrentTrack}
+                            onFavoriteChange = {onFavoriteChange}
+                        />
+                    ))}
+                </div>
             </div>
-        </div>
-    );
+        );
 }
 
 export default TrackList;

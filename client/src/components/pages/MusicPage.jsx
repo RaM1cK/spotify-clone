@@ -1,54 +1,35 @@
-import io from 'socket.io-client';
-import React, {useEffect, useState, useMemo, Fragment} from "react";
-import Player from "../UI/Player/Player";
-import {Button, Nav, NavLink} from "react-bootstrap";
-import { ListMusic, LayoutList, CircleUserRound, Disc3, Heart, Clock } from "lucide-react";
-import axios from "axios";
-import "../../App.css";
+import React from "react";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import {ListMusic, LayoutList, CircleUserRound, Disc3, Heart, Search} from "lucide-react";
 import TrackList from "../UI/TrackList/TrackList";
-import "./MusicPage.css"
 import Liked from "./MusicPages/Liked";
 import PlaylistMenu from "./MusicPages/PlaylistMenu";
 import AlbumMenu from "./MusicPages/AlbumMenu";
 import ArtistMenu from "./MusicPages/ArtistMenu";
+import "./MusicPage.css";
 import SearchBar from "../SearchBar";
-// const socket = io("http://localhost:8080");
 
 const MENU_ITEMS = [
-    { id: "liked",     label: "Избранное",   sub: "Вам понравилось", Icon: Heart,            color: "info" }, ,
-    { id: "playlists", label: "Плейлисты",   sub: "Ваши подборки",   Icon: LayoutList,       color: "success" },
-    { id: "artists",   label: "Исполнители", sub: "По артистам",     Icon: CircleUserRound,  color: "warning" },
-    { id: "albums",    label: "Альбомы",     sub: "Дискография",     Icon: Disc3,            color: "danger" },
+    { id: "liked",     path: "/music/liked",       label: "Избранное",   sub: "Вам понравилось", Icon: Heart,           color: "info" },
+    { id: "playlists", path: "/music/playlists",   label: "Плейлисты",   sub: "Ваши подборки",   Icon: LayoutList,      color: "success" },
+    { id: "artists",   path: "/music/artists",     label: "Исполнители", sub: "По артистам",     Icon: CircleUserRound, color: "warning" },
+    { id: "albums",    path: "/music/albums",      label: "Альбомы",     sub: "Дискография",     Icon: Disc3,           color: "danger" },
 ];
 
+const MusicHome = () => {
+    const navigate = useNavigate();
 
-const MusicPage = ({trackList, ALBUM_ITEMS, artists, setCurrentTrack}) => {
-    const [searchTerm, setSearchTerm] = useState("");
-
-    const [activePage, setActivePage] = useState(
-        //() => localStorage.getItem("musicActivePage") ||
-        null
-    );
-
-    const handleSetPage = (page) => {
-        setActivePage(page);
-        if (page) {
-            localStorage.setItem("musicActivePage", page);
-        } else {
-            localStorage.removeItem("musicActivePage");
-        }
-    };
-
-    if (!activePage) {
-        return (
+    return (
+        <>
+            <SearchBar />
             <div className="music-home">
                 <h1 className="music-home__title">Куда отправимся?</h1>
                 <div className="music-grid">
-                    {MENU_ITEMS.map(({ id, label, sub, Icon, color }) => (
+                    {MENU_ITEMS.map(({ id, path, label, sub, Icon, color }) => (
                         <button
                             key={id}
                             className={`music-tile music-tile--${color}`}
-                            onClick={() => handleSetPage(id)}
+                            onClick={() => navigate(path)}
                         >
                             <div className={`music-tile__icon music-tile__icon--${color}`}>
                                 <Icon size={22} />
@@ -59,45 +40,67 @@ const MusicPage = ({trackList, ALBUM_ITEMS, artists, setCurrentTrack}) => {
                     ))}
                 </div>
             </div>
-        );
-    }
+        </>
+    );
+};
 
-    // Подстраница
+const MusicPage = ({ trackList, ALBUM_ITEMS, artists, setCurrentTrack }) => {
+    const navigate = useNavigate();
+
+    const rollBack = () => navigate(-1);
+
     return (
-        <>
-            <div className="search-bar-container">
-                <SearchBar onSearch={setSearchTerm} />
-            </div>
-            <div className="music-subpage">
-            {activePage === "liked" && (
-                <>
-                    <Liked Tracks={trackList} setCurrentTrack={setCurrentTrack} RollBack = {handleSetPage} />
-                </>
-            )}
+        <Routes>
+            <Route index element={<MusicHome />} />
 
-            {activePage === "playlists" && (
-               <>
-                   <PlaylistMenu setCurrentTrack={setCurrentTrack} RollBack = {handleSetPage}/>
-               </>
-            )}
-            {activePage === "artists" && (
-                <ArtistMenu
-                    artists={artists}
-                    tracks={trackList}
-                    albums={ALBUM_ITEMS}
-                    setCurrentTrack={setCurrentTrack}
-                    onSelectArtist={null}
-                    RollBack = {handleSetPage}
-                />
-            )}
-            {activePage === "albums"    && (
-                <>
-                    <AlbumMenu setCurrentTrack = {setCurrentTrack} albums={ALBUM_ITEMS} RollBack = {handleSetPage} UsingContext={"menu"}/>
-                </>
-            )}
-        </div>
-            </>
-        );
+            <Route
+                path="liked"
+                element={
+                    <Liked
+                        setCurrentTrack={setCurrentTrack}
+                        RollBack={rollBack}
+                    />
+                }
+            />
+
+            <Route
+                path="playlists/*"
+                element={
+                    <PlaylistMenu
+                        setCurrentTrack={setCurrentTrack}
+                        RollBack={rollBack}
+                    />
+                }
+            />
+
+            <Route
+                path="artists/*"
+                element={
+                    <ArtistMenu
+                        artists={artists}
+                        tracks={trackList}
+                        albums={ALBUM_ITEMS}
+                        setCurrentTrack={setCurrentTrack}
+                        RollBack={rollBack}
+                    />
+                }
+            />
+
+            <Route
+                path="albums/*"
+                element={
+                    <AlbumMenu
+                        setCurrentTrack={setCurrentTrack}
+                        albums={ALBUM_ITEMS}
+                        RollBack={rollBack}
+                        UsingContext="menu"
+                    />
+                }
+            />
+
+            <Route path="*" element={<Navigate to="/music" replace />} />
+        </Routes>
+    );
 };
 
 export default MusicPage;

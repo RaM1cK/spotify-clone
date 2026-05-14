@@ -10,25 +10,43 @@ import dotenv from 'dotenv';
 import {sequelize} from './models/index.js';
 import {User} from "./models/User.ts";
 import UserRouter from "./routers/UserRouter.js";
+import ReleaseRouter from "./routers/ReleaseRouter.js";
+import cookieParser from "cookie-parser";
+import {Track} from "./models/Track.ts";
+import {Release} from "./models/Release.ts";
+import axios from "axios";
+import jwt from "jsonwebtoken";
+import authMiddleware from "./routers/authMiddleware.js";
+import ArtistRouter from "./routers/ArtistRouter.js";
+import {Playlist} from "./models/Playlist.ts";
+import PlaylistRouter from "./routers/PlaylistRouter.js";
+import {Friendship} from "./models/Friendship.ts";
 //import {Composition, Track} from "./models/Track.ts";
 
 dotenv.config();
-
-const x = () => {
-  
-}
 
 const app = express();
 const IP_APP = process.env.IP_APP;
 const SERVER_PORT = process.env.SERVER_PORT;
 
-app.use(cors());
-app.use(express.json());
-app.use("/tracks", TrackRouter);
-app.use("/users", UserRouter);
-
 export const __filename = fileURLToPath(import.meta.url);
 export const __dirname = path.dirname(__filename);
+
+axios.defaults.withCredentials = true;
+
+app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+}));
+app.use(express.json());
+app.use(cookieParser());
+app.use('/files', express.static(path.join(__dirname, 'music')));
+app.use("/users", UserRouter);
+app.use(authMiddleware)
+app.use("/tracks", TrackRouter);
+app.use("/releases", ReleaseRouter);
+app.use('/artists', ArtistRouter)
+app.use('/playlists', PlaylistRouter);
 
 const server = http.createServer(app);
 
@@ -42,23 +60,36 @@ const io = new Server(server, {
 try {
     await sequelize.authenticate();
     console.log('Connected');
-    //await sequelize.sync({alter: true});
+    // await sequelize.sync({alter: true});
 
     // await sequelize.transaction(async t => {
-    //     const track = await Track.create({
-    //         isrc: 'US1234567892',
-    //         title: 'Transactional Song',
-    //         duration: 200.0,
-    //         url: 'https://cdn.example.com/track3.mp3'
-    //     }, { transaction: t });
+    //     const user2 = await User.findOne({
+    //         where: {
+    //             email: 'spiridonow044@gmail.com'
+    //         }
+    //     });
     //
-    //     const composition = await Composition.create({
-    //         iswc: 'T987654321B'
-    //     }, {transaction: t});
+    //     const user1 = await User.findOne({
+    //         where: {
+    //             email: 'grigorijgorbunov5@gmail.com'
+    //         }
+    //     });
     //
-    //     await track.addComposition(composition);
+    //     // await Friendship.create({
+    //     //     senderId: user1.id,
+    //     //     receiverId: user2.id,
+    //     // }, { transaction: t})
     //
-    //
+    //     // await Friendship.update(
+    //     //     { request_accepted: true},
+    //     //     {
+    //     //         where: {
+    //     //             senderId: user1.id,
+    //     //             receiverId: user2.id,
+    //     //         },
+    //     //         transaction: t
+    //     //     }
+    //     // )
     // })
 
 } catch (err) {

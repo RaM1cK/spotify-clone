@@ -10,7 +10,7 @@ import type {
     CreationOptional
 } from "@sequelize/core";
 import {
-    Attribute, AutoIncrement, BelongsTo, BelongsToMany,
+    Attribute, AutoIncrement, BelongsTo, BelongsToMany, Default,
     NotNull,
     PrimaryKey,
     Table,
@@ -18,6 +18,7 @@ import {
 } from "@sequelize/core/decorators-legacy";
 import {Composition} from "./Composition.ts";
 import {Release} from "./Release.ts";
+import {Artist} from "./Artist.ts";
 
 @Table({
     underscored: true,
@@ -43,6 +44,11 @@ export class Track extends Model<InferAttributes<Track>, InferCreationAttributes
 
     @Attribute(DataTypes.STRING(140))
     @NotNull
+    @Default('')
+    declare titleNormalized: string
+
+    @Attribute(DataTypes.STRING(140))
+    @NotNull
     declare artist: string
 
     @Attribute(DataTypes.FLOAT)
@@ -60,10 +66,15 @@ export class Track extends Model<InferAttributes<Track>, InferCreationAttributes
     @Attribute(DataTypes.TEXT)
     declare cover: string
 
+    @BelongsToMany(() => Artist, {
+        through: 'ArtistTrack',
+    })
+    declare artists?: NonAttribute<Artist[]>
+
     @BelongsToMany(() => Composition, {
         through: 'TrackComposition',
     })
-    declare trackCompositions?: NonAttribute<Composition[]>;
+    declare compositions?: NonAttribute<Composition[]>;
 
     declare addComposition: BelongsToManyAddAssociationMixin<Composition, Composition['id']>
     declare addCompositions: BelongsToManyAddAssociationsMixin<Composition, Composition['id']>

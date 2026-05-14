@@ -1,5 +1,6 @@
 .liked {
     container-type: inline-size;
+    padding: 32px;
 }
 
 .liked-header {
