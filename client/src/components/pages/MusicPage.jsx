@@ -19,9 +19,13 @@ const MENU_ITEMS = [
 const MusicHome = () => {
     const navigate = useNavigate();
 
+    const handleSearch = (searchQuery) => {
+        console.log('Search in MusicHome:', searchQuery);
+    };
+
     return (
         <>
-            <SearchBar />
+            <SearchBar onSearch={handleSearch} />
             <div className="music-home">
                 <h1 className="music-home__title">Куда отправимся?</h1>
                 <div className="music-grid">

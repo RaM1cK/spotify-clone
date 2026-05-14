@@ -7,6 +7,7 @@ import {getTracksBySecret} from "./TrackController.js";
 import {Track} from "../models/Track.ts";
 import {sequelize} from "../models/index.js";
 import {literal, sql} from "@sequelize/core";
+import stringNormalization from "../helpers/stringNormalization.js";
 
 dotenv.config();
 
