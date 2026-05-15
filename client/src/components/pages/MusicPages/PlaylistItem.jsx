@@ -3,7 +3,7 @@ import TrackList from "../../UI/TrackList/TrackList";
 import "./PlaylistItem.css"
 import {Player as pl, Player} from "../../../classes/Player.ts";
 import usePlayerState from "../../../hooks/usePlayerState";
-import {MoreHorizontal, Pause, Play} from "lucide-react";
+import {ChevronLeft, MoreHorizontal, Pause, Play} from "lucide-react";
 
 
 const getWordForm = (count) => {
@@ -59,10 +59,10 @@ const PlaylistItem = ({Tracks, setCurrentTrack, title, type, AutName, year, imag
     return (
         <div className={"liked"}>
             <button className="music-back" onClick={() => RollBack()}>
-                ← Назад
+                <ChevronLeft size={20} />
             </button>
             <div className="liked-header">
-                <img src={image} className="logo" alt="logo" />
+                <img src={image} className="playlist-logo" alt="logo" />
                 <div className="liked-header-info">
                     <p>{type}</p>
                     <h1>{title}</h1>

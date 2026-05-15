@@ -1,9 +1,12 @@
 .track-item{
     display: flex;
-    width: 99%;
+    width: 100%;
+    max-width: 100%;
     padding: 5px 0;
     align-self: center;
     justify-content: space-between;
+    align-items: center;
+    gap: 8px;
     box-sizing: border-box;
 }
 
@@ -80,10 +83,16 @@
 }
 
 .track-item__left {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: clamp(8px, 2vw, 20px);
+}
+
+.track-item__info {
+    min-width: 0;
+    flex: 1;
 }
 
 .track-item__text {
@@ -92,20 +101,27 @@
 }
 
 .track-item__title {
-    font-size: 16px;
+    font-size: clamp(13px, 3.5vw, 16px);
     font-weight: 600;
     color: white;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .track-item__artist {
-    font-size: 15px;
+    font-size: clamp(12px, 3.2vw, 15px);
     color: #787676;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .track-item__actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
+    flex-shrink: 0;
 }
 
 .track-item__button {
@@ -125,11 +141,29 @@
 }
 
 .time{
-    font-size: 16px;
+    font-size: clamp(12px, 3vw, 16px);
     color: #787676;
+    flex-shrink: 0;
 }
 
 .track-number{
     color: #737373;
-    font-size: 16px;
+    font-size: clamp(12px, 3vw, 16px);
+    display: flex;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+    .track-item__cover-wrapper,
+    .track-item__cover {
+        width: 44px;
+        height: 44px;
+    }
+
+    .track-item__button {
+        padding: 6px;
+    }
 }

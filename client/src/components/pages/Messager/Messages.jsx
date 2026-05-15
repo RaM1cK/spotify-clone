@@ -2,6 +2,9 @@ import React, {useEffect, useRef, useState} from "react";
 import "./Messages.css";
 import ChatItem from "./ChatItem";
 import ChatWindow from "./ChatWindow";
+import axios from "axios";
+import {useSession, useSocket} from "../../../AppContext";
+import {LoadingPage} from "../LoadingPage";
 
 const MOCK_CHATS = [
     {
@@ -59,14 +62,92 @@ const MOCK_CHATS = [
     },
 ];
 
-
-
 const Messages = ({trackList, ALBUM_ITEMS}) => {
-    const [chats, setChats] = useState(MOCK_CHATS);
+    const socket = useSocket();
+    const session = useSession();
+
+    const [chats, setChats] = useState(null);
+    const [replyTo, setReplyTo] = useState(null);
     const [activeChat, setActiveChat] = useState(null);
+    const [mobileChatOpen, setMobileChatOpen] = useState(false);
     const [input, setInput] = useState("");
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     const activeChatRef = useRef(activeChat);
+
+    useEffect(() => {
+        const mq = window.matchMedia("(max-width: 991px)");
+        const onMq = () => {
+            if (!mq.matches) setMobileChatOpen(false);
+        };
+        mq.addEventListener("change", onMq);
+        return () => mq.removeEventListener("change", onMq);
+    }, []);
+
+    const chatsSetter = (prev, newMessage) =>
+        prev.map(chat =>
+            chat.id !== newMessage.chatId ? chat : {
+                ...chat,
+                messages: [...chat.messages, newMessage],
+                lastMessage: newMessage.data,
+                createdAt: newMessage.createdAt
+            }
+        )
+
+    const activeChatSetter = (prev, newMessage) => ({
+        ...prev,
+        messages: [...prev.messages, newMessage],
+        lastMessage: newMessage.data,
+    })
+
+    const setLastMessage = (prev, newMessage) =>
+        prev.map(chat =>
+            chat?.id !== newMessage?.chatId ? chat : {
+                ...chat,
+                lastMessage: newMessage.data,
+            }
+        )
+
+    useEffect(() => {
+        axios.get('/api/users/me/chats')
+            .then(res => {
+                const chats = res.data;
+                setChats(chats);
+
+                chats.forEach(chat => {
+                    socket.emit("join-room", chat.id)
+
+                    const lastMessage = chat.messages.sort((a, b) => a.createdAt.localeCompare(b.createdAt)).at(-1)
+
+                    if (lastMessage)
+                        setChats(prev => setLastMessage(prev, lastMessage));
+                })
+            })
+            .catch(() => setError('Ошибка загрузки'))
+            .finally(() => setLoading(false));
+
+        socket.on('receive-message', message => {
+            if (activeChatRef.current?.id === message.chatId)
+                setActiveChat(prev => activeChatSetter(prev, message));
+
+            setChats(prev => chatsSetter(prev, message));
+        })
+
+        socket.on('user-online', userId => {
+            console.log(`user ${userId} online`);
+        })
+
+        socket.on('user-offline', userId => {
+            console.log(`user ${userId} offline`);
+        })
+
+        return () => {
+            socket.off('receive-message')
+            socket.off('user-online')
+            socket.off('user-offline')
+        }
+    }, [])
 
     useEffect(() => {
         activeChatRef.current = activeChat;
@@ -80,101 +161,71 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
     };
 
     const handleSend = (text = input) => {
-        console.log(text);
-
         if (!text.trim() || !activeChat) return;
 
         const newMessage = {
-            id: Date.now(),
-            from: "me",
-            text:  text.trim(),
-            time: new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }),
+            senderId: session.id,
+            chatId: activeChat.id,
+            data:  text.trim(),
+            dataType: 0,
+            quotedId: replyTo?.id,
+            createdAt: new Date()
         };
 
-        const sentChatId = activeChat.id;
-
-        setChats((prev) =>
-            prev.map((chat) => {
-                if (chat.id !== sentChatId) return chat;
-                return {
-                    ...chat,
-                    messages: [...chat.messages, newMessage],
-                    lastMessage: newMessage.text,
-                    time: newMessage.time,
-                };
-            })
-        );
-        setActiveChat((prev) => ({
-            ...prev,
-            messages: [...prev.messages, newMessage],
-            lastMessage: newMessage.text,
-        }));
-
         setInput("");
+        setReplyTo(null)
 
-        setTimeout(() => {
-            const reply = {
-                id: Date.now() + 1,
-                from: "them",
-                text: "Хорошо",
-                time: new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }),
-            };
-            setChats((prev) =>
-                prev.map((chat) => {
-                    if (chat.id !== sentChatId) return chat;
+        socket.emit('send-message', {
+            room: activeChat.id,
+            msg: newMessage
+        });
 
-                    const isOpen = activeChatRef.current?.id === chat.id;
-                    console.log(isOpen);
-                    const updated = {
-                        ...chat,
-                        messages: [...chat.messages, reply],
-                        lastMessage: reply.text,
-                        time: reply.time,
-                        unread: isOpen ? chat.unread : chat.unread + 1
-                    };
-
-                    if (isOpen) setActiveChat(updated);
-                    return updated;
-                })
-            );
-        }, 1000);
     };
 
-    return (
-        <div className="messages-layout">
-            <aside className="messages-sidebar">
-                <div className="messages-sidebar__title">Сообщения</div>
-                <div className="messages-chat-list">
-                    {chats.map((chat) => (
-                        <ChatItem
-                            key={chat.id}
-                            chat={chat}
-                            isActive={activeChat?.id === chat.id}
-                            onClick={() => {
-                                setActiveChat({ ...chat, unread: 0 });
-                                setChats((prev) =>
-                                    prev.map((c) => c.id === chat.id ? { ...c, unread: 0 } : c)
-                                );
-                            }}
-                        />
-                    ))}
-                </div>
-            </aside>
+    if (loading) return <LoadingPage/>;
+    if (error) return <div>{error}</div>;
 
-            {/* Открытый чат */}
-            <ChatWindow
-                activeChat={activeChat}
-                input={input}
-                setInput={setInput}
-                handleSend={handleSend}
-                // tracks={trackList}
-                // onOpenAlbum={(albumId) => {
-                //     const album = ALBUM_ITEMS.find(a => a.id === albumId);
-                //     if (album) setActiveAlbum(album);
-                // }}
-            />
-        </div>
-    );
+    if (chats)
+        return (
+            <div className={`messages-layout${mobileChatOpen ? " messages-layout--mobile-chat" : ""}`}>
+                <aside className="messages-sidebar">
+                    <div className="messages-sidebar__title">Сообщения</div>
+                    <div className="messages-chat-list">
+                        {chats.map((chat) => (
+                            <ChatItem
+                                key={chat.id}
+                                chat={chat}
+                                isActive={activeChat?.id === chat.id}
+                                onClick={() => {
+                                    setChats(prev => {
+                                        const fresh = prev.find(c => c.id === chat.id);
+
+                                        setActiveChat({...fresh, unread: 0});
+
+                                        return prev.map(c => c.id === chat.id ? {...c, unread: 0} : c);
+                                    });
+                                    if (window.matchMedia("(max-width: 991px)").matches) {
+                                        setMobileChatOpen(true);
+                                    }
+                                }}
+                            />
+                        ))}
+                    </div>
+                </aside>
+
+                {/* Открытый чат */}
+                <ChatWindow
+                    activeChat={activeChat}
+                    input={input}
+                    setInput={setInput}
+                    replyTo={replyTo}
+                    setReplyTo={setReplyTo}
+                    handleSend={handleSend}
+                    showMobileBack={mobileChatOpen}
+                    onMobileBack={() => setMobileChatOpen(false)}
+                />
+            </div>
+        );
 };
 
 export default Messages;

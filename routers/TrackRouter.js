@@ -8,7 +8,8 @@ const trackMiddleware = (req, res, next) => {
     const referer = req.headers['referer'];
     const range = req.headers.range;
 
-    if (fetchDest !== 'audio'
+    if (
+        fetchDest !== 'audio'
         || fetchMode !== 'no-cors'
         || fetchSite !== 'same-origin'
         || !referer
@@ -24,5 +25,5 @@ const trackMiddleware = (req, res, next) => {
 const trackRouter = express.Router();
 
 trackRouter.get('/', trackMiddleware,TrackController.getTrackFile)
-trackRouter.post('/:trackId/info', TrackController.getTrack)
+trackRouter.post('/position', TrackController.saveLastPosition)
 export default trackRouter;

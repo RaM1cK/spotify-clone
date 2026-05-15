@@ -1,25 +1,276 @@
-import React from 'react';
-import { useNavigate, useLocation } from "react-router-dom";
+import React, {useState, useEffect, useRef, createContext, useContext} from 'react';
+import {useNavigate, useLocation, Routes, Route} from "react-router-dom";
 import './ContextMenuStyle.css';
+import {useFriends, useSession, useSocket} from "../AppContext";
+import AddFriendModal from "./AddFriendModal";
+import {ChevronRight} from "lucide-react";
 
-export default function ContextMenu({ PAGES, menuOpen, setMenuOpen }) {
+
+function UserIcon({ size = 22 }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+             strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg>
+    );
+}
+
+function LogoutIcon({ size = 18 }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+             strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+    );
+}
+
+function PencilIcon() {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+             strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
+    );
+}
+
+function PlusIcon() {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+             strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+    );
+}
+
+function ChevronRightIcon() {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"
+             strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
+            <polyline points="9 18 15 12 9 6" />
+        </svg>
+    );
+}
+
+function DotsIcon() {
+    return (
+        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+            <circle cx="5" cy="12" r="2" />
+            <circle cx="12" cy="12" r="2" />
+            <circle cx="19" cy="12" r="2" />
+        </svg>
+    );
+}
+
+function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROUTES_PAGES }) {
+    const overlayRef = useRef(null);
+    const setMenuOpen = useContextMenu().setMenuOpen;
+    const friends = useFriends()
+
     const navigate = useNavigate();
-    const location = useLocation();
+
+    const username  = session.nickname;
+    const email     = session.email;
+    const avatarUrl = session.avatar;
+
+    const handleOverlayClick = (e) => {
+        if (e.target === overlayRef.current) onClose();
+    };
+
+    useEffect(() => {
+        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [onClose]);
+
+    const cardStyle = anchorRect ? (() => {
+        const vw = window.innerWidth;
+        const gap = 12;
+        const width = Math.min(Math.max(anchorRect.width, 260), vw - gap * 2);
+        const left = Math.max(gap, Math.min(anchorRect.left, vw - width - gap));
+        return {
+            position: 'fixed',
+            left,
+            bottom: window.innerHeight - anchorRect.top + 8,
+            width,
+            maxWidth: `calc(100vw - ${gap * 2}px)`,
+        };
+    })() : {};
 
     return (
-        <aside className={`context-menu MainDiv ${menuOpen ? "open" : ""}`}>
-            {PAGES.map(page => (
-                <button
-                    className={`buttons${location.pathname.startsWith(page.navPath) ? " select" : ""}`}
-                    key={page.id}
-                    onClick={() => {
-                        navigate(page.navPath);
-                        setMenuOpen(false);
-                    }}
+        <div className="pm-overlay pm-overlay--anchored" ref={overlayRef} onClick={handleOverlayClick}>
+            <div className="pm-card" style={cardStyle}>
+
+                <div className="pm-section">
+                    <div className="pm-user-row">
+                        <div className="pm-avatar-lg">
+                            {avatarUrl
+                                ? <img src={avatarUrl} alt="avatar" className="avatar-img" />
+                                : <UserIcon size={30} />
+                            }
+                        </div>
+                        <div className="pm-user-details">
+                            <span className="pm-username">{username}</span>
+                            <span className="pm-email">{email}</span>
+                        </div>
+                        <div className="to-profile" onClick={() => {
+                            navigate("/me")
+                            onClose()
+                            setMenuOpen(false)
+                        }}>
+                            <ChevronRight size={20}/>
+                        </div>
+                    </div>
+                    <button className="pm-pill-btn">
+                        <PencilIcon />
+                        Редактировать
+                    </button>
+                </div>
+
+                <div className="pm-divider" />
+
+                <div className="pm-section">
+                    <div className="pm-friends-header">
+                        <span className="pm-section-title">Друзья</span>
+                        <ChevronRightIcon />
+                    </div>
+
+                    {friends.length === 0 ? (
+                        <p className="pm-no-friends">У вас пока нет друзей. Добавьте первого!</p>
+                    ) : (
+                        <div className="pm-friends-grid">
+                            {friends.slice(0, friends.length > 6 ? 5 : 6).map(f => (
+                                <div className="pm-friend-item" key={f.id}>
+                                    <div className="pm-friend-avatar">
+                                        {f.avatar
+                                            ? <img src={f.avatar} alt={f.nickname} className="avatar-img" />
+                                            : <UserIcon size={16} />
+                                        }
+                                    </div>
+                                    <span className="pm-friend-name">{f.nickname || "User"}</span>
+                                </div>
+                            ))}
+                            {friends.length > 6 && (
+                                <div className="pm-friend-item">
+                                    <div className="pm-friend-avatar pm-friend-dots">
+                                        <DotsIcon />
+                                    </div>
+                                    <span className="pm-friend-name">Ещё</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <button className="pm-pill-btn" onClick={() => onAddFriend()}>
+                        <PlusIcon />
+                        Добавить друга
+                    </button>
+                </div>
+
+                <div className="pm-divider" />
+
+                <div className="pm-section pm-section--logout">
+                    <button className="pm-logout-wide" onClick={() => { onLogout(); onClose(); }}>
+                        <LogoutIcon size={16} />
+                        Выйти
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    );
+}
+
+const ContextMenuContext = createContext(null)
+
+const ContextMenuProvider = ({setProfileOpen, setMenuOpen, children }) => {
+    return (
+        <ContextMenuContext.Provider value={{setProfileOpen, setMenuOpen}}>
+            {children}
+        </ContextMenuContext.Provider>
+    )
+}
+
+const useContextMenu = () => useContext(ContextMenuContext);
+
+export default function ContextMenu({ PAGES, menuOpen, setMenuOpen, onLogout, ROUTES_PAGES }) {
+    const socket  = useSocket();
+    const session = useSession();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [profileOpen, setProfileOpen] = useState(false);
+    const [addFriendOpen, setAddFriendOpen] = useState(false);
+    const panelRef = useRef(null);
+
+    const username  = session?.nickname;
+    const avatarUrl = session?.avatar;
+
+    const handleOpenProfile = () => {
+        setProfileOpen(true);
+    };
+
+    return (
+        <ContextMenuProvider setMenuOpen={setMenuOpen} setProfileOpen={setProfileOpen}>
+            <aside className={`context-menu MainDiv ${menuOpen ? "open" : ""}`}>
+                <div className="nav-buttons">
+                    {PAGES.map(page => (
+                        <button
+                            className={`buttons${location.pathname.startsWith(page.navPath) ? " select" : ""}`}
+                            key={page.id}
+                            onClick={() => { navigate(page.navPath); setMenuOpen(false); }}
+                        >
+                            {page.label}
+                        </button>
+                    ))}
+                </div>
+
+                <div
+                    ref={panelRef}
+                    className="user-panel"
+                    onClick={handleOpenProfile}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && handleOpenProfile()}
                 >
-                    {page.label}
-                </button>
-            ))}
-        </aside>
+                    <div className="user-info">
+                        <div className="user-avatar">
+                            {avatarUrl
+                                ? <img src={avatarUrl} alt="avatar" className="avatar-img" />
+                                : <UserIcon />
+                            }
+                        </div>
+                        <div className="user-text">
+                            <span className="user-name">{username}</span>
+                            <span className="user-plan">Free plan</span>
+                        </div>
+                    </div>
+                    <button
+                        className="logout-btn"
+                        onClick={(e) => { e.stopPropagation(); onLogout(); }}
+                        title="Выйти"
+                    >
+                        <LogoutIcon />
+                    </button>
+                </div>
+            </aside>
+
+            {profileOpen && (
+                <ProfileModal
+                    session={session}
+                    onLogout={onLogout}
+                    onClose={() => setProfileOpen(false)}
+                    onAddFriend={() => { setProfileOpen(false); setAddFriendOpen(true); }}
+                    anchorRect={panelRef.current?.getBoundingClientRect()}
+                />
+            )}
+
+            {addFriendOpen && (
+                <AddFriendModal onClose={() => setAddFriendOpen(false)} />
+            )}
+        </ContextMenuProvider>
     );
 }

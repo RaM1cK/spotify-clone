@@ -1,12 +1,13 @@
 import React, {useEffect, useState} from 'react';
 import "./ArtistItem.css"
-import {ChevronRight, Pause, Play} from "lucide-react";
+import {ChevronLeft, ChevronRight, CircleUserRound, Pause, Play} from "lucide-react";
 import {Routes, Route, useNavigate, useParams} from "react-router-dom";
 import AlbumMenu from "./AlbumMenu";
 import TrackList from "../../UI/TrackList/TrackList";
 import {Player} from "../../../classes/Player.ts";
 import usePlayerState from "../../../hooks/usePlayerState";
 import axios from "axios";
+import {LoadingPage} from "../LoadingPage";
 
 const declension = (n) => {
     if (n % 10 === 1 && n % 100 !== 11) return "трек";
@@ -54,16 +55,19 @@ const ArtistMain = ({ artist, setCurrentTrack }) => {
         }
     };
 
-    if (loading) return <div>Загрузка...</div>
+    if (loading) return <LoadingPage/>;
     if (error) return <div>{error}</div>;
 
     if (tracks && albums)
         return (
             <div className="artist-item">
-                <button className="music-back" onClick={() => navigate(-1)}>← Назад</button>
+                <button className="music-back" onClick={() => navigate(-1)}><ChevronLeft size={20} /></button>
                 <div className="artist-header">
                     <div className="artist-header__image">
-                        <img src={artist.photo} alt={artist.name}/>
+                        {artist.avatar
+                            ? <img src={`/api/files/${artist.avatar}`} alt={artist.name} />
+                            : <CircleUserRound size={64} color="#b4b2a9" />
+                        }
                     </div>
                     <div className="artist-header__info">
                         <h1 className="artist-header__name">{artist.name}</h1>
@@ -146,7 +150,7 @@ const ArtistItem = ({ setCurrentTrack }) => {
             .finally(() => setLoading(false));
     }, [])
 
-    if (loading) return <div>Загрузка...</div>;
+    if (loading) return <LoadingPage/>;
     if (error) return <div>{error}</div>;
 
     if (artist)
@@ -164,11 +168,13 @@ const ArtistItem = ({ setCurrentTrack }) => {
                 <Route
                     path="tracks"
                     element={
+                    <div style={{ padding: 32 }}>
                         <TrackList
                             setCurrentTrack={setCurrentTrack}
                             UsingContext={artist.name}
                             RollBack={() => navigate(-1)}
                         />
+                    </div>
                     }
                 />
                 <Route

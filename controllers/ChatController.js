@@ -1,5 +1,10 @@
 import jwt from "jsonwebtoken";
 import {User} from "../models/User.ts";
+import {Chat} from "../models/Chat.ts";
+import {sequelize} from "../models/index.js";
+import {Message} from "../models/Message.ts";
+
+const userConnections = new Map()
 
 const socket = (io) => {
     // io.use(async (socket, next) => {
@@ -28,17 +33,76 @@ const socket = (io) => {
     io.on('connection', (socket) => {
         console.log('user connected');
 
-        // socket.join(`user:${socket.email}`);
+        socket.on('identity', userId => {
+            socket.userId = userId;
+            socket.join(`user:${userId}`);
 
-        socket.on('send-message', ({room, message}) => {
-            socket.to(room).emit('receive-message', {room, message});
+            const count = (userConnections.get(userId) || 0) + 1;
+            userConnections.set(userId, count);
+
+            if (count === 1)
+                socket.broadcast.emit('user-online', userId);
         })
 
-        socket.on('join-room', (room) => {
+        socket.on('send-message', async ({room, msg}) => {
+            try {
+                const chat = await Chat.findByPk(room)
+
+                if (!chat) {
+                    socket.emit('send-error', {
+                        messageId: msg.id,
+                        reason: 'Чат не найден'
+                    })
+
+                    return;
+                }
+
+                const message = await sequelize.transaction(async t => {
+                    const message = await Message.create(msg, { transaction: t})
+
+                    // if (message.quotedId) await message.setQuotedMessage(message.quotedId, {transaction: t})
+
+                    await chat.addMessage(message.id, { transaction: t});
+
+                    const reloaded = await Message.findByPk(message.id, {
+                        transaction: t,
+                        include: {
+                            model: Message,
+                            as: 'quotedMessage',
+                            attributes: ['id', 'data', 'senderId', 'createdAt', 'dataType']
+                        }
+                    });
+
+                    return reloaded.toJSON()
+                })
+
+                io.to(room).emit('receive-message', message);
+            } catch (error) {
+                console.log(error);
+
+                socket.emit('send-error', {
+                    messageId: msg.id,
+                    reason: 'Не удалось отправить сообщение'
+                })
+            }
+        })
+
+        socket.on('join-room', room => {
             socket.join(room);
         })
 
         socket.on('disconnect', () => {
+            if (!socket.userId) return
+
+            const count = (userConnections.get(socket.userId) || 0) - 1;
+
+            if (count <= 0) {
+                userConnections.delete(socket.userId);
+                socket.broadcast.emit('user-offline', socket.userId);
+            } else {
+                userConnections.set(socket.userId, count);
+            }
+
             console.log('user disconnected');
         })
     })

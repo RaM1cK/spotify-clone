@@ -7,7 +7,7 @@ import {fileURLToPath} from 'url';
 import socket from './controllers/ChatController.js'
 import TrackRouter from './routers/TrackRouter.js';
 import dotenv from 'dotenv';
-import {sequelize} from './models/index.js';
+import {redisClient, sequelize} from './models/index.js';
 import {User} from "./models/User.ts";
 import UserRouter from "./routers/UserRouter.js";
 import ReleaseRouter from "./routers/ReleaseRouter.js";
@@ -21,6 +21,8 @@ import ArtistRouter from "./routers/ArtistRouter.js";
 import {Playlist} from "./models/Playlist.ts";
 import PlaylistRouter from "./routers/PlaylistRouter.js";
 import {Friendship} from "./models/Friendship.ts";
+import {Chat} from "./models/Chat.ts";
+import {Resend} from "resend";
 //import {Composition, Track} from "./models/Track.ts";
 
 dotenv.config();
@@ -32,16 +34,15 @@ const SERVER_PORT = process.env.SERVER_PORT;
 export const __filename = fileURLToPath(import.meta.url);
 export const __dirname = path.dirname(__filename);
 
-axios.defaults.withCredentials = true;
-
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: IP_APP,
     credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());
 app.use('/files', express.static(path.join(__dirname, 'music')));
 app.use("/users", UserRouter);
+
 app.use(authMiddleware)
 app.use("/tracks", TrackRouter);
 app.use("/releases", ReleaseRouter);
@@ -52,9 +53,11 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:3000", //при деплое изменить
+        origin: IP_APP, //при деплое изменить
         methods: ["GET", "POST"],
-    }
+    },
+    pingInterval: 25000,
+    pingTimeout: 60000
 });
 
 try {
@@ -62,39 +65,11 @@ try {
     console.log('Connected');
     // await sequelize.sync({alter: true});
 
-    // await sequelize.transaction(async t => {
-    //     const user2 = await User.findOne({
-    //         where: {
-    //             email: 'spiridonow044@gmail.com'
-    //         }
-    //     });
-    //
-    //     const user1 = await User.findOne({
-    //         where: {
-    //             email: 'grigorijgorbunov5@gmail.com'
-    //         }
-    //     });
-    //
-    //     // await Friendship.create({
-    //     //     senderId: user1.id,
-    //     //     receiverId: user2.id,
-    //     // }, { transaction: t})
-    //
-    //     // await Friendship.update(
-    //     //     { request_accepted: true},
-    //     //     {
-    //     //         where: {
-    //     //             senderId: user1.id,
-    //     //             receiverId: user2.id,
-    //     //         },
-    //     //         transaction: t
-    //     //     }
-    //     // )
-    // })
-
+    await redisClient.connect()
 } catch (err) {
     console.error(err);
     await sequelize.close();
+    await redisClient.close();
 }
 
 socket(io)

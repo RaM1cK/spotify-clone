@@ -59,7 +59,11 @@ function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange })
     }
 
     const toFavorite = () => {
-        axios.post(`/api/users/${isFavorite ? 'remove' : 'add'}FavoriteTrack/${track.id}`)
+        const request = () => isFavorite
+            ? axios.delete(`/api/users/removeFavoriteTrack/${track.id}`)
+            : axios.post(`/api/users/addFavoriteTrack/${track.id}`)
+
+        request()
             .then(() => {
                 const newValue = !isFavorite
                 setIsFavorite(newValue)
@@ -73,7 +77,11 @@ function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange })
                 {/* Left section */}
 
                 <div onClick={handleClick} className="track-item__left">
-                    <span className="track-number">{number}</span>
+                    <div className="track-number"
+                    style={{ width: `${tracks.length.toString().length}ch` }}
+                    >
+                        {number}
+                    </div>
                     <div className="track-item__cover-wrapper">
                         <img
                             src={`/api/files/${track.cover}`}
@@ -84,7 +92,7 @@ function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange })
                             {isPlaying ? <Pause size={20}/> : <Play size={20}/>}
                         </div>
                     </div>
-                    <div className="d-flex flex-column justify-content-between">
+                    <div className="track-item__info d-flex flex-column justify-content-between">
                         <span className="track-item__title">{track.title}</span>
                         <span className="track-item__artist">{track.artist}</span>
                     </div>

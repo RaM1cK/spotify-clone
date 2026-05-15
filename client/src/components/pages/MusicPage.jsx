@@ -1,13 +1,12 @@
 import React from "react";
-import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
-import {ListMusic, LayoutList, CircleUserRound, Disc3, Heart, Search} from "lucide-react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { LayoutList, CircleUserRound, Disc3, Heart } from "lucide-react";
 import TrackList from "../UI/TrackList/TrackList";
 import Liked from "./MusicPages/Liked";
 import PlaylistMenu from "./MusicPages/PlaylistMenu";
 import AlbumMenu from "./MusicPages/AlbumMenu";
 import ArtistMenu from "./MusicPages/ArtistMenu";
 import "./MusicPage.css";
-import SearchBar from "../SearchBar";
 
 const MENU_ITEMS = [
     { id: "liked",     path: "/music/liked",       label: "Избранное",   sub: "Вам понравилось", Icon: Heart,           color: "info" },
@@ -24,10 +23,9 @@ const MusicHome = () => {
     };
 
     return (
-        <>
-            <SearchBar onSearch={handleSearch} />
+        <div className="MusicPage">
             <div className="music-home">
-                <h1 className="music-home__title">Куда отправимся?</h1>
+                <h1 className="music-home__title">Коллекция</h1>
                 <div className="music-grid">
                     {MENU_ITEMS.map(({ id, path, label, sub, Icon, color }) => (
                         <button
@@ -44,7 +42,7 @@ const MusicHome = () => {
                     ))}
                 </div>
             </div>
-        </>
+        </div>
     );
 };
 

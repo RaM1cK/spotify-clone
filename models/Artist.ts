@@ -34,6 +34,9 @@ export class Artist extends Model<InferAttributes<Artist>, InferCreationAttribut
     @NotNull
     declare name: string;
 
+    @Attribute(DataTypes.TEXT)
+    declare avatar: string;
+
     @Attribute(DataTypes.STRING(140))
     @NotNull
     @Default('')
