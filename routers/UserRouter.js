@@ -82,6 +82,7 @@ userRouter.delete('/cancel/:receiverId', UserController.cancelFriendRequest);
 userRouter.post('/send-request/:receiverId', UserController.sendFriendRequest);
 userRouter.post('/logout', UserController.logout);
 userRouter.post("/get-users", UserController.getUsersByNickname);
+userRouter.post("/search", UserController.normalizedSearch);
 userRouter.get('/:userId', async (req, res) => {
     const user = await UserController.getUser(req, res)
 

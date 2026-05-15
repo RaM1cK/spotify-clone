@@ -18,6 +18,10 @@ const MENU_ITEMS = [
 const MusicHome = () => {
     const navigate = useNavigate();
 
+    const handleSearch = (searchQuery) => {
+        console.log('Search in MusicHome:', searchQuery);
+    };
+
     return (
         <div className="MusicPage">
             <div className="music-home">

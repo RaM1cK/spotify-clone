@@ -5,8 +5,10 @@ import jwt from "jsonwebtoken";
 import io from "../server.js"
 import {getTracksBySecret, getTracksBySecretFromCache, trackAttributes, trackCountQuery} from "./TrackController.js";
 import {Track} from "../models/Track.ts";
-import {redisClient, sequelize} from "../models/index.js";
+import {sequelize} from "../models/index.js";
 import {literal, sql, Op} from "@sequelize/core";
+import stringNormalization from "../helpers/stringNormalization.js";
+import {redisClient, sequelize} from "../models/index.js";
 import {Message} from "../models/Message.ts";
 import {artistAttributes} from "./ArtistController.js";
 import {playlistAttributes} from "./PlaylistController.js";
@@ -190,6 +192,23 @@ const getUsersByNickname = async (req, res) => {
     })
 
     return res.status(200).send(users)
+}
+
+const normalizedSearch = async (req, res) => {
+    const search_query = req.body.search_query;
+    const normalizedQuery = stringNormalization.normalizeString(search_query);
+
+    const result = await Track.findAll({
+        where: sequelize.where(
+            sequelize.fn('similarity', sequelize.col('title'), normalizedQuery),
+            '>=',
+            0.3 // Порог схожести
+        ),
+        order: [[sequelize.fn('similarity', sequelize.col('title'), normalizedQuery), 'DESC']],
+        limit: 10 // Количество вхождений
+    });
+
+    return res.status(200).json(result);
 }
 
 const getReleases = async (req, res) => {
@@ -471,6 +490,7 @@ export default {
     auth,
     logout,
     verifyEmail,
+    normalizedSearch,
     getUser,
     getUsersByNickname,
     getReleases,
