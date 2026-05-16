@@ -1,6 +1,6 @@
 // ArtistMenu.jsx
 import React, {useEffect, useState} from "react";
-import {ChevronLeft, CircleUserRound} from "lucide-react";
+import {ChevronLeft, CircleUserRound, Heart} from "lucide-react";
 import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
 import "./ArtistMenu.css";
 import ArtistItem from "./ArtistItem";

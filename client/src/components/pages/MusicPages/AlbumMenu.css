@@ -1,9 +1,17 @@
 .album-autor{
     color: #a3a3a3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 
 .date-issingle{
     color: #a3a3a3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 
 .menuHeader{

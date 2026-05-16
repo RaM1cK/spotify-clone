@@ -3,7 +3,7 @@ import TrackList from "../../UI/TrackList/TrackList";
 import "./PlaylistItem.css"
 import {Player as pl, Player} from "../../../classes/Player.ts";
 import usePlayerState from "../../../hooks/usePlayerState";
-import {ChevronLeft, MoreHorizontal, Pause, Play} from "lucide-react";
+import {ChevronLeft, Heart, MoreHorizontal, Pause, Play} from "lucide-react";
 
 
 const getWordForm = (count) => {
@@ -62,7 +62,7 @@ const PlaylistItem = ({Tracks, setCurrentTrack, title, type, AutName, year, imag
                 <ChevronLeft size={20} />
             </button>
             <div className="liked-header">
-                <img src={image} className="playlist-logo" alt="logo" />
+                <img src={image} className="playlist-logo" alt="logo" onError={(e) => e.target.style.display = 'none'} />
                 <div className="liked-header-info">
                     <p>{type}</p>
                     <h1>{title}</h1>
@@ -88,6 +88,9 @@ const PlaylistItem = ({Tracks, setCurrentTrack, title, type, AutName, year, imag
                         >
                             {isPlaying? <Pause size={18}/> : <Play size={18}/>}
                             <span>Слушать</span>
+                        </button>
+                        <button className="liked-props-btn">
+                            <Heart size={18}/>
                         </button>
                         <button className="liked-props-btn">
                             <MoreHorizontal size={18}/>

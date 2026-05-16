@@ -1,5 +1,5 @@
 import {Artist} from "../models/Artist.ts";
-import {getTracksBySecret, hasInFavoriteQuery, trackAttributes, trackCountQuery} from "./TrackController.js";
+import {getFavoriteTrackIdsSet, getTracksBySecret, trackAttributes, trackCountQuery} from "./TrackController.js";
 import {getUser} from "./UserController.js";
 import {Track} from "../models/Track.ts";
 import {literal} from "@sequelize/core";
@@ -32,16 +32,19 @@ const getTracks = async (req, res) => {
     const artist = await Artist.findByPk(artistId)
     if (!artist) return res.status(404).send('Not Found')
 
+    const favoriteSet = await getFavoriteTrackIdsSet(req.user.id)
+
     const tracks = await artist.getTracks({
         limit: limit,
         order: [['createdAt', 'DESC']],
-        attributes: [
-            ...trackAttributes,
-            [hasInFavoriteQuery(req.user.id, 'Track'), 'hasInFavorite']
-        ]
-    }).then(tracks => getTracksBySecret(req, res, tracks))
+        attributes: trackAttributes
+    })
 
-    res.status(200).send(tracks)
+    const result = await getTracksBySecret(req, res, tracks)
+
+    res.status(200).send(
+        result.map(track => ({ ...track, hasInFavorite: favoriteSet.has(track.id) }))
+    )
 }
 
 const getReleases = async (req, res) => {

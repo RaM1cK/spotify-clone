@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import "./ArtistItem.css"
-import {ChevronLeft, ChevronRight, CircleUserRound, Pause, Play} from "lucide-react";
+import {ChevronLeft, ChevronRight, CircleUserRound, Heart, Pause, Play} from "lucide-react";
 import {Routes, Route, useNavigate, useParams} from "react-router-dom";
 import AlbumMenu from "./AlbumMenu";
 import TrackList from "../../UI/TrackList/TrackList";

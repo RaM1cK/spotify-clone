@@ -3,7 +3,7 @@ import axios from "axios";
 import PlaylistItem from "./PlaylistItem";
 import "./AlbumMenu.css"
 import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
-import {ChevronLeft} from "lucide-react";
+import {ChevronLeft, Heart} from "lucide-react";
 import {LoadingPage} from "../LoadingPage";
 
 const AlbumList = ({ artistId, UsingContext, RollBack }) => {
@@ -60,19 +60,12 @@ const AlbumDetail = ({ setCurrentTrack }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        Promise.all([
-            axios.get(`/api/releases/${albumId}`),
-            axios.get(`/api/releases/${albumId}/tracks`)
-        ])
-            .then(([albumRes, tracksRes]) => {
-                if (!albumRes.data) {
-                    setError('Альбом не найден');
-                    return;
-                }
-                setAlbum(albumRes.data);
-                setTracks(tracksRes.data);
+        axios.get(`/api/releases/${albumId}`)
+            .then(res => {
+                setAlbum(res.data);
+                setTracks(res.data.tracks);
             })
-            .catch((err) => {
+            .catch(err => {
                 if (err.response?.status === 404) setError('Альбом не найден');
                 else setError('Ошибка загрузки');
             })

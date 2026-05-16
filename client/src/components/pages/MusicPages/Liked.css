@@ -23,6 +23,7 @@
     flex-basis: clamp(80px, 28vw, 200px);
     min-width: 60px;
     max-width: min(200px, 40vw);
+    border-radius: 10%;
     aspect-ratio: 1 / 1;
     object-fit: contain;
 }
@@ -145,3 +146,4 @@
 .liked-props-btn:hover {
     background-color: rgba(255, 255, 255, 0.1);
 }
+
