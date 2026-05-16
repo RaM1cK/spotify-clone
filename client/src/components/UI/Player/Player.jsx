@@ -36,11 +36,12 @@ const Player = ({track, setTrack}) => {
             setPlaying(player.isPlaying());
             setLoading(player.isLoading())
             setDisabledPlayer(player.isLoading())
+            setPosition(player.seek())
             if (player.track) {
                 setTrack(player.track);
                 setDuration(player.track.duration);
             }
-        },[])
+        })
 
         if (track) {
             setDuration(track.duration);

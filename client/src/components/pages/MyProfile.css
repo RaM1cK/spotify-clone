@@ -1,4 +1,5 @@
 .mp-root {
+    padding: 32px 36px;
     padding: clamp(16px, 4vw, 32px) clamp(14px, 4vw, 36px);
     padding-top: max(16px, calc(env(safe-area-inset-top, 0px) + 12px));
     display: flex;
@@ -20,10 +21,10 @@
 /* ══ Header ══ */
 .mp-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    flex-wrap: wrap;
     gap: 16px 24px;
+    flex-wrap: wrap;
 }
 
 .mp-header-left {
@@ -130,8 +131,10 @@
 /* ══ Friends row ══ */
 .mp-friends-row {
     display: flex;
+    justify-content: left;
+    width: 100%;
     gap: 16px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .mp-friend-card {
@@ -143,8 +146,8 @@
 }
 
 .mp-friend-avatar {
-    width: 58px;
-    height: 58px;
+    width: 200px;
+    height: 200px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.07);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -196,7 +199,6 @@
     }
 
     .mp-edit-btn {
-        width: 100%;
         justify-content: center;
     }
 
@@ -210,6 +212,8 @@
         justify-content: center;
     }
 }
+
+
 
 .mp-switch-btn {
     display: flex;

@@ -12,22 +12,6 @@ const RangeTrack = ({duration, playing, intervalRef, position, setPosition}) => 
     const player = useRef(pl.getInstance()).current
 
     useEffect(() => {
-        const playerObserver = new PlayerUI(() => {
-            if (player.isStopped()) {
-                setPosition(0)
-            }
-        },[])
-
-        player.attach(playerObserver);
-
-        return () => {
-            player.detach(playerObserver);
-            player.destroy();
-            clearInterval(intervalRef.current);
-        }
-    }, [])
-
-    useEffect(() => {
         if (playing) {
             intervalRef.current = setInterval(() => {
                 if (!isDraggingRef.current) setPosition(player.seek());

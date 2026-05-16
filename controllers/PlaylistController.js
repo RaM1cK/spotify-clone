@@ -1,6 +1,6 @@
 import {Playlist} from "../models/Playlist.ts";
 import {literal} from "@sequelize/core";
-import {getTracksBySecret, hasInFavoriteQuery, trackAttributes} from "./TrackController.js";
+import {getFavoriteTrackIdsSet, getTracksBySecret, trackAttributes} from "./TrackController.js";
 import {Track} from "../models/Track.ts";
 
 export const playlistAttributes = [
@@ -38,19 +38,19 @@ const getPlaylistTracks = async (req, res) => {
         include: {
             model: Track,
             as: 'tracks',
-            attributes: [
-                ...trackAttributes,
-                [hasInFavoriteQuery(req.user.id), 'hasInFavorite']
-            ],
+            attributes: trackAttributes,
             order: [[literal('"playlistTrack.createdAt"'), 'DESC']]
         }
     })
 
     if (!playlist) return res.status(404).send('No such playlist')
 
+    const favoriteSet = await getFavoriteTrackIdsSet(req.user.id)
     const result = await getTracksBySecret(req, res, playlist.tracks)
 
-    res.status(200).send(result)
+    res.status(200).send(
+        result.map(track => ({ ...track, hasInFavorite: favoriteSet.has(track.id) }))
+    )
 }
 
 export default {

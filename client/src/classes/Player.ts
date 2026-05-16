@@ -140,8 +140,6 @@ export class Player implements Subject {
     }
 
     private setHowl(track: any, startFrom: number = 0, autoplay: boolean = true) {
-        this.stop()
-
         this.howl?.unload()
         this._lastPositionOnLoading = -1
         this.stopBufferWatch()
@@ -232,11 +230,11 @@ export class Player implements Subject {
         return this.state instanceof StoppedState;
     }
 
-    public get track(): Track {
+    public get track(): any {
         return this._strategy.wrapped.track;
     }
 
-    public get queue(): Track[] {
+    public get queue(): any[] {
         return this._strategy.wrapped.queue;
     }
 

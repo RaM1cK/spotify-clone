@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {
     useFriendRequestActions,
     useFriends,
@@ -149,6 +149,22 @@ export default function MyProfile() {
     const nickname  = session.nickname;
     const email     = session.email;
     const avatarUrl = session.avatar;
+    const AVATAR_SIZE = 180; // px — фиксированная ширина аватарки
+    const GAP = 16;         // px — gap между карточками
+    const friendsRowRef = useRef(null);
+    const [maxVisible, setMaxVisible] = useState(6);
+
+    useEffect(() => {
+        const el = friendsRowRef.current;
+        if (!el) return;
+        const observer = new ResizeObserver(([entry]) => {
+            const width = entry.contentRect.width;
+            const count = Math.max(1, Math.floor((width + GAP) / (AVATAR_SIZE + GAP)));
+            setMaxVisible(count);
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
 
     const handleSwitch = (tab) => {
         setRequestsTab(prev => prev === tab ? null : tab);
@@ -176,7 +192,7 @@ export default function MyProfile() {
                 </div>
                 <button className="mp-edit-btn">
                     <PencilIcon />
-                    Редактировать
+                    <span className="mp-edit-btn-text">Редактировать</span>
                 </button>
             </div>
 
@@ -192,7 +208,7 @@ export default function MyProfile() {
                 {friends.length === 0 ? (
                     <p className="mp-empty">У вас пока нет друзей. Добавьте первого!</p>
                 ) : (
-                    <div className="mp-friends-row">
+                    <div className="mp-friends-row" ref={friendsRowRef}>
                         {friends.slice(0, friends.length > 6 ? 5 : 6).map(f =>
                             <FriendCard key={f.id} friend={f} />)}
                         {friends.length > 6 && (

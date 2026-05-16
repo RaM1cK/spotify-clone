@@ -1,5 +1,5 @@
 import {
-    BelongsToGetAssociationMixin, BelongsToManyGetAssociationsMixin,
+    BelongsToGetAssociationMixin, BelongsToManyGetAssociationsMixin, BelongsToSetAssociationMixin,
     DataTypes, HasManyGetAssociationsMixin,
     InferAttributes,
     InferCreationAttributes,
@@ -31,7 +31,6 @@ export class Message extends Model<InferAttributes<Model>, InferCreationAttribut
         }
     })
     declare sender?: NonAttribute<Chat>;
-    declare getSender: BelongsToGetAssociationMixin<Chat>;
 
     @Attribute(DataTypes.UUID)
     declare chatId: string;
@@ -44,7 +43,6 @@ export class Message extends Model<InferAttributes<Model>, InferCreationAttribut
         }
     })
     declare chat?: NonAttribute<Chat>;
-    declare getChat: BelongsToGetAssociationMixin<Chat>;
 
     @Attribute(DataTypes.SMALLINT)
     @NotNull
@@ -60,7 +58,6 @@ export class Message extends Model<InferAttributes<Model>, InferCreationAttribut
     declare quotedId: string;
 
     declare quotedMessage?: NonAttribute<Message>;
-    declare getQuotedMessage: BelongsToGetAssociationMixin<Message>;
 
     @HasMany(() => Message, {
         foreignKey: 'quotedId',

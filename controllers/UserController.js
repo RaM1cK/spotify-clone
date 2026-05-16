@@ -3,14 +3,21 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import io from "../server.js"
-import {getTracksBySecret, getTracksBySecretFromCache, trackAttributes, trackCountQuery} from "./TrackController.js";
-import {Track} from "../models/Track.ts";
+import {
+    getFavoriteTrackIdsSet,
+    getTracksBySecret,
+    getTracksBySecretFromCache,
+    trackAttributes,
+    trackCountQuery
+} from "./TrackController.js";
+import {literal, Op} from "@sequelize/core";
+import stringNormalization from "../helpers/stringNormalization.js";
 import {redisClient, sequelize} from "../models/index.js";
-import {literal, sql} from "@sequelize/core";
 import {Message} from "../models/Message.ts";
 import {artistAttributes} from "./ArtistController.js";
 import {playlistAttributes} from "./PlaylistController.js";
 import {Friendship} from "../models/Friendship.ts";
+import {getFavoriteReleaseIdsSet, releaseAttributes} from "./ReleaseController.js";
 
 dotenv.config();
 
@@ -42,6 +49,8 @@ function sendVerificationLink(regData) {
         .set(`verification:${email}`, 1, { EX: 5 * 60})
         .catch(err => console.log(err))
 
+    console.log(`${process.env.IP_APP}/api/users/verify-email?token=${tokenEmailVerify}`)
+
     transporter.sendMail({
         from: process.env.MAIL_FROM,
         to: email,
@@ -52,7 +61,6 @@ function sendVerificationLink(regData) {
         .catch(err => console.log(err))
 }
 
-//TODO: сделать одноразовую ссылку
 const verifyEmail = async (req, res) => {
     try {
         const token = jwt.verify(req.query.token, process.env.SECRET_KEY);
@@ -178,82 +186,145 @@ export const getUser = async (req, res) => {
 const getUsersByNickname = async (req, res) => {
     const nickname = req.body.nickname
 
-    const user = await User.findAll({
-        where: { nickname },
+    const users = await User.findAll({
+        where: {
+            nickname: { [Op.iLike]: `%${nickname}%` },
+            id: { [Op.ne]: req.user.id }
+        },
         attributes: {
             exclude: ['password_hash', 'createdAt', 'updatedAt'],
         }
     })
 
-    if (!user) {
-        return res.status(404).json({})
-    } else {
-        return res.status(200).send(user)
+    return res.status(200).send(users)
+}
+
+const normalizedSearch = async (req, res) => {
+    const search_query = req.query.query;
+    const normalizedQuery = stringNormalization.normalizeString(search_query);
+    const searchResult =
+        await redisClient.get(`search:${normalizedQuery}`);
+
+    if (searchResult)
+        return res.status(200).send(JSON.parse(searchResult));
+
+    const tables = {
+        track: 'tracks',
+        artist: 'artists',
+        release: 'releases'
     }
+
+    const subQuery = (type, column, limit = 0) =>
+        `(
+            SELECT 
+                id, 
+                '${type}' AS type,
+                GREATEST(
+                    similarity(${column}, :query),
+                    word_similarity(${column}, :query)
+                ) AS score
+            FROM ${tables[type]}
+            WHERE 
+                ${column} % :query 
+                OR ${column} <% :query
+            ORDER BY score DESC
+            ${limit > 0 ? `LIMIT ${limit}` : ''}
+        )`
+
+    const result = await sequelize.query(`
+        SET pg_trgm.similarity_threshold = 0.0001;
+        SET pg_trgm.word_similarity_threshold = 0.0001;
+    
+        ${subQuery('artist', 'name_normalized', 20)}
+        UNION ALL
+        ${subQuery('track', 'title_normalized', 50)}
+        UNION ALL
+        ${subQuery('release', 'title_normalized', 20)}
+    `, {
+        replacements: { query: normalizedQuery }
+    })
+
+    redisClient
+        .set(`search:${normalizedQuery}`, JSON.stringify(result[0]), { EX: 10 * 60})
+        .catch(err => console.log(err))
+
+    return res.status(200).json(result[0]);
 }
 
 const getReleases = async (req, res) => {
-    const user = await getUser(req, res)
+    const targetUser = await getUser(req, res)
+    const currentUserId = req.user.id
+    const isOwn = targetUser.id === currentUserId
 
-    const result = await user.getFavoriteReleases({
-        attributes: {
-            exclude: ['createdAt', 'updatedAt', 'icpn']
-        },
-        order: [[literal('"userFavoriteRelease.createdAt"'), 'DESC']]
-    }).then(releases => releases.map(release => {
-        const {userFavoriteRelease, ...rest} = release.toJSON()
+    const cachedValue =
+        await redisClient.get(`favoriteReleases:${req.user.id}`)
 
-        return {
-            ...rest,
-            date: new Date(release.date).getFullYear()
-        }
-    }))
+    let releaseList = null;
+    if (cachedValue) releaseList = JSON.parse(cachedValue)
 
-    res.status(200).send(result)
+    if (!releaseList) {
+        const result = await targetUser.getFavoriteReleases({
+            attributes: releaseAttributes,
+            order: [[literal('"userFavoriteRelease.createdAt"'), 'DESC']]
+        })
+
+        releaseList = result.map(r => {
+            const {userFavoriteRelease, date, ...rest} = r.dataValues
+
+            return {
+                ...rest,
+                date: new Date(date).getFullYear()
+            }
+        })
+
+        redisClient
+            .set(`favoriteReleases:${req.user.id}`, JSON.stringify(releaseList), {EX: 3600})
+            .catch(err => console.log(err))
+    }
+
+    if (isOwn) {
+        res.status(200).send(releaseList.map(t => ({ ...t, hasInFavorite: true })))
+    } else {
+        const favSet = await getFavoriteReleaseIdsSet(currentUserId, releaseList)
+        res.status(200).send(releaseList.map(t => ({ ...t, hasInFavorite: favSet.has(t.id) })))
+    }
 }
 
 const getTracks = async (req, res) => {
-    const favoriteTracks =
-        await redisClient.get(`favoriteTracks:${req.user.id}`)
+    const targetUser = await getUser(req, res)
+    const currentUserId = req.user.id
+    const isOwn = targetUser.id === currentUserId
 
-    if (!favoriteTracks) {
-        const user = await getUser(req, res)
+    const cachedValue =
+        await redisClient.get(`favoriteTracks:${targetUser.id}`)
 
-        const result = await user.getFavoriteTracks({
-            attributes: [
-                ...trackAttributes,
-                [literal(`true`), 'hasInFavorite']
-            ],
+    let trackList = null
+    if (cachedValue) trackList = JSON.parse(cachedValue)
+
+    if (!trackList) {
+        const result = await targetUser.getFavoriteTracks({
+            attributes: trackAttributes,
             order: [[literal('"userFavoriteTrack.createdAt"'), 'DESC']]
-        }).then(tracks => getTracksBySecret(req, res, tracks));
+        })
+
+        trackList = result.map(t => {
+            const {userFavoriteTrack, ...rest} = t.dataValues
+
+            return rest
+        })
 
         redisClient
-            .set(`favoriteTracks:${req.user.id}`, JSON.stringify(result.map(track => track.id)))
+            .set(`favoriteTracks:${targetUser.id}`, JSON.stringify(trackList), { EX: 3600 })
             .catch(err => console.log(err));
+    }
 
-        res.status(200).send(result)
+    const response = getTracksBySecretFromCache(req, res, trackList)
+
+    if (isOwn) {
+        res.status(200).send(response.map(t => ({ ...t, hasInFavorite: true })))
     } else {
-        const favoriteTracksIds = JSON.parse(favoriteTracks)
-
-        const result = await Promise.all(
-            favoriteTracksIds.map(async trackId => {
-                const cached =
-                    await redisClient.get(`track:${trackId}`)
-
-                if (cached) return {...JSON.parse(cached), hasInFavorite: true}
-
-                const track = await Track.findByPk(trackId)
-                if (!track) return null
-
-                redisClient
-                    .set(`track:${trackId}`, JSON.stringify(track.toJSON()))
-                    .catch(err => console.log(err));
-
-                return {...track.toJSON(), hasInFavorite: true};
-            })
-        )
-
-        res.status(200).send(getTracksBySecretFromCache(req, res, result.filter(Boolean)))
+        const favSet = await getFavoriteTrackIdsSet(currentUserId)
+        res.status(200).send(response.map(t => ({ ...t, hasInFavorite: favSet.has(t.id) })))
     }
 }
 
@@ -265,6 +336,10 @@ const addFavoriteTrack = async (req, res) => {
         await sequelize.transaction(async t => {
             await user.addFavoriteTrack(trackId, { transaction: t });
         });
+
+        redisClient
+            .del(`favoriteTracks:${req.user.id}`)
+            .catch(err => console.log(err));
 
         return res.status(200).send({});
     } catch {
@@ -280,6 +355,10 @@ const removeFavoriteTrack = async (req, res) => {
         await sequelize.transaction(async t => {
             await user.removeFavoriteTrack(trackId, { transaction: t });
         });
+
+        redisClient
+            .del(`favoriteTracks:${req.user.id}`)
+            .catch(err => console.log(err));
 
         return res.status(200).send({});
     } catch {
@@ -330,12 +409,33 @@ const getChats = async (req, res) => {
         attributes: {
             exclude: ['createdAt', 'updatedAt']
         },
-        include: {
-            model: Message, as: 'messages'
-        }
+        include: [
+            {
+                model: Message,
+                as: 'messages',
+                separate: true,
+                include: {
+                    model: Message,
+                    as: 'quotedMessage',
+                    attributes: ['id', 'data', 'senderId', 'createdAt', 'dataType']
+                }
+            },
+            {
+                model: User,
+                as: 'users',
+                attributes: userAttributes,
+                through: { attributes: [] }
+            }
+        ]
     })
 
-    res.status(200).send(result)
+    res.status(200).send(
+        result.map(chat => {
+            const {userChat, ...rest} = chat.toJSON();
+
+            return rest;
+        })
+    )
 }
 
 const acceptFriendRequest = async (req, res) => {
@@ -357,6 +457,10 @@ const acceptFriendRequest = async (req, res) => {
             )
         })
 
+        redisClient
+            .del([`friendships:${req.user.id}`, `friendships:${senderId}`])
+            .catch(err => console.log(err));
+
         return res.status(200).send({});
     } catch (error) {
         return res.status(500).send({});
@@ -376,6 +480,10 @@ const rejectFriendRequest = async (req, res) => {
                 transaction: t
             })
         })
+
+        redisClient
+            .del([`friendships:${req.user.id}`, `friendships:${senderId}`])
+            .catch(err => console.log(err));
 
         return res.status(200).send({});
     } catch (error) {
@@ -397,9 +505,35 @@ const cancelFriendRequest = async (req, res) => {
             })
         })
 
+        redisClient
+            .del([`friendships:${req.user.id}`, `friendships:${receiverId}`])
+            .catch(err => console.log(err));
+
         return res.status(200).send({});
     } catch (error) {
         return res.status(500).send({});
+    }
+}
+
+const sendFriendRequest = async (req, res) => {
+    const receiverId = req.params.receiverId
+
+    try {
+        await sequelize.transaction(async t => {
+            await Friendship.create({
+                senderId: req.user.id,
+                receiverId,
+                request_accepted: false
+            }, { transaction: t })
+        })
+
+        redisClient
+            .del([`friendships:${req.user.id}`, `friendships:${receiverId}`])
+            .catch(err => console.log(err))
+
+        return res.status(200).send({})
+    } catch (error) {
+        return res.status(500).send({})
     }
 }
 
@@ -408,6 +542,7 @@ export default {
     auth,
     logout,
     verifyEmail,
+    normalizedSearch,
     getUser,
     getUsersByNickname,
     getReleases,
@@ -420,4 +555,5 @@ export default {
     acceptFriendRequest,
     rejectFriendRequest,
     cancelFriendRequest,
+    sendFriendRequest,
 }

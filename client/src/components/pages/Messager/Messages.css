@@ -243,6 +243,59 @@
     padding: 0 4px;
 }
 
+.messages-bubble__quoted {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 6px;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    cursor: pointer;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.messages-bubble.me .messages-bubble__quoted {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.messages-bubble__quoted-line {
+    width: 3px;
+    background: #6366f1;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.messages-bubble__quoted-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.messages-bubble__quoted-user {
+    font-size: 11px;
+    font-weight: 600;
+    color: #a5b4fc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.messages-bubble__quoted-text {
+    font-size: 12px;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.messages-bubble.them .messages-bubble__quoted-text {
+    color: #777;
+}
+
 .messages-input-row {
     display: flex;
     align-items: flex-end;
@@ -334,4 +387,141 @@
     .messages-chat-last {
         max-width: 56vw;
     }
+}
+
+.messages-bubble--reply-target .messages-bubble__text {
+    outline: 2px solid rgba(99, 102, 241, 0.5);
+    outline-offset: 2px;
+}
+
+.messages-context-menu {
+    position: fixed;
+    z-index: 1000;
+    background: #1a1b23;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 4px;
+    min-width: 180px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    animation: cm-fade-in 0.12s ease;
+}
+
+@keyframes cm-fade-in {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+.messages-context-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: #d4d4d4;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+    user-select: none;
+}
+
+.messages-context-menu__item svg {
+    flex-shrink: 0;
+    color: #6b7280;
+    transition: color 0.12s ease;
+}
+
+.messages-context-menu__item:hover {
+    background: rgba(99, 102, 241, 0.15);
+    color: #e0e0ff;
+}
+
+.messages-context-menu__item:hover svg {
+    color: #a5b4fc;
+}
+
+.messages-context-menu__item--danger {
+    color: #f87171;
+}
+
+.messages-context-menu__item--danger svg {
+    color: #f87171;
+}
+
+.messages-context-menu__item--danger:hover {
+    background: rgba(248, 113, 113, 0.12);
+    color: #fca5a5;
+}
+
+.messages-context-menu__item--danger:hover svg {
+    color: #fca5a5;
+}
+
+.messages-context-menu__divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.07);
+    margin: 4px 8px;
+}
+
+/* Reply indicator */
+
+.messages-reply-indicator {
+    flex-shrink: 0;
+    padding: 0 16px;
+    background: rgba(99, 102, 241, 0.04);
+    border-top: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.messages-reply-indicator__content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.messages-reply-indicator__line {
+    width: 3px;
+    align-self: stretch;
+    background: #6366f1;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.messages-reply-indicator__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.messages-reply-indicator__user {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6366f1;
+}
+
+.messages-reply-indicator__text {
+    font-size: 13px;
+    color: #6b7280;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.messages-reply-indicator__close {
+    all: unset;
+    cursor: pointer;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 6px;
+    transition: color 0.15s ease, background 0.15s ease;
+    flex-shrink: 0;
+}
+
+.messages-reply-indicator__close:hover {
+    color: #e8e8e8;
+    background: rgba(255, 255, 255, 0.08);
 }

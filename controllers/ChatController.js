@@ -60,9 +60,20 @@ const socket = (io) => {
                 const message = await sequelize.transaction(async t => {
                     const message = await Message.create(msg, { transaction: t})
 
-                    await chat.addMessage(message, { transaction: t});
+                    // if (message.quotedId) await message.setQuotedMessage(message.quotedId, {transaction: t})
 
-                    return message.toJSON()
+                    await chat.addMessage(message.id, { transaction: t});
+
+                    const reloaded = await Message.findByPk(message.id, {
+                        transaction: t,
+                        include: {
+                            model: Message,
+                            as: 'quotedMessage',
+                            attributes: ['id', 'data', 'senderId', 'createdAt', 'dataType']
+                        }
+                    });
+
+                    return reloaded.toJSON()
                 })
 
                 io.to(room).emit('receive-message', message);

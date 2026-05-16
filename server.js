@@ -22,6 +22,7 @@ import {Playlist} from "./models/Playlist.ts";
 import PlaylistRouter from "./routers/PlaylistRouter.js";
 import {Friendship} from "./models/Friendship.ts";
 import {Chat} from "./models/Chat.ts";
+import {Resend} from "resend";
 //import {Composition, Track} from "./models/Track.ts";
 
 dotenv.config();

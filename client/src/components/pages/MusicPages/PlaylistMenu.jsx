@@ -10,6 +10,7 @@ import playlistItem from "./PlaylistItem";
 import PlaylistItem from "./PlaylistItem";
 import trackList from "../../UI/TrackList/TrackList";
 import {Routes, Route, useNavigate, useParams, Navigate} from "react-router-dom";
+import {LoadingPage} from "../LoadingPage";
 
 const getWordForm = (count) => {
     const lastTwo = count % 100;
@@ -69,7 +70,7 @@ const PlaylistList = ({ onSelect, RollBack }) => {
             .finally(() => setLoading(false));
     }, [])
 
-    if (loading) return <div>Загрузка...</div>
+    if (loading) return <LoadingPage/>
     if (error) return <div>{error}</div>;
 
     return (
@@ -124,7 +125,7 @@ const PlaylistDetail = ({ setCurrentTrack, RollBack }) => {
             .finally(() => setLoading(false));
     }, [])
 
-    if (loading) return <div>Загрузка...</div>
+    if (loading) return <LoadingPage/>;
     if (error) return <div>{error}</div>;
 
     if (playlist && tracks)

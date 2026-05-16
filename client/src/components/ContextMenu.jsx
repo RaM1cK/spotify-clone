@@ -2,6 +2,7 @@ import React, {useState, useEffect, useRef, createContext, useContext} from 'rea
 import {useNavigate, useLocation, Routes, Route} from "react-router-dom";
 import './ContextMenuStyle.css';
 import {useFriends, useSession, useSocket} from "../AppContext";
+import AddFriendModal from "./AddFriendModal";
 import {ChevronRight} from "lucide-react";
 
 
@@ -65,7 +66,7 @@ function DotsIcon() {
     );
 }
 
-function ProfileModal({ session, onLogout, onClose, anchorRect, ROUTES_PAGES }) {
+function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROUTES_PAGES }) {
     const overlayRef = useRef(null);
     const setMenuOpen = useContextMenu().setMenuOpen;
     const friends = useFriends()
@@ -164,7 +165,7 @@ function ProfileModal({ session, onLogout, onClose, anchorRect, ROUTES_PAGES }) 
                         </div>
                     )}
 
-                    <button className="pm-pill-btn">
+                    <button className="pm-pill-btn" onClick={() => onAddFriend()}>
                         <PlusIcon />
                         Добавить друга
                     </button>
@@ -202,6 +203,7 @@ export default function ContextMenu({ PAGES, menuOpen, setMenuOpen, onLogout, RO
     const navigate = useNavigate();
     const location = useLocation();
     const [profileOpen, setProfileOpen] = useState(false);
+    const [addFriendOpen, setAddFriendOpen] = useState(false);
     const panelRef = useRef(null);
 
     const username  = session?.nickname;
@@ -261,8 +263,13 @@ export default function ContextMenu({ PAGES, menuOpen, setMenuOpen, onLogout, RO
                     session={session}
                     onLogout={onLogout}
                     onClose={() => setProfileOpen(false)}
+                    onAddFriend={() => { setProfileOpen(false); setAddFriendOpen(true); }}
                     anchorRect={panelRef.current?.getBoundingClientRect()}
                 />
+            )}
+
+            {addFriendOpen && (
+                <AddFriendModal onClose={() => setAddFriendOpen(false)} />
             )}
         </ContextMenuProvider>
     );

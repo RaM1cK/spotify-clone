@@ -3,7 +3,6 @@ import axios from "axios";
 import "../../App.css";
 import TrackList from "../UI/TrackList/TrackList";
 import SearchBar from "../SearchBar";
-import { filterTracksBySearchTerm } from "../../../../searchUtils";
 
 const MainPage = ({setCurrentTrack}) => {
     const music = [
@@ -38,7 +37,21 @@ const MainPage = ({setCurrentTrack}) => {
         })();
     }, []);
 
-    const filteredTracks = filterTracksBySearchTerm(trackList, searchTerm);
+
+    const handleSearch = async (searchQuery) => {
+        if (!searchQuery.trim()) {
+            setTrackList(trackList);
+            return;
+        }
+
+        try {
+            const res = await axios.post('/api/users/search', { search_query: searchQuery });
+            console.log('Search request sent:', searchQuery);
+            console.log('Search results:', res.data);
+        } catch (error) {
+            console.error('Search error:', error);
+        }
+    };
 
     return (
         <>
@@ -55,8 +68,8 @@ const MainPage = ({setCurrentTrack}) => {
                         height: '100%',
                     }}
                 >
-                    <SearchBar onSearch={setSearchTerm} />
-                    <TrackList tracks={filteredTracks} setCurrentTrack = {setCurrentTrack} />
+                    <SearchBar onSearch={handleSearch} />
+                    <TrackList tracks={trackList} setCurrentTrack = {setCurrentTrack} />
                 </div>
             </div>
         </>

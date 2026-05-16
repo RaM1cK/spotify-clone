@@ -1,20 +1,49 @@
-import React, { useState } from "react";
-import { Search, X } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { Search, X, Loader } from "lucide-react";
 import "./SearchBar.css";
+import axios from "axios";
 
-const SearchBar = ({ onSearch }) => {
+const SearchBar = () => {
     const [searchTerm, setSearchTerm] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const debounceTimer = useRef(null);
+
+    const handleSearch = (searchQuery) =>
+        axios.get(`/api/users/search?query=${searchQuery}`)
+            .then(res => console.log(res.data))
+            .catch(err => console.log(err));
 
     const handleChange = (e) => {
         const value = e.target.value;
+
         setSearchTerm(value);
-        onSearch(value);
+        setIsLoading(true);
+
+        if (debounceTimer.current) {
+            clearTimeout(debounceTimer.current);
+        }
+
+        debounceTimer.current = setTimeout(() => {
+            if (value) handleSearch(value);
+            setIsLoading(false);
+        }, 500);
     };
 
     const handleClear = () => {
         setSearchTerm("");
-        onSearch("");
+        setIsLoading(false);
+        if (debounceTimer.current) {
+            clearTimeout(debounceTimer.current);
+        }
     };
+
+    useEffect(() => {
+        return () => {
+            if (debounceTimer.current) {
+                clearTimeout(debounceTimer.current);
+            }
+        };
+    }, []);
 
     return (
         <div className="search-bar-container">
@@ -22,12 +51,13 @@ const SearchBar = ({ onSearch }) => {
                 <Search className="search-icon" size={20} />
                 <input
                     type="text"
-                    placeholder="Search by track name or artist..."
+                    placeholder="Название трека, альбома, артиста..."
                     value={searchTerm}
                     onChange={handleChange}
                     className="search-input"
                 />
-                {searchTerm && (
+                {isLoading && <Loader className="spinner" size={20} />}
+                {searchTerm && !isLoading && (
                     <button
                         onClick={handleClear}
                         className="clear-button"
