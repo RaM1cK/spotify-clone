@@ -89,6 +89,8 @@ userRouter.get('/:userId', async (req, res) => {
     res.status(200).send(user);
 })
 userRouter.get("/:userId/favoriteReleases", UserController.getReleases);
+userRouter.delete('/removeFavoriteRelease/:releaseId', userController.removeFavoriteRelease);
+userRouter.post('/addFavoriteRelease/:releaseId', userController.addFavoriteRelease);
 userRouter.get("/:userId/favoriteTracks", UserController.getTracks);
 userRouter.delete('/removeFavoriteTrack/:trackId', userController.removeFavoriteTrack);
 userRouter.post('/addFavoriteTrack/:trackId', userController.addFavoriteTrack);

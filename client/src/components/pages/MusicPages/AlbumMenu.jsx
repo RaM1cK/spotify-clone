@@ -57,6 +57,7 @@ const AlbumDetail = ({ setCurrentTrack }) => {
     const [tracks, setTracks] = useState(null);
     const [album, setAlbum] = useState(null);
     const [error, setError] = useState(null);
+    const [isFavorite, setIsFavorite] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -64,6 +65,7 @@ const AlbumDetail = ({ setCurrentTrack }) => {
             .then(res => {
                 setAlbum(res.data);
                 setTracks(res.data.tracks);
+                setIsFavorite(res.data.hasInFavorite)
             })
             .catch(err => {
                 if (err.response?.status === 404) setError('Альбом не найден');
@@ -72,14 +74,30 @@ const AlbumDetail = ({ setCurrentTrack }) => {
             .finally(() => setLoading(false));
     }, [albumId]);
 
+    const toFavorite = () => {
+        const request = () => isFavorite
+            ? axios.delete(`/api/users/removeFavoriteRelease/${albumId}`)
+            : axios.post(`/api/users/addFavoriteRelease/${albumId}`)
+
+        request()
+            .then(() => {
+                const newValue = !isFavorite
+                setIsFavorite(newValue)
+            })
+            .catch(err => console.error(err));
+    }
+
     if (loading) return <LoadingPage/>;
     if (error) return <div>{error}</div>;
 
     if (album && tracks)
         return (
             <PlaylistItem
+                id={albumId}
                 Tracks={tracks}
                 title={album.title}
+                isFavorite={isFavorite}
+                toFavorite={toFavorite}
                 type="Альбом"
                 image={`/api/files/${album.cover}`}
                 setCurrentTrack={setCurrentTrack}

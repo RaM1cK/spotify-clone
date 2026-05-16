@@ -1,9 +1,10 @@
-import React, {useRef} from 'react';
+import React, {useRef, useState} from 'react';
 import TrackList from "../../UI/TrackList/TrackList";
 import "./PlaylistItem.css"
 import {Player as pl, Player} from "../../../classes/Player.ts";
 import usePlayerState from "../../../hooks/usePlayerState";
 import {ChevronLeft, Heart, MoreHorizontal, Pause, Play} from "lucide-react";
+import axios from "axios";
 
 
 const getWordForm = (count) => {
@@ -35,7 +36,7 @@ const getSum = (Tracks) => {
 };
 
 
-const PlaylistItem = ({Tracks, setCurrentTrack, title, type, AutName, year, image, RollBack}) => {
+const PlaylistItem = ({Tracks, setCurrentTrack, title, type, isFavorite, toFavorite, AutName, year, image, RollBack}) => {
     const player = useRef(pl.getInstance()).current
     const isPlaying = usePlayerState(player, Tracks);
 
@@ -89,8 +90,11 @@ const PlaylistItem = ({Tracks, setCurrentTrack, title, type, AutName, year, imag
                             {isPlaying? <Pause size={18}/> : <Play size={18}/>}
                             <span>Слушать</span>
                         </button>
-                        <button className="liked-props-btn">
-                            <Heart size={18}/>
+                        <button
+                            className="liked-props-btn"
+                            onClick={toFavorite}
+                        >
+                            <Heart size={18} fill={isFavorite ? 'white' : 'none'}/>
                         </button>
                         <button className="liked-props-btn">
                             <MoreHorizontal size={18}/>

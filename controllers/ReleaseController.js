@@ -7,6 +7,7 @@ import {
 } from "./TrackController.js";
 import {Track} from "../models/Track.ts";
 import {redisClient, sequelize} from "../models/index.js";
+import t from "nodemailer/lib/smtp-connection/index.js";
 
 export const releaseAttributes = [
     'id',
@@ -92,10 +93,12 @@ const getRelease = async (req, res) => {
     }
 
     const favTracks = await getFavoriteTrackIdsSet(req.user.id)
+    const favReleases = await getFavoriteReleaseIdsSet(req.user.id)
     trackList = getTracksBySecretFromCache(req, res, trackList.map(t => ({...t, hasInFavorite: favTracks.has(t.id)})))
 
     res.status(200).send({
         ...release,
+        hasInFavorite: favReleases.has(releaseId),
         tracks: trackList
     })
 }

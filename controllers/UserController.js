@@ -290,6 +290,44 @@ const getReleases = async (req, res) => {
     }
 }
 
+const addFavoriteRelease = async (req, res) => {
+    const user = await getUser(req, res)
+    const releaseId = req.params.releaseId;
+
+    try {
+        await sequelize.transaction(async t => {
+            await user.addFavoriteRelease(releaseId, { transaction: t });
+        });
+
+        redisClient
+            .del(`favoriteReleases:${req.user.id}`)
+            .catch(err => console.log(err));
+
+        return res.status(200).send({});
+    } catch {
+        return res.status(500).send({});
+    }
+}
+
+const removeFavoriteRelease = async (req, res) => {
+    const user = await getUser(req, res)
+    const releaseId = req.params.releaseId;
+
+    try {
+        await sequelize.transaction(async t => {
+            await user.removeFavoriteRelease(releaseId, { transaction: t });
+        });
+
+        redisClient
+            .del(`favoriteReleases:${req.user.id}`)
+            .catch(err => console.log(err));
+
+        return res.status(200).send({});
+    } catch {
+        return res.status(500).send({});
+    }
+}
+
 const getTracks = async (req, res) => {
     const targetUser = await getUser(req, res)
     const currentUserId = req.user.id
@@ -546,6 +584,8 @@ export default {
     getUser,
     getUsersByNickname,
     getReleases,
+    addFavoriteRelease,
+    removeFavoriteRelease,
     getTracks,
     addFavoriteTrack,
     removeFavoriteTrack,
