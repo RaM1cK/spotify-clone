@@ -163,7 +163,10 @@ export function UserProfile() {
 
     if (user) {
         return (
-            <div>{user.nickname}</div>
+            <div>
+                {user.nickname}
+                saSasa
+            </div>
         )
     }
 }
