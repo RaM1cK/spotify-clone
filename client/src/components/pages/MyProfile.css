@@ -1,7 +1,7 @@
 .mp-root {
     padding: 32px 36px;
     padding: clamp(16px, 4vw, 32px) clamp(14px, 4vw, 36px);
-    padding-top: max(16px, calc(env(safe-area-inset-top, 0px) + 12px));
+    padding-top: max(40px, calc(env(safe-area-inset-top, 0px) + 30px));
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -31,14 +31,14 @@
     display: flex;
     align-items: flex-start;
     gap: 20px;
-    height: 140px;
+    height: 100%;
 }
 
 .mp-avatar {
-    width: 140px;
-    height: 140px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
     background: rgba(99, 102, 241, 0.25);
-    border: 2px solid rgba(99, 102, 241, 0.45);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -50,7 +50,6 @@
 .mp-avatar img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
     border-radius: 50%;
 }
 
@@ -58,25 +57,26 @@
     display: flex;
     flex-direction: column;
     padding: 12px;
-    gap: 5px;
+    gap: 12px;
     height: 100%;
 }
 
 .mp-nickname {
-    font-size: clamp(20px, 5vw, 26px);
+    font-size: clamp(26px, 5vw, 32px);
     font-weight: 700;
     color: #f0f0f0;
     line-height: 1;
 }
 
 .mp-email {
-    font-size: 15px;
+    font-size: 20px;
     color: #6b7280;
 }
 
 .mp-edit-btn {
     display: flex;
-    align-items: center;
+    width: fit-content;
+    justify-content: center;
     margin-top: auto;
     gap: 8px;
     padding: 10px 22px;
@@ -352,4 +352,182 @@
 .mp-req-btn--cancel:hover {
     background: rgba(248, 113, 113, 0.12);
     color: #f87171;
+}
+
+.edit-modal-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.edit-modal-overlay {
+    animation: fadeIn 0.15s ease;
+}
+
+.edit-modal-content {
+    background: #1a1a1a;
+    border-radius: 12px;
+    border: 1px solid #888;
+    padding: 1.5rem;
+    max-width: px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+/* Анимация появления модалки */
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.modal {
+    animation: slideUp 0.2s ease;
+}
+
+/* Шапка */
+.edit-modal-header {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.edit-modal-title {
+    font-size: 24px;
+    color: #f5f5f5;
+    font-weight: 500;
+    margin: 0;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+    padding: 8px;
+    line-height: 1;
+    border-radius: 6px;
+    font-size: 24px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+
+
+.edit-modal-avatar-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    width: 100%;
+    height: 200px;
+}
+
+.edit-modal-avatar {
+    position: relative;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.edit-modal-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.edit-modal-avatar-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0);
+    transition: background 0.2s, color 0.2s;
+}
+
+.edit-modal-avatar:hover .edit-modal-avatar-overlay {
+    background: rgba(0, 0, 0, 0.5);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.edit-modal-avatar {
+    height: 100%;
+    border-radius: 50%;
+}
+
+.edit-modal-avatar img {
+    height: 100%;
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+
+}
+
+.edit-modal-avatar-load-button{
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    width: fit-content;
+    padding: 8px 16px;
+    color: #c9c9c9;
+    display: flex;
+    gap: 8px;
+}
+
+.edit-modal-name{
+    color: #c9c9c9;
+    font-size: 18px;
+}
+
+
+.edit-modal-nickname{
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 8px
+}
+
+.edit-modal-nickname-input {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #737373;
+    font-size: 18px;
+    border-radius: 4px;
+}
+
+.edit-modal-nickname-input:focus{
+    outline: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: none;
+}
+
+.edit-modal-save{
+    display: flex;
+    justify-content: flex-end;
+    padding: 1rem;
+}
+
+.edit-modal-save-button{
+    background: #6366f1;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 12px;
 }
