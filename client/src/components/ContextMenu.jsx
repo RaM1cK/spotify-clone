@@ -146,7 +146,7 @@ export default function ContextMenu({ PAGES, menuOpen, setMenuOpen, onLogout, RO
     const panelRef = useRef(null);
 
     const username  = session?.nickname;
-    const avatarUrl = `/api/files/${session?.avatar}`;
+    const avatarUrl = session.avatar ? `/api/files/${session?.avatar}` : null;
 
     const handleOpenProfile = () => {
         setProfileOpen(true);

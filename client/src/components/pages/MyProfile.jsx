@@ -90,7 +90,7 @@ export default function MyProfile() {
 
     const nickname  = session.nickname;
     const email     = session.email;
-    const avatarUrl = `/api/files/${session.avatar}`;
+    const avatarUrl = session.avatar ? `/api/files/${session?.avatar}` : null
     const AVATAR_SIZE = 180; // px — фиксированная ширина аватарки
     const GAP = 16;         // px — gap между карточками
     const friendsRowRef = useRef(null);
