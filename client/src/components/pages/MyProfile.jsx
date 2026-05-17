@@ -104,7 +104,6 @@ export function UserProfile() {
         <div>{error}</div>
     )
 
-
     if (user) {
         return (
             <div>
@@ -125,7 +124,6 @@ function MyUserProfile() {
 
     const nickname  = session.nickname;
     const email     = session.email;
-    const avatarUrl = session.avatar ? `/api/files/${session?.avatar}` : null
     const AVATAR_SIZE = 180; // px — фиксированная ширина аватарки
     const GAP = 16;         // px — gap между карточками
     const friendsRowRef = useRef(null);
@@ -155,8 +153,8 @@ function MyUserProfile() {
             <div className="mp-header">
                 <div className="mp-header-left">
                     <div className="mp-avatar">
-                        {avatarUrl
-                            ? <img src={avatarUrl} alt="avatar" />
+                        {session.avatar
+                            ? <img src={`/api/files/${session.avatar}`} alt="avatar" />
                             : <User size={52} />
                         }
                     </div>

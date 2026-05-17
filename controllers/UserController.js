@@ -17,6 +17,8 @@ import {artistAttributes, getFavoriteArtistIdsSet} from "./ArtistController.js";
 import {playlistAttributes} from "./PlaylistController.js";
 import {Friendship} from "../models/Friendship.ts";
 import {getFavoriteReleaseIdsSet, releaseAttributes} from "./ReleaseController.js";
+import sharp from "sharp";
+import fs from "fs";
 
 dotenv.config();
 
@@ -139,6 +141,56 @@ const auth = async (req, res) => {
         email: user.email,
         nickname: user.nickname
     })
+}
+
+const edit = async (req, res) => {
+    const id = req.user.id;
+    const fields = {}
+
+    if (req.body.email) fields.email = req.body.email;
+    if (req.body.nickname) fields.nickname = req.body.nickname;
+
+    const updateDB = async () => {
+        await sequelize.transaction(async t => {
+            await User.update(fields, {
+                where: { id },
+                transaction: t
+            })
+        })
+    }
+
+    if (req.file) {
+        const filename = `${id}.jpg`
+        const filepath = `images/users/${filename}`
+
+        try {
+            await sharp(req.file.buffer)
+                .jpeg({ quality: 85 })
+                .toFile(`music/${filepath}`)
+
+            fields.avatar = filepath
+
+            await updateDB()
+
+            return res.status(200).send({ avatar: `${filepath}?t=${Date.now()}` })
+        } catch (error) {
+            console.log(error)
+
+            fs.unlink(`music/${filepath}`, () => {})
+
+            return res.status(500).send({error: 'Upload failed'})
+        }
+    } else {
+        try {
+            await updateDB()
+
+            return res.status(200).send({})
+        } catch (error) {
+            console.log(error)
+
+            return res.status(500).send({error: 'Upload failed'})
+        }
+    }
 }
 
 export const logout = async (req, res) => {
@@ -657,6 +709,7 @@ export default {
     reg,
     auth,
     logout,
+    edit,
     verifyEmail,
     normalizedSearch,
     getUsersByNickname,

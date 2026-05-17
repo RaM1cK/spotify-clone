@@ -6,6 +6,7 @@ import PlaylistMenu from "./MusicPages/PlaylistMenu";
 import AlbumMenu from "./MusicPages/AlbumMenu";
 import ArtistMenu from "./MusicPages/ArtistMenu";
 import "./MusicPage.css";
+import axios from "axios";
 
 const MENU_ITEMS = [
     { id: "liked",     path: "/music/liked",       label: "Избранное",   sub: "Вам понравилось", Icon: Heart,           color: "info" },
