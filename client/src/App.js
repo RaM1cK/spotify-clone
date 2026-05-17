@@ -13,7 +13,9 @@ import SearchPage from "./components/pages/MusicPages/SearchPage";
 import Messages from "./components/pages/Messager/Messages";
 import {AppProvider, useSession, useSocket} from "./AppContext";
 import MyProfile from "./components/pages/MyProfile";
+import {UserProfile} from "./components/pages/MyProfile";
 import {LoadingPage} from "./components/pages/LoadingPage";
+
 
 
 const PAGES = [
@@ -30,6 +32,7 @@ const ROUTES_PAGES = [
     { id: "testPage",    path: "/gazan",    navPath: "/gazan",    component: testpage,  label: "Газан" },
 
     { id: "myProfile", path: "/me", component: MyProfile },
+    { id: "userProfile", path: "/profile/:id", component: UserProfile},
 ]
 
 function AppLayout({ setCurrentTrack, currentTrack, menuOpen, setMenuOpen, onLogout }) {

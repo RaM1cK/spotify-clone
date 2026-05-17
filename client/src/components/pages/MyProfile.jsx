@@ -6,8 +6,10 @@ import {
     useOutgoingRequests,
     useSession
 } from '../../AppContext';
+import {useNavigate, useLocation, Routes, Route, useParams} from "react-router-dom";
 import './MyProfile.css';
 import axios from "axios";
+import {LoadingPage} from "./LoadingPage";
 import { User, Pencil, ChevronRight, Ellipsis, Check, X } from "lucide-react";
 
 /* ── Friend Card ── */
@@ -78,6 +80,35 @@ function RequestCard({ req, type }) {
             )}
         </div>
     );
+}
+
+export function UserProfile() {
+    const { id } = useParams()
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        axios.get(`/api/users/${id}`)
+            .then(res => setUser(res.data))
+            .catch(() => setError("loadError"))
+            .finally(() => setLoading(false))
+    }, [id])
+
+    if (loading) return <LoadingPage/>;
+
+    if (error) return (
+        <div>{error}</div>
+    )
+
+    if (user) {
+        return (
+            <div>
+                {user.nickname}
+                saSasa
+            </div>
+        )
+    }
 }
 
 /* ── Main Component ── */
@@ -207,4 +238,12 @@ export default function MyProfile() {
 
         </div>
     );
+}
+
+export default function MyProfile({user}) {
+    if (!user) {
+        return <MyUserProfile/>
+    }
+
+    return <UserProfile user={user} />;
 }
