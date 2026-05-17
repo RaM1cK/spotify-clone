@@ -3,68 +3,7 @@ import {useNavigate, useLocation, Routes, Route} from "react-router-dom";
 import './ContextMenuStyle.css';
 import {useFriends, useSession, useSocket} from "../AppContext";
 import AddFriendModal from "./AddFriendModal";
-import {ChevronRight} from "lucide-react";
-
-
-function UserIcon({ size = 22 }) {
-    return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
-             strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-        </svg>
-    );
-}
-
-function LogoutIcon({ size = 18 }) {
-    return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
-             strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-        </svg>
-    );
-}
-
-function PencilIcon() {
-    return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
-             strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-        </svg>
-    );
-}
-
-function PlusIcon() {
-    return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-             strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-    );
-}
-
-function ChevronRightIcon() {
-    return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"
-             strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
-            <polyline points="9 18 15 12 9 6" />
-        </svg>
-    );
-}
-
-function DotsIcon() {
-    return (
-        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-            <circle cx="5" cy="12" r="2" />
-            <circle cx="12" cy="12" r="2" />
-            <circle cx="19" cy="12" r="2" />
-        </svg>
-    );
-}
+import {ChevronRight, User, LogOut, Pencil, Plus, Ellipsis} from "lucide-react";
 
 function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROUTES_PAGES }) {
     const overlayRef = useRef(null);
@@ -75,7 +14,7 @@ function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROU
 
     const username  = session.nickname;
     const email     = session.email;
-    const avatarUrl = session.avatar;
+    const avatarUrl = `/api/files/${session.avatar}`;
 
     const handleOverlayClick = (e) => {
         if (e.target === overlayRef.current) onClose();
@@ -110,7 +49,7 @@ function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROU
                         <div className="pm-avatar-lg">
                             {avatarUrl
                                 ? <img src={avatarUrl} alt="avatar" className="avatar-img" />
-                                : <UserIcon size={30} />
+                                : <User size={30} />
                             }
                         </div>
                         <div className="pm-user-details">
@@ -126,7 +65,7 @@ function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROU
                         </div>
                     </div>
                     <button className="pm-pill-btn">
-                        <PencilIcon />
+                        <Pencil size={14} />
                         Редактировать
                     </button>
                 </div>
@@ -136,7 +75,7 @@ function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROU
                 <div className="pm-section">
                     <div className="pm-friends-header">
                         <span className="pm-section-title">Друзья</span>
-                        <ChevronRightIcon />
+                        <ChevronRight size={15} />
                     </div>
 
                     {friends.length === 0 ? (
@@ -147,8 +86,8 @@ function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROU
                                 <div className="pm-friend-item" key={f.id}>
                                     <div className="pm-friend-avatar">
                                         {f.avatar
-                                            ? <img src={f.avatar} alt={f.nickname} className="avatar-img" />
-                                            : <UserIcon size={16} />
+                                            ? <img src={`/api/files/${f.avatar}`} alt={f.nickname} className="avatar-img" />
+                                            : <User size={16} />
                                         }
                                     </div>
                                     <span className="pm-friend-name">{f.nickname || "User"}</span>
@@ -157,7 +96,7 @@ function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROU
                             {friends.length > 6 && (
                                 <div className="pm-friend-item">
                                     <div className="pm-friend-avatar pm-friend-dots">
-                                        <DotsIcon />
+                                        <Ellipsis size={16} />
                                     </div>
                                     <span className="pm-friend-name">Ещё</span>
                                 </div>
@@ -166,7 +105,7 @@ function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROU
                     )}
 
                     <button className="pm-pill-btn" onClick={() => onAddFriend()}>
-                        <PlusIcon />
+                        <Plus size={14} />
                         Добавить друга
                     </button>
                 </div>
@@ -175,7 +114,7 @@ function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROU
 
                 <div className="pm-section pm-section--logout">
                     <button className="pm-logout-wide" onClick={() => { onLogout(); onClose(); }}>
-                        <LogoutIcon size={16} />
+                        <LogOut size={16} />
                         Выйти
                     </button>
                 </div>
@@ -207,7 +146,7 @@ export default function ContextMenu({ PAGES, menuOpen, setMenuOpen, onLogout, RO
     const panelRef = useRef(null);
 
     const username  = session?.nickname;
-    const avatarUrl = session?.avatar;
+    const avatarUrl = `/api/files/${session?.avatar}`;
 
     const handleOpenProfile = () => {
         setProfileOpen(true);
@@ -240,7 +179,7 @@ export default function ContextMenu({ PAGES, menuOpen, setMenuOpen, onLogout, RO
                         <div className="user-avatar">
                             {avatarUrl
                                 ? <img src={avatarUrl} alt="avatar" className="avatar-img" />
-                                : <UserIcon />
+                                : <User size={22} />
                             }
                         </div>
                         <div className="user-text">
@@ -253,7 +192,7 @@ export default function ContextMenu({ PAGES, menuOpen, setMenuOpen, onLogout, RO
                         onClick={(e) => { e.stopPropagation(); onLogout(); }}
                         title="Выйти"
                     >
-                        <LogoutIcon />
+                        <LogOut size={18} />
                     </button>
                 </div>
             </aside>

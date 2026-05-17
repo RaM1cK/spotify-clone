@@ -24,6 +24,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px 24px;
+    flex-wrap: wrap;
 }
 
 .mp-header-left {
@@ -198,7 +199,6 @@
     }
 
     .mp-edit-btn {
-        width: 100%;
         justify-content: center;
     }
 
@@ -212,6 +212,8 @@
         justify-content: center;
     }
 }
+
+
 
 .mp-switch-btn {
     display: flex;

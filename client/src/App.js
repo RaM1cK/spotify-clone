@@ -9,6 +9,7 @@ import MusicPage from "./components/pages/MusicPage";
 import ContextMenu from "./components/ContextMenu";
 import testpage from "./components/pages/testpage";
 import MenuButton from "./components/MenuButton";
+import SearchPage from "./components/pages/MusicPages/SearchPage";
 import Messages from "./components/pages/Messager/Messages";
 import {AppProvider, useSession, useSocket} from "./AppContext";
 import MyProfile from "./components/pages/MyProfile";
@@ -17,12 +18,14 @@ import {LoadingPage} from "./components/pages/LoadingPage";
 
 const PAGES = [
     { id: "testTrack",   path: "/music/*",  navPath: "/music",    component: MusicPage, label: "Коллекция" },
+    { id: "search",      path: "/search",   navPath: "/search",   component: SearchPage, label: "Поиск" },
     { id: "messagePage", path: "/messages", navPath: "/messages", component: Messages,  label: "Сообщения" },
     { id: "testPage",    path: "/gazan",    navPath: "/gazan",    component: testpage,  label: "Газан" },
 ];
 
 const ROUTES_PAGES = [
     { id: "testTrack",   path: "/music/*",  navPath: "/music",    component: MusicPage, label: "Коллекция" },
+    { id: "search",      path: "/search",   navPath: "/search",   component: SearchPage, label: "Поиск" },
     { id: "messagePage", path: "/messages", navPath: "/messages", component: Messages,  label: "Сообщения" },
     { id: "testPage",    path: "/gazan",    navPath: "/gazan",    component: testpage,  label: "Газан" },
 

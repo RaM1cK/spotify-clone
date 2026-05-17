@@ -6,8 +6,9 @@ import {Track} from "../models/Track.ts";
 import jwt from "jsonwebtoken";
 import * as crypto from "node:crypto";
 import {literal} from "@sequelize/core";
-import {redisClient} from "../models/index.js";
-import {getUser} from "./UserController.js";
+import {redisClient, sequelize} from "../models/index.js";
+import {User} from "../models/User.ts";
+import {getUserFavoriteArtistList, getUserFavoriteTrackList} from "./UserController.js";
 
 dotenv.config();
 
@@ -17,39 +18,50 @@ export const trackAttributes = [
     'artist',
     'duration',
     'cover',
+    'parentalWarning',
     'uri',
     'releaseId',
 ]
 
-export const hasInFavoriteQuery = (userId, alias = 'tracks') => literal(`(
-    select exists (
-        select 1
-        from "FavoriteTracks" ft
-        where ft."trackId" = "${alias}"."id" and ft."userId" = '${userId}'
-    )
-)`)
+export const hasInFavoriteQuery = (userId, alias = 'tracks') => {
+    const favoriteAlias = {
+        tracks: 'FavoriteTracks',
+        Track: 'FavoriteTracks',
+        artists: 'FavoriteArtists',
+        releases: 'FavoriteReleases',
+        playlists: 'FavoritePlaylists',
+    }
+
+    const aliasToOneString = {
+        tracks: 'track',
+        Track: 'track',
+        artists: 'artist',
+        releases: 'release',
+        playlists: 'playlist'
+    }
+
+    const query = `(
+        select exists (
+            select 1
+            from "${favoriteAlias[alias]}" fs
+            where fs."${aliasToOneString[alias]}Id" = "${alias}"."id" and fs."userId" = '${userId}'
+        )
+    )`
+
+    return literal(query)
+}
+
+export const getFavoriteTrackIdsSet = async (userId) => {
+    const favoriteTracks = await getUserFavoriteTrackList(userId)
+
+    return new Set(favoriteTracks.map(t => t.id))
+}
 
 export const trackCountQuery = (alias) => literal(`(
     select count(*) 
     from "${alias}Track"
     where "${alias}Track"."${alias.toLowerCase()}Id" = "${alias}"."id"
 )`)
-
-// export const getTrack = async (req, res)=> {
-//     const id = req.params['trackId'];
-//
-//     const track = await Track.findByPk(id,{
-//         attributes: {
-//             exclude: ['isrc', 'createdAt', 'updatedAt', 'releaseId']
-//         },
-//     })
-//
-//     if (!track) {
-//         return res.status(404).json({})
-//     }
-//
-//     return res.json(track);
-// }
 
 export const getTracksBySecret = (req, res, tracks) => {
     const fingerprint = crypto
@@ -61,9 +73,6 @@ export const getTracksBySecret = (req, res, tracks) => {
         const {
             uri,
             hasInFavorite,
-            userFavoriteTrack,
-            artistTrack,
-            PlaylistTrack,
             ...rest
         } = track.toJSON()
 
@@ -123,7 +132,7 @@ export const saveLastPosition = async (req, res) => {
 
     redisClient
         .set(`currentTrack:${req.user.id}`, JSON.stringify({...restTrack, start: position}))
-        .catch(err => res.status(500).json(err));
+        .catch(err => console.log(err));
 
     res.status(200).json({})
 }

@@ -1,7 +1,11 @@
 import io from "socket.io-client";
 import {createContext, useContext, useEffect, useState} from "react";
 
-const socket = io('ws://localhost:8080');
+
+const socket = io('http://localhost:8080');
+// const socket = io('https://spotify-clone.ru', {
+//     transports: ['websocket']
+// });
 const AppContext = createContext(null);
 
 export const AppProvider = ({session, children}) => {

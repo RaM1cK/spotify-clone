@@ -223,6 +223,16 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
                     handleSend={handleSend}
                     showMobileBack={mobileChatOpen}
                     onMobileBack={() => setMobileChatOpen(false)}
+                    onSendTrack={(media) => {
+                        let text;
+                        switch (media.type) {
+                            case "track":  text = `${media.data.title} — ${media.data.artist}`; break;
+                            case "album":  text = `${media.data.title} — ${media.data.artist}`; break;
+                            case "artist": text = media.data.name; break;
+                            default:       return;
+                        }
+                        handleSend(text);
+                    }}
                 />
             </div>
         );

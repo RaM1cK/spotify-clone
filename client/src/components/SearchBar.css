@@ -1,7 +1,11 @@
 .search-bar-container {
     padding: clamp(12px, 3vw, 16px) clamp(14px, 3vw, 20px);
-    background-color: transparent;
+    background-color: rgba(18, 18, 18, 0.95);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(8px);
 }
 
 .search-bar {
@@ -55,4 +59,19 @@
 
 .clear-button:hover {
     color: rgba(255, 255, 255, 0.9);
+}
+
+.spinner {
+    color: rgba(30, 215, 96, 0.8);
+    flex-shrink: 0;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }

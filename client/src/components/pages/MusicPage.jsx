@@ -1,7 +1,6 @@
-import React from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { LayoutList, CircleUserRound, Disc3, Heart } from "lucide-react";
-import TrackList from "../UI/TrackList/TrackList";
+import React, {useRef} from "react";
+import {Navigate, Route, Routes, useNavigate} from "react-router-dom";
+import {CircleUserRound, Disc3, Heart, LayoutList} from "lucide-react";
 import Liked from "./MusicPages/Liked";
 import PlaylistMenu from "./MusicPages/PlaylistMenu";
 import AlbumMenu from "./MusicPages/AlbumMenu";

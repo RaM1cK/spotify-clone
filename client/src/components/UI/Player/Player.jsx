@@ -138,7 +138,7 @@ const Player = ({track, setTrack}) => {
                         <div className="d-flex align-self-center">
                             {(() => {
                                 if (loading) {
-                                    return <LoaderCircle className="spin" size={20}/>
+                                    return <LoaderCircle className="spin-player" size={20}/>
                                 } else {
                                     return playing ? <Pause size={20}/> : <Play size={20}/>
                                 }
@@ -161,8 +161,8 @@ const Player = ({track, setTrack}) => {
                         />
                     </Button>
 
-                    <div className="d-flex w-100 flex-column">
-                        <div className="d-flex flex-column justify-content-between">
+                    <div className="d-flex flex-column" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                        <div className="d-flex flex-column justify-content-between" style={{ minWidth: 0 }}>
                             <span className="track-item__title">{track ? track.title : ""}</span>
                             <span className="track-item__artist ">{track ? track.artist : ""}</span>
                         </div>

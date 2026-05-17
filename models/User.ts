@@ -49,7 +49,7 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
     @NotNull
     declare email: string;
 
-    @Attribute(DataTypes.UUID)
+    @Attribute(DataTypes.TEXT)
     declare avatar: string;
     
     @BelongsToMany(() => Track, {
