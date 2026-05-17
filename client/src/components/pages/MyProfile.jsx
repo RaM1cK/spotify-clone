@@ -14,8 +14,11 @@ import { User, Pencil, ChevronRight, Ellipsis, Check, X } from "lucide-react";
 
 /* ── Friend Card ── */
 function FriendCard({ friend }) {
+    const navigate = useNavigate();
     return (
-        <div className="mp-friend-card">
+        <div
+            onClick={() => navigate(`/profile/${friend.id}`)}
+            className="mp-friend-card">
             <div className="mp-friend-avatar">
                 {friend.avatar
                     ? <img src={`/api/files/${friend.avatar}`} alt={friend.nickname} />
@@ -101,18 +104,19 @@ export function UserProfile() {
         <div>{error}</div>
     )
 
+
     if (user) {
         return (
             <div>
                 {user.nickname}
-                saSasa
+                <img src={`/api/files/${user.avatar}`} alt={user.avatar} />
             </div>
         )
     }
 }
 
 /* ── Main Component ── */
-export default function MyProfile() {
+function MyUserProfile() {
     const session = useSession();
     const [requestsTab, setRequestsTab] = useState('incoming'); // null | 'incoming' | 'outgoing'
     const friends = useFriends()
@@ -239,6 +243,7 @@ export default function MyProfile() {
         </div>
     );
 }
+
 
 export default function MyProfile({user}) {
     if (!user) {
