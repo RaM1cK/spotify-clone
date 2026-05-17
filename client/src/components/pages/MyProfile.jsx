@@ -112,9 +112,7 @@ export default function MyProfile() {
         setRequestsTab(prev => prev === tab ? null : tab);
     };
 
-    const activeRequests = requestsTab === 'incoming' ? incomingRequests
-                         : requestsTab === 'outgoing' ? outgoingRequests
-                         : [];
+    const activeRequests = requestsTab === 'incoming' ? incomingRequests : requestsTab === 'outgoing' ? outgoingRequests : [];
 
     return (
         <div className="mp-root">
