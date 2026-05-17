@@ -21,7 +21,7 @@ export const sequelize = new Sequelize({
     password: process.env.DB_PASSWORD,
     host: process.env.DB_HOST,
     port: 5432,
-    // logging: console.log,
+    logging: console.log,
     models: [
         User,
         Composition,

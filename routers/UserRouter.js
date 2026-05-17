@@ -84,7 +84,7 @@ userRouter.post('/logout', UserController.logout);
 userRouter.post("/get-users", UserController.getUsersByNickname);
 userRouter.get("/search", UserController.normalizedSearch);
 userRouter.get('/:userId', async (req, res) => {
-    const user = await UserController.getUser(req, res)
+    const user = await User.findByPk(req.params.userId);
 
     res.status(200).send(user);
 })
@@ -95,6 +95,8 @@ userRouter.get("/:userId/favoriteTracks", UserController.getTracks);
 userRouter.delete('/removeFavoriteTrack/:trackId', userController.removeFavoriteTrack);
 userRouter.post('/addFavoriteTrack/:trackId', userController.addFavoriteTrack);
 userRouter.get("/:userId/favoriteArtists", UserController.getFavoriteArtists);
+userRouter.delete('/removeFavoriteArtist/:artistId', userController.removeFavoriteArtist);
+userRouter.post('/addFavoriteArtist/:artistId', userController.addFavoriteArtist);
 userRouter.get("/:userId/favoritePlaylists", UserController.getFavoritePlaylists);
 userRouter.get("/:userId/chats", UserController.getChats);
 export default userRouter;

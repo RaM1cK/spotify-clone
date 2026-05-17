@@ -63,7 +63,7 @@ const io = new Server(server, {
 try {
     await sequelize.authenticate();
     console.log('Connected');
-    // await sequelize.sync({alter: true});
+    await sequelize.sync({alter: true});
 
     await redisClient.connect()
 } catch (err) {

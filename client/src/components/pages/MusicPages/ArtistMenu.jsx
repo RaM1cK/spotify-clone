@@ -13,7 +13,7 @@ const declension = (n) => {
     return "треков";
 };
 
-const ArtistList = ({ RollBack }) => {
+const ArtistFullPage = ({ RollBack }) => {
     const navigate = useNavigate();
     const [artists, setArtists] = useState(null);
     const [error, setError] = useState(null);
@@ -26,9 +26,6 @@ const ArtistList = ({ RollBack }) => {
             .finally(() => setLoading(false));
     }, [])
 
-    const getCount = (artistId) =>
-        artists.find(artist => artist.id === artistId).trackCount;
-
     if (loading) return <LoadingPage/>;
     if (error) return <div>{error}</div>;
 
@@ -38,27 +35,55 @@ const ArtistList = ({ RollBack }) => {
                 <button className="music-back" onClick={() => RollBack(null)}>
                     <ChevronLeft size={20} />
                 </button>
-                <div className="playlist-grid">
-                    {artists.map((artist) => (
-                        <button
-                            key={artist.id}
-                            onClick={() => navigate(artist.id)}
-                        >
-                            <div className="artist-avatar">
-                                {artist.avatar
-                                    ? <img src={`/api/files/${artist.avatar}`} alt={artist.name} />
-                                    : <CircleUserRound size={64} color="#b4b2a9" />
-                                }
-                            </div>
-                            <span className="music-tile__label">{artist.name}</span>
-                            <span className="playlist-track-count">
-                                {getCount(artist.id)} {declension(getCount(artist.id))}
-                            </span>
-                        </button>
-                    ))}
-                </div>
+                <ArtistList artists={artists} />
             </div>
         );
+};
+
+const ArtistList = ({ artists, scrollable }) => {
+    const navigate = useNavigate();
+
+    const declension = (n) => {
+        if (n % 10 === 1 && n % 100 !== 11) return "трек";
+        if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return "трека";
+        return "треков";
+    };
+
+    const card = (artist) => (
+        <>
+            <div className="artist-avatar">
+                {artist.avatar
+                    ? <img src={`/api/files/${artist.avatar}`} alt={artist.name} />
+                    : <CircleUserRound size={64} color="#b4b2a9" />
+                }
+            </div>
+            <span className="music-tile__label">{artist.name}</span>
+            <span className="playlist-track-count">
+                {artist.trackCount} {declension(artist.trackCount)}
+            </span>
+        </>
+    );
+
+    if (scrollable)
+        return (
+            <div className="scroll-container">
+                {artists.map(artist => (
+                    <button key={artist.id} className="scroll-card" onClick={() => navigate(`/music/artists/${artist.id}`)}>
+                        {card(artist)}
+                    </button>
+                ))}
+            </div>
+        );
+
+    return (
+        <div className="playlist-grid">
+            {artists.map(artist => (
+                <button key={artist.id} onClick={() => navigate(artist.id)}>
+                    {card(artist)}
+                </button>
+            ))}
+        </div>
+    );
 };
 
 const ArtistMenu = ({ setCurrentTrack, RollBack }) => {
@@ -67,7 +92,7 @@ const ArtistMenu = ({ setCurrentTrack, RollBack }) => {
             <Route
                 index
                 element={
-                    <ArtistList
+                    <ArtistFullPage
                         RollBack={RollBack}
                     />
                 }
@@ -86,3 +111,4 @@ const ArtistMenu = ({ setCurrentTrack, RollBack }) => {
 };
 
 export default ArtistMenu;
+export { ArtistList };

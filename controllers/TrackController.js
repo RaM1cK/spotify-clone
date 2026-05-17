@@ -7,7 +7,8 @@ import jwt from "jsonwebtoken";
 import * as crypto from "node:crypto";
 import {literal} from "@sequelize/core";
 import {redisClient, sequelize} from "../models/index.js";
-import {getUser} from "./UserController.js";
+import {User} from "../models/User.ts";
+import {getUserFavoriteArtistList, getUserFavoriteTrackList} from "./UserController.js";
 
 dotenv.config();
 
@@ -50,17 +51,10 @@ export const hasInFavoriteQuery = (userId, alias = 'tracks') => {
     return literal(query)
 }
 
-export const getFavoriteTrackIdsSet = async (userId, cache = undefined) => {
-    const cached =
-        cache ?? await redisClient.get(`favoriteTracks:${userId}`)
+export const getFavoriteTrackIdsSet = async (userId) => {
+    const favoriteTracks = await getUserFavoriteTrackList(userId)
 
-    if (cached) return new Set(JSON.parse(cached).map(t => t.id))
-
-    const [rows] = await sequelize.query(
-        `SELECT "trackId" as id FROM "FavoriteTracks" WHERE "userId" = $1`,
-        { bind: [userId] }
-    )
-    return new Set(rows.map(r => r.id))
+    return new Set(favoriteTracks.map(t => t.id))
 }
 
 export const trackCountQuery = (alias) => literal(`(

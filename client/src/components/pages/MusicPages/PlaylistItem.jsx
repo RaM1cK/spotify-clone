@@ -1,6 +1,6 @@
 import React, {useRef, useState} from 'react';
 import TrackList from "../../UI/TrackList/TrackList";
-import "./PlaylistItem.css"
+import  "./PlaylistItem.css"
 import {Player as pl, Player} from "../../../classes/Player.ts";
 import usePlayerState from "../../../hooks/usePlayerState";
 import {ChevronLeft, Heart, MoreHorizontal, Pause, Play} from "lucide-react";

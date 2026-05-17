@@ -6,7 +6,7 @@ import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-do
 import {ChevronLeft, Heart} from "lucide-react";
 import {LoadingPage} from "../LoadingPage";
 
-const AlbumList = ({ artistId, UsingContext, RollBack }) => {
+const AlbumFullPage = ({ artistId, UsingContext, RollBack }) => {
     const navigate = useNavigate();
     const [albums, setAlbums] = useState(null);
     const [error, setError] = useState(null);
@@ -35,20 +35,44 @@ const AlbumList = ({ artistId, UsingContext, RollBack }) => {
                         <button className="music-back" onClick={() => RollBack(null)}><ChevronLeft size={20} /></button>
                     }
                 </div>
-                <div className="playlist-grid">
-                    {albums.map(({ id, title, artist, date, cover }) => (
-                        <button key={id} onClick={() => navigate(id)}>
-                            <div className="album-imagediv">
-                                <img src={`/api/files/${cover}`} alt={title} />
-                            </div>
-                            <span className="music-tile__label">{title}</span>
-                            {UsingContext === "menu" && <span className="album-autor">{artist}</span>}
-                            <span className="date-issingle">{date}</span>
-                        </button>
-                    ))}
-                </div>
+                <AlbumList albums={albums} showArtist={UsingContext === "menu"} />
             </div>
         );
+};
+
+const AlbumList = ({ albums, showArtist, scrollable }) => {
+    const navigate = useNavigate();
+
+    if (scrollable)
+        return (
+            <div className="scroll-container">
+                {albums.map(({ id, title, artist, date, cover }) => (
+                    <button key={id} className="scroll-card" onClick={() => navigate(`/music/albums/${id}`)}>
+                        <div className="album-imagediv">
+                            <img src={`/api/files/${cover}`} alt={title} />
+                        </div>
+                        <span className="music-tile__label">{title}</span>
+                        {showArtist && <span className="album-autor">{artist}</span>}
+                        <span className="date-issingle">{new Date(date).getFullYear()}</span>
+                    </button>
+                ))}
+            </div>
+        );
+
+    return (
+        <div className="playlist-grid">
+            {albums.map(({ id, title, artist, date, cover }) => (
+                <button key={id} onClick={() => navigate(`/music/albums/${id}`)}>
+                    <div className="album-imagediv">
+                        <img src={`/api/files/${cover}`} alt={title} />
+                    </div>
+                    <span className="music-tile__label">{title}</span>
+                    {showArtist && <span className="album-autor">{artist}</span>}
+                    <span className="date-issingle">{date}</span>
+                </button>
+            ))}
+        </div>
+    );
 };
 
 const AlbumDetail = ({ setCurrentTrack }) => {
@@ -116,7 +140,7 @@ const AlbumMenu = ({ setCurrentTrack, RollBack, UsingContext }) => {
             <Route
                 index
                 element={
-                    <AlbumList
+                    <AlbumFullPage
                         artistId={artistId}
                         UsingContext={UsingContext}
                         RollBack={RollBack}
@@ -134,3 +158,4 @@ const AlbumMenu = ({ setCurrentTrack, RollBack, UsingContext }) => {
 };
 
 export default AlbumMenu;
+export { AlbumList };

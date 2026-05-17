@@ -205,6 +205,37 @@
     gap: 8px;
 }
 
+.messages-date-separator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0 12px;
+    position: relative;
+}
+
+.messages-date-separator:first-child {
+    margin-top: 4px;
+}
+
+.messages-date-separator::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.messages-date-separator span {
+    background: #0a0a0a;
+    padding: 0 12px;
+    font-size: 12px;
+    color: #6b7280;
+    position: relative;
+    z-index: 1;
+}
+
 .messages-bubble {
     display: flex;
     flex-direction: column;

@@ -5,16 +5,15 @@ import jwt from "jsonwebtoken";
 import io from "../server.js"
 import {
     getFavoriteTrackIdsSet,
-    getTracksBySecret,
     getTracksBySecretFromCache,
     trackAttributes,
     trackCountQuery
 } from "./TrackController.js";
-import {literal, Op} from "@sequelize/core";
+import {literal, Op, sql} from "@sequelize/core";
 import stringNormalization from "../helpers/stringNormalization.js";
 import {redisClient, sequelize} from "../models/index.js";
 import {Message} from "../models/Message.ts";
-import {artistAttributes} from "./ArtistController.js";
+import {artistAttributes, getFavoriteArtistIdsSet} from "./ArtistController.js";
 import {playlistAttributes} from "./PlaylistController.js";
 import {Friendship} from "../models/Friendship.ts";
 import {getFavoriteReleaseIdsSet, releaseAttributes} from "./ReleaseController.js";
@@ -142,45 +141,17 @@ const auth = async (req, res) => {
     })
 }
 
-const users_cache = new Map()
-
 export const logout = async (req, res) => {
     res.clearCookie('token');
     res.status(200).send({});
 }
 
-export const updateUser = async (req, res, id) => {
-    users_cache.delete(id)
-
-    const user = await User.findByPk(id, {
-        attributes: {
-            exclude: ['password_hash', 'createdAt', 'updatedAt'],
-        }
-    })
-
-    if (!user) {
-        return res.status(404).json({})
-    }
-
-    users_cache.set(id, {user, expiresOn: Date.now() + 5 * 60 * 1000})
-
-    return user
-}
-
-export const getUser = async (req, res) => {
+export const getUserId = (req) => {
     let id;
     const userId = req.params.userId
     userId === 'me' || userId === undefined ? id = req.user.id : id = userId;
 
-    const user_cache = users_cache.get(id)
-
-    if (!user_cache) return updateUser(req, res, id);
-
-    const { user, expiresOn } = user_cache
-
-    if (expiresOn <= Date.now()) return updateUser(req, res, id);
-
-    return user;
+    return id;
 }
 
 const getUsersByNickname = async (req, res) => {
@@ -202,96 +173,133 @@ const getUsersByNickname = async (req, res) => {
 const normalizedSearch = async (req, res) => {
     const search_query = req.query.query;
     const normalizedQuery = stringNormalization.normalizeString(search_query);
-    const searchResult =
-        await redisClient.get(`search:${normalizedQuery}`);
 
-    if (searchResult)
-        return res.status(200).send(JSON.parse(searchResult));
+    const similarity_threshold = 0.2
+    const word_similarity_threshold = 0.2
 
-    const tables = {
-        track: 'tracks',
-        artist: 'artists',
-        release: 'releases'
-    }
+    const searchArtists = async (column, limit = 0) => {
+        const rows = await sequelize.query(`
+            SET pg_trgm.similarity_threshold = ${similarity_threshold};
+            SET pg_trgm.word_similarity_threshold = ${word_similarity_threshold};
 
-    const subQuery = (type, column, limit = 0) =>
-        `(
-            SELECT 
-                id, 
-                '${type}' AS type,
+            SELECT *,
                 GREATEST(
-                    similarity(${column}, :query),
-                    word_similarity(${column}, :query)
-                ) AS score
-            FROM ${tables[type]}
-            WHERE 
-                ${column} % :query 
-                OR ${column} <% :query
+                    similarity(:query, ${column}),
+                    word_similarity(:query, ${column})
+                ) AS score,
+                (
+                    SELECT COUNT(*)
+                    FROM "ArtistTrack" at
+                    WHERE at."artistId" = a."id"
+                ) as track_count
+            FROM artists a
+            WHERE :query % ${column} OR :query <% ${column}
             ORDER BY score DESC
             ${limit > 0 ? `LIMIT ${limit}` : ''}
-        )`
+        `, {
+            replacements: { query: normalizedQuery }
+        })
 
-    const result = await sequelize.query(`
-        SET pg_trgm.similarity_threshold = 0.0001;
-        SET pg_trgm.word_similarity_threshold = 0.0001;
-    
-        ${subQuery('artist', 'name_normalized', 20)}
-        UNION ALL
-        ${subQuery('track', 'title_normalized', 50)}
-        UNION ALL
-        ${subQuery('release', 'title_normalized', 20)}
-    `, {
-        replacements: { query: normalizedQuery }
+        return rows[0]
+    }
+
+    const searchTable = async (table, column, limit = 0) => {
+        const rows = await sequelize.query(`
+            SET pg_trgm.similarity_threshold = ${similarity_threshold};
+            SET pg_trgm.word_similarity_threshold = ${word_similarity_threshold};
+
+            SELECT *,
+                GREATEST(
+                    similarity(:query, ${column}),
+                    word_similarity(:query, ${column})
+                ) AS score
+            FROM ${table}
+            WHERE :query % ${column} OR :query <% ${column}
+            ORDER BY score DESC
+            ${limit > 0 ? `LIMIT ${limit}` : ''}
+        `, {
+            replacements: { query: normalizedQuery }
+        })
+
+        return rows[0]
+    }
+
+    const [artists, tracks, releases] = await Promise.all([
+        searchArtists('name_normalized', 20),
+        searchTable('tracks', 'title_normalized', 50),
+        searchTable('releases', 'title_normalized', 20),
+    ])
+
+    const favArtists = await getFavoriteArtistIdsSet(req.user.id)
+    const favTracks = await getFavoriteTrackIdsSet(req.user.id)
+    const favReleases = await getFavoriteReleaseIdsSet(req.user.id)
+
+    const grouped = {
+        artists: artists.map(artist => ({
+            ...artist,
+            hasInFavorite: favArtists.has(artist.id),
+            trackCount: artist.track_count
+        })),
+        tracks: getTracksBySecretFromCache(req, res, tracks)
+            .map(track => ({
+                ...track,
+                hasInFavorite: favTracks.has(track.id)
+            })),
+        releases: releases.map(release => ({
+            ...release,
+            hasInFavorite: favReleases.has(release.id)
+        })),
+    }
+
+    return res.status(200).json(grouped);
+}
+
+export const getUserFavoriteReleaseList = async (userId) => {
+    const cached = await redisClient.get(`favoriteReleases:${userId}`)
+    if (cached) return JSON.parse(cached)
+
+    const user = await User.findByPk(userId)
+
+    const result = await user.getFavoriteReleases({
+        attributes: releaseAttributes,
+        through: { attributes: [] },
+        order: [[literal('"userFavoriteRelease.createdAt"'), 'DESC']]
+    })
+
+    const releaseList = result.map(r => {
+        const {userFavoriteRelease, date, ...rest} = r.dataValues
+        return {
+            ...rest,
+            date: new Date(date).getFullYear()
+        }
     })
 
     redisClient
-        .set(`search:${normalizedQuery}`, JSON.stringify(result[0]), { EX: 10 * 60})
+        .set(`favoriteReleases:${userId}`, JSON.stringify(releaseList), { EX: 3600 })
         .catch(err => console.log(err))
 
-    return res.status(200).json(result[0]);
+    return releaseList
 }
 
 const getReleases = async (req, res) => {
-    const targetUser = await getUser(req, res)
-    const currentUserId = req.user.id
-    const isOwn = targetUser.id === currentUserId
+    const targetUserId = getUserId(req)
+    const isOwn = targetUserId === req.user.id
 
-    const cachedValue =
-        await redisClient.get(`favoriteReleases:${req.user.id}`)
-
-    let releaseList = null;
-    if (cachedValue) releaseList = JSON.parse(cachedValue)
-
-    if (!releaseList) {
-        const result = await targetUser.getFavoriteReleases({
-            attributes: releaseAttributes,
-            order: [[literal('"userFavoriteRelease.createdAt"'), 'DESC']]
-        })
-
-        releaseList = result.map(r => {
-            const {userFavoriteRelease, date, ...rest} = r.dataValues
-
-            return {
-                ...rest,
-                date: new Date(date).getFullYear()
-            }
-        })
-
-        redisClient
-            .set(`favoriteReleases:${req.user.id}`, JSON.stringify(releaseList), {EX: 3600})
-            .catch(err => console.log(err))
-    }
+    const releaseList = await getUserFavoriteReleaseList(targetUserId)
 
     if (isOwn) {
         res.status(200).send(releaseList.map(t => ({ ...t, hasInFavorite: true })))
     } else {
-        const favSet = await getFavoriteReleaseIdsSet(currentUserId, releaseList)
+        const favoriteReleases = await getUserFavoriteReleaseList(req.user.id)
+
+        const favSet = new Set(favoriteReleases.map(t => t.id))
+
         res.status(200).send(releaseList.map(t => ({ ...t, hasInFavorite: favSet.has(t.id) })))
     }
 }
 
 const addFavoriteRelease = async (req, res) => {
-    const user = await getUser(req, res)
+    const user = await User.findByPk(req.user.id)
     const releaseId = req.params.releaseId;
 
     try {
@@ -310,7 +318,7 @@ const addFavoriteRelease = async (req, res) => {
 }
 
 const removeFavoriteRelease = async (req, res) => {
-    const user = await getUser(req, res)
+    const user = await User.findByPk(req.user.id)
     const releaseId = req.params.releaseId;
 
     try {
@@ -328,46 +336,50 @@ const removeFavoriteRelease = async (req, res) => {
     }
 }
 
+export const getUserFavoriteTrackList = async (userId) => {
+    const cached = await redisClient.get(`favoriteTracks:${userId}`)
+    if (cached) return JSON.parse(cached)
+
+    const user = await User.findByPk(userId)
+
+    const result = await user.getFavoriteTracks({
+        attributes: trackAttributes,
+        through: { attributes: [] },
+        order: [[literal('"userFavoriteTrack.createdAt"'), 'DESC']]
+    })
+
+    const trackList = result.map(t => {
+        const {userFavoriteTrack, ...rest} = t.dataValues
+        return rest
+    })
+
+    redisClient
+        .set(`favoriteTracks:${userId}`, JSON.stringify(trackList), { EX: 3600 })
+        .catch(err => console.log(err))
+
+    return trackList
+}
+
 const getTracks = async (req, res) => {
-    const targetUser = await getUser(req, res)
-    const currentUserId = req.user.id
-    const isOwn = targetUser.id === currentUserId
+    const targetUserId = getUserId(req)
+    const isOwn = targetUserId === req.user.id
 
-    const cachedValue =
-        await redisClient.get(`favoriteTracks:${targetUser.id}`)
-
-    let trackList = null
-    if (cachedValue) trackList = JSON.parse(cachedValue)
-
-    if (!trackList) {
-        const result = await targetUser.getFavoriteTracks({
-            attributes: trackAttributes,
-            order: [[literal('"userFavoriteTrack.createdAt"'), 'DESC']]
-        })
-
-        trackList = result.map(t => {
-            const {userFavoriteTrack, ...rest} = t.dataValues
-
-            return rest
-        })
-
-        redisClient
-            .set(`favoriteTracks:${targetUser.id}`, JSON.stringify(trackList), { EX: 3600 })
-            .catch(err => console.log(err));
-    }
-
+    const trackList = await getUserFavoriteTrackList(targetUserId)
     const response = getTracksBySecretFromCache(req, res, trackList)
 
     if (isOwn) {
         res.status(200).send(response.map(t => ({ ...t, hasInFavorite: true })))
     } else {
-        const favSet = await getFavoriteTrackIdsSet(currentUserId)
+        const favoriteTracks = await getUserFavoriteTrackList(req.user.id)
+
+        const favSet = new Set(favoriteTracks.map(t => t.id))
+
         res.status(200).send(response.map(t => ({ ...t, hasInFavorite: favSet.has(t.id) })))
     }
 }
 
 const addFavoriteTrack = async (req, res) => {
-    const user = await getUser(req, res)
+    const user = await User.findByPk(req.user.id)
     const trackId = req.params.trackId;
 
     try {
@@ -386,7 +398,7 @@ const addFavoriteTrack = async (req, res) => {
 }
 
 const removeFavoriteTrack = async (req, res) => {
-    const user = await getUser(req, res)
+    const user = await User.findByPk(req.user.id)
     const trackId = req.params.trackId;
 
     try {
@@ -404,22 +416,88 @@ const removeFavoriteTrack = async (req, res) => {
     }
 }
 
-const getFavoriteArtists = async (req, res) => {
-    const user = await getUser(req, res)
+export const getUserFavoriteArtistList = async (userId) => {
+    const cached =
+        await redisClient.get(`favoriteArtists:${userId}`)
+
+    if (cached) return JSON.parse(cached)
+
+    const user = await User.findByPk(userId)
 
     const result = await user.getFavoriteArtists({
         attributes: [
             ...artistAttributes,
             [trackCountQuery('Artist'), 'trackCount']
         ],
+        through: { attributes: [] },
         order: [[literal('"userFavoriteArtist.createdAt"'), 'DESC']]
     })
 
-    res.status(200).send(result.map(artist => {
-        const {userFavoriteArtist, ...rest} = artist.toJSON();
+    const artistList = result.map(a => {
+        const {userFavoriteArtist, ...rest} = a.dataValues
+        return rest
+    })
 
-        return rest;
-    }))
+    redisClient
+        .set(`favoriteArtists:${userId}`, JSON.stringify(artistList), { EX: 3600 })
+        .catch(err => console.log(err))
+
+    return artistList
+}
+
+const getFavoriteArtists = async (req, res) => {
+    const targetUserId = getUserId(req)
+    const isOwn = targetUserId === req.user.id
+
+    const artistList = await getUserFavoriteArtistList(targetUserId)
+
+    if (isOwn) {
+        res.status(200).send(artistList.map(t => ({ ...t, hasInFavorite: true })))
+    } else {
+        const favoriteArtists = await getUserFavoriteArtistList(req.user.id)
+
+        const favSet = new Set(favoriteArtists.map(t => t.id))
+
+        res.status(200).send(artistList.map(t => ({ ...t, hasInFavorite: favSet.has(t.id) })))
+    }
+}
+
+const addFavoriteArtist = async (req, res) => {
+    const user = await User.findByPk(req.user.id)
+    const artistId = req.params.artistId;
+
+    try {
+        await sequelize.transaction(async t => {
+            await user.addFavoriteArtist(artistId, { transaction: t });
+        });
+
+        redisClient
+            .del(`favoriteArtists:${req.user.id}`)
+            .catch(err => console.log(err));
+
+        return res.status(200).send({});
+    } catch {
+        return res.status(500).send({});
+    }
+}
+
+const removeFavoriteArtist = async (req, res) => {
+    const user = await User.findByPk(req.user.id)
+    const artistId = req.params.artistId;
+
+    try {
+        await sequelize.transaction(async t => {
+            await user.removeFavoriteArtist(artistId, { transaction: t });
+        });
+
+        redisClient
+            .del(`favoriteArtists:${req.user.id}`)
+            .catch(err => console.log(err));
+
+        return res.status(200).send({});
+    } catch {
+        return res.status(500).send({});
+    }
 }
 
 const getFavoritePlaylists = async (req, res) => {
@@ -441,7 +519,7 @@ const getFavoritePlaylists = async (req, res) => {
 }
 
 const getChats = async (req, res) => {
-    const user = await getUser(req, res)
+    const user = await User.findByPk(req.user.id)
 
     const result = await user.getChats({
         attributes: {
@@ -581,19 +659,11 @@ export default {
     logout,
     verifyEmail,
     normalizedSearch,
-    getUser,
     getUsersByNickname,
-    getReleases,
-    addFavoriteRelease,
-    removeFavoriteRelease,
-    getTracks,
-    addFavoriteTrack,
-    removeFavoriteTrack,
-    getFavoriteArtists,
+    getReleases, addFavoriteRelease, removeFavoriteRelease,
+    getTracks, addFavoriteTrack, removeFavoriteTrack,
+    getFavoriteArtists, addFavoriteArtist, removeFavoriteArtist,
     getFavoritePlaylists,
     getChats,
-    acceptFriendRequest,
-    rejectFriendRequest,
-    cancelFriendRequest,
-    sendFriendRequest,
+    acceptFriendRequest, rejectFriendRequest, cancelFriendRequest, sendFriendRequest,
 }

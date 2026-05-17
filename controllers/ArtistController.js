@@ -1,8 +1,12 @@
 import {Artist} from "../models/Artist.ts";
-import {getFavoriteTrackIdsSet, getTracksBySecret, trackAttributes, trackCountQuery} from "./TrackController.js";
-import {getUser} from "./UserController.js";
+import {getFavoriteTrackIdsSet, getTracksBySecretFromCache, trackAttributes, trackCountQuery} from "./TrackController.js";
+import {getFavoriteReleaseIdsSet, releaseAttributes} from "./ReleaseController.js";
 import {Track} from "../models/Track.ts";
+import {Release} from "../models/Release.ts";
+import {redisClient, sequelize} from "../models/index.js";
+import {User} from "../models/User.ts";
 import {literal} from "@sequelize/core";
+import {getUserFavoriteArtistList} from "./UserController.js";
 
 export const artistAttributes = [
     'id',
@@ -10,71 +14,112 @@ export const artistAttributes = [
     'avatar'
 ]
 
-const getArtist = async (req, res) => {
-    const artistId = req.params['artistId'];
+export const getFavoriteArtistIdsSet = async (userId) => {
+    const favoriteArtists = await getUserFavoriteArtistList(userId)
 
-    const artist = await Artist.findByPk(artistId, {
+    return new Set(favoriteArtists.map(t => t.id))
+}
+
+const getArtistData = async (artistId) => {
+    const cached = await redisClient.get(`artist:${artistId}`)
+    if (cached) return JSON.parse(cached)
+
+    const artistModel = await Artist.findByPk(artistId, {
         attributes: [
             ...artistAttributes,
             [trackCountQuery('Artist'), 'trackCount']
+        ],
+        include: [
+            {
+                model: Track,
+                as: 'tracks',
+                attributes: trackAttributes,
+                through: { attributes: [] }
+            },
+            {
+                model: Release,
+                as: 'releases',
+                attributes: releaseAttributes,
+                through: { attributes: [] }
+            }
+        ],
+        order: [
+            [{ model: Track, as: 'tracks' }, 'createdAt', 'DESC'],
+            [{ model: Release, as: 'releases' }, 'createdAt', 'DESC']
         ]
     })
 
-    if (!artist) return res.status(404).send('Not Found');
+    if (!artistModel) return null
 
-    res.status(200).send(artist);
+    const { tracks, releases, ...rest } = artistModel.dataValues
+
+    const data = {
+        ...rest,
+        tracks: tracks.map(t => t.dataValues),
+        releases: releases.map(r => {
+            const { ArtistRelease, ...releaseData } = r.dataValues
+            return {
+                ...releaseData,
+                date: new Date(r.date).getFullYear()
+            }
+        })
+    }
+
+    redisClient
+        .set(`artist:${artistId}`, JSON.stringify(data), { EX: 3600 })
+        .catch(err => console.log(err))
+
+    return data
 }
 
-const getTracks = async (req, res) => {
-    const artistId = req.params.artistId
-    const limit = req.query.limit
+const getArtist = async (req, res) => {
+    const artistId = req.params['artistId']
+    const data = await getArtistData(artistId)
 
-    const artist = await Artist.findByPk(artistId)
-    if (!artist) return res.status(404).send('Not Found')
+    if (!data) return res.status(404).send({})
 
-    const favoriteSet = await getFavoriteTrackIdsSet(req.user.id)
+    const { tracks, releases, ...rest } = data
 
-    const tracks = await artist.getTracks({
-        limit: limit,
-        order: [['createdAt', 'DESC']],
-        attributes: trackAttributes
+    const [favTracks, favReleases, favArtists] = await Promise.all([
+        getFavoriteTrackIdsSet(req.user.id),
+        getFavoriteReleaseIdsSet(req.user.id),
+        getFavoriteArtistIdsSet(req.user.id)
+    ])
+
+    res.status(200).send({
+        ...rest,
+        hasInFavorite: favArtists.has(artistId),
+        tracks: getTracksBySecretFromCache(req, res, tracks.map(t => ({ ...t, hasInFavorite: favTracks.has(t.id) })))
+            .slice(0, 5),
+        releases: releases.map(r => ({ ...r, hasInFavorite: favReleases.has(r.id) }))
+            .slice(0, 5)
     })
+}
 
-    const result = await getTracksBySecret(req, res, tracks)
+const getArtistTracks = async (req, res) => {
+    const artistId = req.params['artistId']
+    const data = await getArtistData(artistId)
+
+    if (!data) return res.status(404).send({})
+
+    const favTracks = await getFavoriteTrackIdsSet(req.user.id)
 
     res.status(200).send(
-        result.map(track => ({ ...track, hasInFavorite: favoriteSet.has(track.id) }))
+        getTracksBySecretFromCache(req, res, data.tracks.map(t => ({ ...t, hasInFavorite: favTracks.has(t.id) })))
     )
 }
 
-const getReleases = async (req, res) => {
-    const artistId = req.params.artistId;
-    const limit = req.query.limit;
+const getArtistReleases = async (req, res) => {
+    const artistId = req.params['artistId']
+    const data = await getArtistData(artistId)
 
-    const artist = await Artist.findByPk(artistId);
+    if (!data) return res.status(404).send({})
 
-    if (!artist) return res.status(404).send('Not Found');
+    const favReleases = await getFavoriteReleaseIdsSet(req.user.id)
 
-    const result = await artist.getReleases({
-        limit: limit,
-        order: [['createdAt', 'DESC']],
-        attributes: {
-            exclude: ['createdAt', 'updatedAt', 'icpn']
-        }
-    }).then(releases => releases.map(release => {
-        const {artistRelease, ...rest} = release.toJSON();
-
-        return {
-            ...rest,
-            date: new Date(release.date).getFullYear()
-        }
-    }))
-
-    res.status(200).send(result);
+    res.status(200).send(
+        data.releases.map(r => ({ ...r, hasInFavorite: favReleases.has(r.id) }))
+    )
 }
 
-export default {
-    getArtist,
-    getTracks,
-    getReleases
-}
+export default {getArtist, getArtistTracks, getArtistReleases}

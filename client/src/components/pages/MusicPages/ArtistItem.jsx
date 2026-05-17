@@ -15,31 +15,12 @@ const declension = (n) => {
     return "треков";
 };
 
-const ArtistMain = ({ artist, setCurrentTrack }) => {
+const ArtistMain = ({ artist, isFavorite, toFavorite, setCurrentTrack }) => {
     const navigate = useNavigate();
-    const { artistId } = useParams();
     const player = React.useRef(Player.getInstance()).current;
-    const [tracks, setTracks] = useState([]);
-    const [albums, setAlbums] = useState(null);
-    const [error, setError] = useState(null);
+    const [tracks, setTracks] = useState(artist.tracks.slice(0, 5));
+    const [albums, setAlbums] = useState(artist.releases.slice(0, 5));
     const isPlaying = usePlayerState(player, tracks);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        Promise.all([
-            axios.get(`/api/artists/${artistId}/tracks`, { params: { limit: 5}}),
-            axios.get(`/api/artists/${artistId}/releases`, { params: { limit: 5}})
-        ])
-            .then(([tracksRes, albumsRes]) => {
-                setTracks(tracksRes.data);
-                setAlbums(albumsRes.data);
-            })
-            .catch((err) => {
-                if (err.response?.status === 404) setError('Альбом не найден');
-                else setError('Ошибка загрузки');
-            })
-            .finally(() => setLoading(false));
-    }, [])
 
     const getCount = () => artist.trackCount
 
@@ -55,85 +36,87 @@ const ArtistMain = ({ artist, setCurrentTrack }) => {
         }
     };
 
-    if (loading) return <LoadingPage/>;
-    if (error) return <div>{error}</div>;
-
-    if (tracks && albums)
-        return (
-            <div className="artist-item">
-                <button className="music-back" onClick={() => navigate(-1)}><ChevronLeft size={20} /></button>
-                <div className="artist-header">
-                    <div className="artist-header__image">
-                        {artist.avatar
-                            ? <img src={`/api/files/${artist.avatar}`} alt={artist.name} />
-                            : <CircleUserRound size={64} color="#b4b2a9" />
-                        }
-                    </div>
-                    <div className="artist-header__info">
-                        <h1 className="artist-header__name">{artist.name}</h1>
-                        <div className="artist-header__bottom">
-                            <div className="artist-header__meta">
-                                <span className="artist-header__type">Артист</span>
-                                <span className="artist-header__count">
-                                    {getCount()} {declension(getCount())}
-                                </span>
-                            </div>
-                            <button
-                                className="liked-play-btn-artist"
-                                onClick={handlePlay}
-                                disabled={tracks.length === 0}
-                            >
-                                {isPlaying ? <Pause size={18}/> : <Play size={18}/>}
-                                <span>Слушать</span>
-                            </button>
+    return (
+        <div className="artist-item">
+            <button className="music-back" onClick={() => navigate(-1)}><ChevronLeft size={20} /></button>
+            <div className="artist-header">
+                <div className="artist-header__image">
+                    {artist.avatar
+                        ? <img src={`/api/files/${artist.avatar}`} alt={artist.name} />
+                        : <CircleUserRound size={64} color="#b4b2a9" />
+                    }
+                </div>
+                <div className="artist-header__info">
+                    <h1 className="artist-header__name">{artist.name}</h1>
+                    <div className="artist-header__bottom">
+                        <div className="artist-header__meta">
+                            <span className="artist-header__type">Артист</span>
+                            <span className="artist-header__count">
+                                {getCount()} {declension(getCount())}
+                            </span>
                         </div>
+                        <button
+                            className="liked-play-btn-artist"
+                            onClick={handlePlay}
+                            disabled={tracks.length === 0}
+                        >
+                            {isPlaying ? <Pause size={18}/> : <Play size={18}/>}
+                            <span>Слушать</span>
+                        </button>
+                        <button
+                            className="liked-props-btn"
+                            onClick={toFavorite}
+                        >
+                            <Heart size={18} fill={isFavorite ? 'white' : 'none'}/>
+                        </button>
                     </div>
                 </div>
-
-                {albums.length > 0 && (
-                    <div className="artist-albums-section">
-                        <button
-                            className="artist-albums-header"
-                            onClick={() => navigate("albums")}
-                        >
-                            <span>Альбомы</span>
-                            <ChevronRight size={18} color="#a3a3a3" />
-                        </button>
-                        <div className="playlist-grid">
-                            {albums.map(({ id, title, cover, date }) => (
-                                <button
-                                    key={id}
-                                    onClick={() => navigate(`albums/${id}`)}
-                                >
-                                    <div className="album-imagediv">
-                                        <img src={`/api/files/${cover}`} alt="" />
-                                    </div>
-                                    <span className="music-tile__label">{title}</span>
-                                    <span className="date-issingle">{date}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {tracks.length > 0 && (
-                    <div className="artist-albums-section">
-                        <button
-                            className="artist-albums-header"
-                            onClick={() => navigate("tracks")}
-                        >
-                            <span>Треки</span>
-                            <ChevronRight size={18} color="#a3a3a3" />
-                        </button>
-                        <TrackList
-                            tracks={tracks}
-                            setCurrentTrack={setCurrentTrack}
-                            UsingContext={null}
-                        />
-                    </div>
-                )}
             </div>
-        );
+
+            {albums.length > 0 && (
+                <div className="artist-albums-section">
+                    <button
+                        className="artist-albums-header"
+                        onClick={() => navigate("albums")}
+                    >
+                        <span>Альбомы</span>
+                        <ChevronRight size={18} color="#a3a3a3" />
+                    </button>
+                    <div className="playlist-grid">
+                        {albums.map(({ id, title, cover, date }) => (
+                            <button
+                                key={id}
+                                onClick={() => navigate(`/music/albums/${id}`)}
+                            >
+                                <div className="album-imagediv">
+                                    <img src={`/api/files/${cover}`} alt="" />
+                                </div>
+                                <span className="music-tile__label">{title}</span>
+                                <span className="date-issingle">{date}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {tracks.length > 0 && (
+                <div className="artist-albums-section">
+                    <button
+                        className="artist-albums-header"
+                        onClick={() => navigate("tracks")}
+                    >
+                        <span>Треки</span>
+                        <ChevronRight size={18} color="#a3a3a3" />
+                    </button>
+                    <TrackList
+                        tracks={tracks}
+                        setCurrentTrack={setCurrentTrack}
+                        UsingContext={null}
+                    />
+                </div>
+            )}
+        </div>
+    );
 };
 
 const ArtistItem = ({ setCurrentTrack }) => {
@@ -142,13 +125,30 @@ const ArtistItem = ({ setCurrentTrack }) => {
     const [artist, setArtist] = useState(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isFavorite, setIsFavorite] = useState(false);
 
     useEffect(() => {
         axios.get(`/api/artists/${artistId}`)
-            .then(res => setArtist(res.data))
+            .then(res => {
+                setArtist(res.data)
+                setIsFavorite(res.data.hasInFavorite)
+            })
             .catch(() => setError('Артист не найден'))
             .finally(() => setLoading(false));
     }, [])
+
+    const toFavorite = () => {
+        const request = () => isFavorite
+            ? axios.delete(`/api/users/removeFavoriteArtist/${artistId}`)
+            : axios.post(`/api/users/addFavoriteArtist/${artistId}`)
+
+        request()
+            .then(() => {
+                const newValue = !isFavorite
+                setIsFavorite(newValue)
+            })
+            .catch(err => console.error(err));
+    }
 
     if (loading) return <LoadingPage/>;
     if (error) return <div>{error}</div>;
@@ -160,6 +160,8 @@ const ArtistItem = ({ setCurrentTrack }) => {
                     index
                     element={
                         <ArtistMain
+                            isFavorite={isFavorite}
+                            toFavorite={toFavorite}
                             artist={artist}
                             setCurrentTrack={setCurrentTrack}
                         />

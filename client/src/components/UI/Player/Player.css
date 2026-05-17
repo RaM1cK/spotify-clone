@@ -1,4 +1,4 @@
-.spin {
+.spin-player {
     animation: spin 1s infinite linear;
 }
 
@@ -6,7 +6,7 @@
     padding-bottom: env(safe-area-inset-bottom);
 }
 
-@keyframes spin {
+@keyframes spin-player {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
