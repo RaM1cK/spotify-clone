@@ -10,7 +10,7 @@ import {useNavigate, useLocation, Routes, Route, useParams} from "react-router-d
 import './MyProfile.css';
 import axios from "axios";
 import {LoadingPage} from "./LoadingPage";
-import { User, Pencil, ChevronRight, Ellipsis, Check, X } from "lucide-react";
+import { User, Pencil, ChevronRight, Ellipsis, Check, X, FolderPlus } from "lucide-react";
 
 /* ── Friend Card ── */
 function FriendCard({ friend }) {
@@ -114,6 +114,70 @@ export function UserProfile() {
     }
 }
 
+function EditModal({isOpen, onClose, title}) {
+    const session = useSession();
+
+    useEffect(() => {
+        if (isOpen) document.body.style.overflow = 'hidden'
+        else document.body.style.overflow = ''
+        return () => { document.body.style.overflow = '' }
+    }, [isOpen])
+
+    useEffect(() => {
+        const onKey = (e) => e.key === 'Escape' && onClose()
+        document.addEventListener('keydown', onKey)
+        return () => document.removeEventListener('keydown', onKey)
+    }, [onClose])
+
+    const handleAvatarClick = () =>{
+    }
+
+    if (!isOpen) return null
+    return (
+        <div className="edit-modal-overlay"
+            onClick={(e) => e.target === e.currentTarget && onClose(e)}>
+            <div className="edit-modal-content"
+                 role="dialog"
+                 aria-modal={true}
+                 aria-labelledby="modal-title"
+            >
+                <div className="edit-modal-header">
+                    <h2 className="edit-modal-title">{title}</h2>
+                    <button className="close-btn" onClick={onClose} aria-label="Закрыть">✕</button>
+                </div>
+
+                <div className="edit-modal-avatar-line">
+                    <div className="edit-modal-avatar" onClick={handleAvatarClick}>
+                        {session.avatar
+                            ? <img src={`/api/files/${session.avatar}`} alt="avatar" />
+                            : <User size={52} />
+                        }
+                        <div className="edit-modal-avatar-overlay">
+                            <FolderPlus size={32} />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="edit-modal-nickname">
+                    <div className="edit-modal-name">Имя</div>
+                    <input className="edit-modal-nickname-input" placeholder={session.nickname} />
+                </div>
+
+                <div className="edit-modal-nickname">
+                    <div className="edit-modal-name">E-mail</div>
+                    <input className="edit-modal-nickname-input" placeholder={session.email} />
+                </div>
+
+                <div className="edit-modal-save">
+                    <div className="edit-modal-save-button">Сохранить</div>
+                </div>
+            </div>
+        </div>
+    )
+
+}
+
+
 /* ── Main Component ── */
 function MyUserProfile() {
     const session = useSession();
@@ -121,6 +185,8 @@ function MyUserProfile() {
     const friends = useFriends()
     const incomingRequests = useIncomingRequests();
     const outgoingRequests = useOutgoingRequests()
+
+    const [isOpen, setOpen] = useState(false);
 
     const nickname  = session.nickname;
     const email     = session.email;
@@ -148,6 +214,7 @@ function MyUserProfile() {
     const activeRequests = requestsTab === 'incoming' ? incomingRequests : requestsTab === 'outgoing' ? outgoingRequests : [];
 
     return (
+        <>
         <div className="mp-root">
 
             <div className="mp-header">
@@ -161,12 +228,14 @@ function MyUserProfile() {
                     <div className="mp-identity">
                         <span className="mp-nickname">{nickname}</span>
                         <span className="mp-email">{email}</span>
+                        <button className="mp-edit-btn" onClick={() => setOpen(true)}>
+                            <Pencil size={20} />
+                            <span className="mp-edit-btn-text">Редактировать</span>
+                        </button>
                     </div>
+
                 </div>
-                <button className="mp-edit-btn">
-                    <Pencil size={15} />
-                    <span className="mp-edit-btn-text">Редактировать</span>
-                </button>
+
             </div>
 
             <div className="mp-divider" />
@@ -239,6 +308,9 @@ function MyUserProfile() {
             </div>
 
         </div>
+
+            <EditModal isOpen={isOpen} onClose={() => setOpen(false)} title="Редактировать профиль"></EditModal>
+        </>
     );
 }
 
