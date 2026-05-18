@@ -26,4 +26,5 @@ const trackRouter = express.Router();
 
 trackRouter.get('/', trackMiddleware,TrackController.getTrackFile)
 trackRouter.post('/position', TrackController.saveLastPosition)
+trackRouter.post('/token', TrackController.requestTrackToken)
 export default trackRouter;

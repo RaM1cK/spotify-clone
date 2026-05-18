@@ -5,7 +5,6 @@ import jwt from "jsonwebtoken";
 import io from "../server.js"
 import {
     getFavoriteTrackIdsSet,
-    getTracksBySecretFromCache,
     trackAttributes,
     trackCountQuery
 } from "./TrackController.js";
@@ -17,6 +16,8 @@ import {artistAttributes, getFavoriteArtistIdsSet} from "./ArtistController.js";
 import {playlistAttributes} from "./PlaylistController.js";
 import {Friendship} from "../models/Friendship.ts";
 import {getFavoriteReleaseIdsSet, releaseAttributes} from "./ReleaseController.js";
+import sharp from "sharp";
+import fs from "fs";
 
 dotenv.config();
 
@@ -141,6 +142,67 @@ const auth = async (req, res) => {
     })
 }
 
+const edit = async (req, res) => {
+    const id = req.user.id;
+    const fields = {}
+
+    if (req.body.email) fields.email = req.body.email;
+    if (req.body.nickname) fields.nickname = req.body.nickname;
+
+    const updateDB = async () => {
+        await sequelize.transaction(async t => {
+            await User.update(fields, {
+                where: { id },
+                transaction: t
+            })
+
+            redisClient
+                .del(`user:${id}`)
+                .catch(err => console.log(err))
+        })
+    }
+
+    if (req.file) {
+        const filename = `${id}.jpg`
+        const filepath = `images/users/${filename}`
+
+        try {
+            await sharp(req.file.buffer)
+                .jpeg({ quality: 85 })
+                .toFile(`music/${filepath}`)
+
+            fields.avatar = filepath
+
+            await updateDB()
+
+            return res.status(200).send({
+                email: fields.email,
+                nickname: fields.nickname,
+                avatar: `${filepath}?t=${Date.now()}`
+            })
+        } catch (error) {
+            console.log(error)
+
+            fs.unlink(`music/${filepath}`, () => {})
+
+            return res.status(500).send({error: 'Upload failed'})
+        }
+    } else {
+        try {
+            await updateDB()
+
+            return res.status(200).send({
+                email: fields.email,
+                nickname: fields.nickname
+            })
+        } catch (error) {
+            console.log(error)
+
+            return res.status(500).send({error: 'Upload failed'})
+        }
+    }
+}
+
 export const logout = async (req, res) => {
     res.clearCookie('token');
     res.status(200).send({});
@@ -193,7 +255,7 @@ const normalizedSearch = async (req, res) => {
                     WHERE at."artistId" = a."id"
                 ) as track_count
             FROM artists a
-            WHERE :query % ${column} OR :query <% ${column}
+            WHERE :query % ${column} OR :query <% ${column} OR ${column} ILIKE '%' || :query || '%'
             ORDER BY score DESC
             ${limit > 0 ? `LIMIT ${limit}` : ''}
         `, {
@@ -214,7 +276,7 @@ const normalizedSearch = async (req, res) => {
                     word_similarity(:query, ${column})
                 ) AS score
             FROM ${table}
-            WHERE :query % ${column} OR :query <% ${column}
+            WHERE :query % ${column} OR :query <% ${column} OR ${column} ILIKE '%' || :query || '%'
             ORDER BY score DESC
             ${limit > 0 ? `LIMIT ${limit}` : ''}
         `, {
@@ -240,7 +302,7 @@ const normalizedSearch = async (req, res) => {
             hasInFavorite: favArtists.has(artist.id),
             trackCount: artist.track_count
         })),
-        tracks: getTracksBySecretFromCache(req, res, tracks)
+        tracks: tracks
             .map(track => ({
                 ...track,
                 hasInFavorite: favTracks.has(track.id)
@@ -365,16 +427,15 @@ const getTracks = async (req, res) => {
     const isOwn = targetUserId === req.user.id
 
     const trackList = await getUserFavoriteTrackList(targetUserId)
-    const response = getTracksBySecretFromCache(req, res, trackList)
 
     if (isOwn) {
-        res.status(200).send(response.map(t => ({ ...t, hasInFavorite: true })))
+        res.status(200).send(trackList.map(t => ({ ...t, hasInFavorite: true })))
     } else {
         const favoriteTracks = await getUserFavoriteTrackList(req.user.id)
 
         const favSet = new Set(favoriteTracks.map(t => t.id))
 
-        res.status(200).send(response.map(t => ({ ...t, hasInFavorite: favSet.has(t.id) })))
+        res.status(200).send(trackList.map(t => ({ ...t, hasInFavorite: favSet.has(t.id) })))
     }
 }
 
@@ -500,22 +561,88 @@ const removeFavoriteArtist = async (req, res) => {
     }
 }
 
-const getFavoritePlaylists = async (req, res) => {
-    const user = await getUser(req, res)
+export const getUserFavoritePlaylists = async (userId) => {
+    const cached =
+        await redisClient.get(`favoritePlaylists:${userId}`)
+
+    if (cached) return JSON.parse(cached)
+
+    const user = await User.findByPk(userId)
 
     const result = await user.getFavoritePlaylists({
         attributes: [
             ...playlistAttributes,
             [trackCountQuery('Playlist'), 'trackCount']
         ],
+        through: { attributes: [] },
         order: [[literal('"userFavoritePlaylist.createdAt"'), 'DESC']]
-    }).then(playlists => playlists.map(playlist => {
-        const {userFavoritePlaylist, ...rest} = playlist.toJSON();
+    })
 
+    const playlists = result.map(p => {
+        const {userFavoritePlaylist, ...rest} = p.dataValues
         return rest
-    }))
+    })
 
-    res.status(200).send(result)
+    redisClient
+        .set(`favoritePlaylists:${userId}`, JSON.stringify(playlists), { EX: 3600 })
+        .catch(err => console.log(err))
+
+    return playlists
+}
+
+const getFavoritePlaylists = async (req, res) => {
+    const targetUserId = getUserId(req)
+    const isOwn = targetUserId === req.user.id
+
+    const playlists = await getUserFavoritePlaylists(targetUserId)
+
+    if (isOwn) {
+        res.status(200).send(playlists.map(p => ({ ...p, hasInFavorite: true })))
+    } else {
+        const favoritePlaylists = await getUserFavoritePlaylists(req.user.id)
+
+        const favSet = new Set(favoritePlaylists.map(p => p.id))
+
+        res.status(200).send(playlists.map(p => ({ ...p, hasInFavorite: favSet.has(p.id) })))
+    }
+}
+
+const addFavoritePlaylist = async (req, res) => {
+    const user = await User.findByPk(req.user.id)
+    const playlistId = req.params.playlistId;
+
+    try {
+        await sequelize.transaction(async t => {
+            await user.addFavoritePlaylist(playlistId, { transaction: t });
+        });
+
+        redisClient
+            .del(`favoritePlaylists:${req.user.id}`)
+            .catch(err => console.log(err));
+
+        return res.status(200).send({});
+    } catch {
+        return res.status(500).send({});
+    }
+}
+
+const removeFavoritePlaylist = async (req, res) => {
+    const user = await User.findByPk(req.user.id)
+    const playlistId = req.params.playlistId;
+
+    try {
+        await sequelize.transaction(async t => {
+            await user.removeFavoritePlaylist(playlistId, { transaction: t });
+        });
+
+        redisClient
+            .del(`favoritePlaylists:${req.user.id}`)
+            .catch(err => console.log(err));
+
+        return res.status(200).send({});
+    } catch {
+        return res.status(500).send({});
+    }
 }
 
 const getChats = async (req, res) => {
@@ -657,13 +784,14 @@ export default {
     reg,
     auth,
     logout,
+    edit,
     verifyEmail,
     normalizedSearch,
     getUsersByNickname,
     getReleases, addFavoriteRelease, removeFavoriteRelease,
     getTracks, addFavoriteTrack, removeFavoriteTrack,
     getFavoriteArtists, addFavoriteArtist, removeFavoriteArtist,
-    getFavoritePlaylists,
+    getFavoritePlaylists, addFavoritePlaylist, removeFavoritePlaylist,
     getChats,
     acceptFriendRequest, rejectFriendRequest, cancelFriendRequest, sendFriendRequest,
 }

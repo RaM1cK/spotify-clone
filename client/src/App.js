@@ -123,7 +123,7 @@ function App() {
 
     return (
         <BrowserRouter>
-            <AppProvider session={session}>
+            <AppProvider session={session} setSession={setSession}>
                 <AppLayout
                     setCurrentTrack={setCurrentTrack}
                     currentTrack={currentTrack}

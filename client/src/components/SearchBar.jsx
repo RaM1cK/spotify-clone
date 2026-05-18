@@ -9,21 +9,22 @@ const SearchBar = ({searchTerm, setSearchTerm, isLoading, setIsLoading, setData}
     const handleSearch = (searchQuery) =>
         axios.get(`/api/users/search?query=${searchQuery}`)
             .then(res => setData(res.data))
-            .catch(err => console.log(err));
+            .catch(err => console.log(err))
+            .finally(() => setIsLoading(false));
 
     const handleChange = (e) => {
         const value = e.target.value;
 
-        setSearchTerm(value);
         setIsLoading(true);
+        setSearchTerm(value);
 
         if (debounceTimer.current) {
             clearTimeout(debounceTimer.current);
         }
 
         debounceTimer.current = setTimeout(() => {
-            if (value) handleSearch(value);
-            setIsLoading(false);
+            if (value) handleSearch(value)
+            else setIsLoading(false);
         }, 500);
     };
 

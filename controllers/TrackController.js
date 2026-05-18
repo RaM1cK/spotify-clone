@@ -27,6 +27,7 @@ export const hasInFavoriteQuery = (userId, alias = 'tracks') => {
     const favoriteAlias = {
         tracks: 'FavoriteTracks',
         Track: 'FavoriteTracks',
+        Playlist: 'FavoritePlaylists',
         artists: 'FavoriteArtists',
         releases: 'FavoriteReleases',
         playlists: 'FavoritePlaylists',
@@ -35,6 +36,7 @@ export const hasInFavoriteQuery = (userId, alias = 'tracks') => {
     const aliasToOneString = {
         tracks: 'track',
         Track: 'track',
+        Playlist: 'playlist',
         artists: 'artist',
         releases: 'release',
         playlists: 'playlist'
@@ -63,58 +65,33 @@ export const trackCountQuery = (alias) => literal(`(
     where "${alias}Track"."${alias.toLowerCase()}Id" = "${alias}"."id"
 )`)
 
-export const getTracksBySecret = (req, res, tracks) => {
+export const requestTrackToken = async (req, res) => {
+    const { trackId } = req.body;
+    if (!trackId) return res.status(400).json({});
+
+    const track = await Track.findByPk(trackId, {
+        attributes: trackAttributes
+    });
+
+    if (!track) return res.status(404).json({});
+
     const fingerprint = crypto
         .createHash('sha256')
         .update(req.ip + req.headers['user-agent'] + req.user.id)
         .digest('hex')
 
-    return tracks.map(track => {
-        const {
-            uri,
-            hasInFavorite,
-            ...rest
-        } = track.toJSON()
+    const { uri, ...rest } = track.toJSON();
 
-        redisClient
-            .set(`track:${track.id}`, JSON.stringify({...rest, uri}), { EX: 3600})
-            .catch(err => console.log(err));
+    redisClient
+        .set(`track:${track.id}`, JSON.stringify({...rest, uri}), { EX: 3600})
+        .catch(err => console.log(err));
 
-        return {
-            ...rest,
-            hasInFavorite,
-            token: jwt.sign(
-            {
-                ...rest,
-                uri,
-                fingerprint
-            }, process.env.SECRET_KEY)
-        }
-    })
-}
+    const token = jwt.sign(
+        { ...rest, uri, fingerprint },
+        process.env.SECRET_KEY
+    );
 
-export const getTracksBySecretFromCache = (req, res, tracks) => {
-    const fingerprint = crypto
-        .createHash('sha256')
-        .update(req.ip + req.headers['user-agent'] + req.user.id)
-        .digest('hex')
-
-    return tracks.map(track => {
-        const {
-            uri,
-            ...rest
-        } = track
-
-        return {
-            ...rest,
-            token: jwt.sign(
-                {
-                    ...rest,
-                    uri,
-                    fingerprint
-                }, process.env.SECRET_KEY)
-        }
-    })
+    res.json({ token });
 }
 
 export const saveLastPosition = async (req, res) => {
@@ -187,5 +164,11 @@ export const getTrackFile = async (req, res)=> {
     fileStream.pipe(res);
 }
 
-export default {getTrackFile, saveLastPosition}
+// export const getTrackArtists = async (req, res) => {
+//     const trackId = req.params.trackId;
+//
+//     const artists = await
+// }
+
+export default {getTrackFile, saveLastPosition, requestTrackToken}
 

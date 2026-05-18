@@ -39,6 +39,18 @@
     border-radius: inherit;
 }
 
+.playlist-logo-wrapper {
+    width: min(260px, 42vw);
+    min-width: 60px;
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    background: #1a1a1a;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 @keyframes skeleton-shimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }

@@ -1,5 +1,5 @@
 import {Artist} from "../models/Artist.ts";
-import {getFavoriteTrackIdsSet, getTracksBySecretFromCache, trackAttributes, trackCountQuery} from "./TrackController.js";
+import {getFavoriteTrackIdsSet, trackAttributes, trackCountQuery} from "./TrackController.js";
 import {getFavoriteReleaseIdsSet, releaseAttributes} from "./ReleaseController.js";
 import {Track} from "../models/Track.ts";
 import {Release} from "../models/Release.ts";
@@ -89,7 +89,7 @@ const getArtist = async (req, res) => {
     res.status(200).send({
         ...rest,
         hasInFavorite: favArtists.has(artistId),
-        tracks: getTracksBySecretFromCache(req, res, tracks.map(t => ({ ...t, hasInFavorite: favTracks.has(t.id) })))
+        tracks: tracks.map(t => ({ ...t, hasInFavorite: favTracks.has(t.id) }))
             .slice(0, 5),
         releases: releases.map(r => ({ ...r, hasInFavorite: favReleases.has(r.id) }))
             .slice(0, 5)
@@ -105,7 +105,7 @@ const getArtistTracks = async (req, res) => {
     const favTracks = await getFavoriteTrackIdsSet(req.user.id)
 
     res.status(200).send(
-        getTracksBySecretFromCache(req, res, data.tracks.map(t => ({ ...t, hasInFavorite: favTracks.has(t.id) })))
+        data.tracks.map(t => ({ ...t, hasInFavorite: favTracks.has(t.id) }))
     )
 }
 

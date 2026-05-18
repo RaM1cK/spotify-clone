@@ -8,7 +8,7 @@ const socket = io('http://localhost:8080');
 // });
 const AppContext = createContext(null);
 
-export const AppProvider = ({session, children}) => {
+export const AppProvider = ({session, setSession, children}) => {
     const [friends, setFriends] = useState(session?.friends);
     const [incomingRequests, setIncomingRequests] = useState(session?.incomingRequests);
     const [outgoingRequests, setOutgoingRequests] = useState(session?.outgoingRequests);
@@ -36,7 +36,7 @@ export const AppProvider = ({session, children}) => {
 
     return (
         <AppContext.Provider value={{
-            socket, session, friends, incomingRequests, outgoingRequests,
+            socket, session, setSession, friends, incomingRequests, outgoingRequests,
             acceptRequest, rejectRequest, cancelRequest, sendRequest
         }}>
             {children}
@@ -46,6 +46,7 @@ export const AppProvider = ({session, children}) => {
 
 export const useSocket = () => useContext(AppContext).socket;
 export const useSession = () => useContext(AppContext).session;
+export const useSetSession = () => useContext(AppContext).setSession;
 export const useFriends = () => useContext(AppContext).friends;
 export const useIncomingRequests = () => useContext(AppContext).incomingRequests;
 export const useOutgoingRequests = () => useContext(AppContext).outgoingRequests;

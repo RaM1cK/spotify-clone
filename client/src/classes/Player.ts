@@ -23,6 +23,13 @@ export class Player implements Subject {
     private _lastPosition: number = 0;
     private _lastPositionOnLoading: number = -1;
 
+    private _pendingTrackId: number | null = null;
+    private _lastToken: string | null = null;
+
+    public get token(): string | null {
+        return this._lastToken;
+    }
+
     public get currentIndex(): number {
         return this._currentIndex;
     }
@@ -139,59 +146,80 @@ export class Player implements Subject {
         }, 2000)
     }
 
-    private setHowl(track: any, startFrom: number = 0, autoplay: boolean = true) {
+    private async setHowl(track: any, startFrom: number = 0, autoplay: boolean = true) {
         this.howl?.unload()
         this._lastPositionOnLoading = -1
         this.stopBufferWatch()
         this.state = new LoadingState()
         this.notify()
 
-        const params = new URLSearchParams({
-            token: track.token,
-            duration: track.duration
-        })
+        this._pendingTrackId = track.id;
 
-        this.howl = new Howl({
-            src: [`/api/tracks?${params.toString()}`],
-            format: ['mp3', 'flac'],
-            volume: 1,
-            loop: false,
-            html5: true,
-            onload: () => {
-                console.log('loaded')
+        try {
+            const res = await fetch('/api/tracks/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ trackId: track.id })
+            });
+            const data = await res.json();
 
-                if (startFrom > 0) this.howl!.seek(startFrom)
-                else if (this._lastPositionOnLoading !== -1) this.howl!.seek(this._lastPositionOnLoading)
+            if (this._pendingTrackId !== track.id) return;
 
-                if (autoplay) this.play()
-                else {
-                    this.pause()
+            this._lastToken = data.token;
+
+            const params = new URLSearchParams({
+                token: data.token,
+                duration: track.duration
+            })
+
+            this.howl = new Howl({
+                src: [`/api/tracks?${params.toString()}`],
+                format: ['mp3', 'flac'],
+                volume: 1,
+                loop: false,
+                html5: true,
+                onload: () => {
+                    console.log('loaded')
+
+                    if (startFrom > 0) this.howl!.seek(startFrom)
+                    else if (this._lastPositionOnLoading !== -1) this.howl!.seek(this._lastPositionOnLoading)
+
+                    if (autoplay) this.play()
+                    else {
+                        this.pause()
+                    }
+
+                    this.updateMediaSession(track)
+                    this.startBufferWatch()
+                },
+                onplay: () => {
+                    this.updateMediaSessionState('playing')
+                    this.state = new PlayingState();
+                    this.notify()
+                },
+                onpause: () => this.updateMediaSessionState('paused'),
+                onend: () => {
+                    this.updateMediaSessionState('none')
+                    this._strategy.onTrackEnd()
+                },
+                onloaderror: (e) => {
+                    console.log('Load error')
+                    console.error(e)
+                    this.handleError(track)
+                },
+                onplayerror: (e) => {
+                    console.log('Play error')
+                    console.error(e)
+                    this.handleError(track)
                 }
-
-                this.updateMediaSession(track)
-                this.startBufferWatch()
-            },
-            onplay: () => {
-                this.updateMediaSessionState('playing')
-                this.state = new PlayingState();
-                this.notify()
-            },
-            onpause: () => this.updateMediaSessionState('paused'),
-            onend: () => {
-                this.updateMediaSessionState('none')
-                this._strategy.onTrackEnd()
-            },
-            onloaderror: (e) => {
-                console.log('Load error')
-                console.error(e)
-                this.handleError(track)
-            },
-            onplayerror: (e) => {
-                console.log('Play error')
-                console.error(e)
-                this.handleError(track)
+            })
+        } catch (err) {
+            console.error('Failed to fetch track token', err);
+            if (this._pendingTrackId === track.id) {
+                this.state = new StoppedState();
+                this.notify();
             }
-        })
+        }
     }
 
     public seek(num?: number) {

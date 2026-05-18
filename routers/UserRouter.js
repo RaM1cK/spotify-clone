@@ -8,9 +8,18 @@ import {Friendship} from "../models/Friendship.ts";
 import {Op} from "@sequelize/core";
 import {User} from "../models/User.ts";
 import {redisClient} from "../models/index.js";
-import {getTracksBySecret, getTracksBySecretFromCache} from "../controllers/TrackController.js";
+
+import multer from "multer";
 
 dotenv.config();
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024,
+        files: 1
+    }
+})
 
 const userRouter = express.Router();
 
@@ -26,7 +35,7 @@ userRouter.get('/me', async (req, res) => {
     const {iat, ...rest} = req.user
     let currentTrack = undefined;
 
-    if (userCurrentTrack) currentTrack = getTracksBySecretFromCache(req, res, [JSON.parse(userCurrentTrack)])[0];
+    if (userCurrentTrack) currentTrack = JSON.parse(userCurrentTrack);
 
     if (!userFriendships) {
         const friendships = await Friendship.findAll({
@@ -76,6 +85,7 @@ userRouter.get('/me', async (req, res) => {
         })
     }
 })
+userRouter.post('/edit', upload.single('avatar'), UserController.edit)
 userRouter.delete('/reject/:senderId', UserController.rejectFriendRequest);
 userRouter.post('/accept/:senderId', UserController.acceptFriendRequest);
 userRouter.delete('/cancel/:receiverId', UserController.cancelFriendRequest);
@@ -98,5 +108,7 @@ userRouter.get("/:userId/favoriteArtists", UserController.getFavoriteArtists);
 userRouter.delete('/removeFavoriteArtist/:artistId', userController.removeFavoriteArtist);
 userRouter.post('/addFavoriteArtist/:artistId', userController.addFavoriteArtist);
 userRouter.get("/:userId/favoritePlaylists", UserController.getFavoritePlaylists);
+userRouter.delete('/removeFavoritePlaylist/:playlistId', userController.removeFavoritePlaylist);
+userRouter.post('/addFavoritePlaylist/:playlistId', userController.addFavoritePlaylist);
 userRouter.get("/:userId/chats", UserController.getChats);
 export default userRouter;

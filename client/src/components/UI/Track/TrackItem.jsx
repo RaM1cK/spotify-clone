@@ -1,18 +1,15 @@
 import React, {useEffect, useLayoutEffect, useRef, useState} from "react";
-import {createPortal} from "react-dom";
-import {Heart, MoreVertical, Pause, Play, User, Disc3, ListPlus, Share2} from "lucide-react";
+import {Heart, MoreVertical, Pause, Play} from "lucide-react";
 import {Player} from "../../../classes/Player.ts";
 import "./trackitem.css";
 import {TrackUI} from "../../../classes/observers/TrackUI.ts";
 import axios from "axios";
-import {useLocation, useNavigate} from "react-router-dom";
+import TrackMenu from "./TrackMenu.jsx";
 
 function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange }) {
     const [isPlaying, setIsPlaying] = React.useState(false);
     const [isCurrent, setIsCurrent] = React.useState(false);
     const [isFavorite, setIsFavorite] = React.useState(track.hasInFavorite);
-    const navigate = useNavigate();
-    const location = useLocation()
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuPos, setMenuPos] = useState({ top: 0, left: 0, openUp: false });
     const buttonRef = useRef(null);
@@ -176,37 +173,14 @@ function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange })
                     <button onClick={toggleMenu} ref={buttonRef} className="track-item__button">
                         <MoreVertical size={20} color={"white"}/>
                     </button>
-                    {menuOpen && createPortal(
-                        <div ref={menuRef} className={`track-item__menu${menuPos.openUp ? " track-item__menu--up" : ""}`}
-                             style={{ position: "fixed", top: menuPos.top, left: menuPos.left, zIndex: 9999 }}>
-                            <button
-                                className="track-item__menu-item"
-                                onClick={e => {
-                                    e.stopPropagation();
-
-                                    setMenuOpen(false);
-                                }}>
-                                <User size={16}/> Перейти к исполнителю
-                            </button>
-                            <button
-                                className="track-item__menu-item"
-                                onClick={e => {
-                                    const path = `/music/albums/${track.releaseId}`
-
-                                    e.stopPropagation();
-                                    if (path !== location.pathname) navigate(`/music/albums/${track.releaseId}`)
-                                    setMenuOpen(false);
-                                }}>
-                                <Disc3 size={16}/> Перейти к альбому
-                            </button>
-                            <button className="track-item__menu-item" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}>
-                                <ListPlus size={16}/> Добавить в плейлист
-                            </button>
-                            <button className="track-item__menu-item" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}>
-                                <Share2 size={16}/> Поделиться
-                            </button>
-                        </div>,
-                        document.body
+                    {menuOpen && (
+                        <TrackMenu
+                            ref={menuRef}
+                            track={track}
+                            style={{ top: menuPos.top, left: menuPos.left, zIndex: 9999 }}
+                            openUp={menuPos.openUp}
+                            onClose={() => setMenuOpen(false)}
+                        />
                     )}
                 </div>
             </div>

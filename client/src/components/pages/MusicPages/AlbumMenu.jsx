@@ -3,7 +3,7 @@ import axios from "axios";
 import PlaylistItem from "./PlaylistItem";
 import "./AlbumMenu.css"
 import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
-import {ChevronLeft, Heart} from "lucide-react";
+import {ChevronLeft, Heart, ListMusic} from "lucide-react";
 import {LoadingPage} from "../LoadingPage";
 
 const AlbumFullPage = ({ artistId, UsingContext, RollBack }) => {
@@ -49,7 +49,10 @@ const AlbumList = ({ albums, showArtist, scrollable }) => {
                 {albums.map(({ id, title, artist, date, cover }) => (
                     <button key={id} className="scroll-card" onClick={() => navigate(`/music/albums/${id}`)}>
                         <div className="album-imagediv">
-                            <img src={`/api/files/${cover}`} alt={title} />
+                            {cover
+                                ? <img src={`/api/files/${cover}`} alt={title} />
+                                : <ListMusic size={48} color="#b4b2a9" />
+                            }
                         </div>
                         <span className="music-tile__label">{title}</span>
                         {showArtist && <span className="album-autor">{artist}</span>}
@@ -64,7 +67,10 @@ const AlbumList = ({ albums, showArtist, scrollable }) => {
             {albums.map(({ id, title, artist, date, cover }) => (
                 <button key={id} onClick={() => navigate(`/music/albums/${id}`)}>
                     <div className="album-imagediv">
-                        <img src={`/api/files/${cover}`} alt={title} />
+                        {cover
+                            ? <img src={`/api/files/${cover}`} alt={title} />
+                            : <ListMusic size={64} color="#b4b2a9" />
+                        }
                     </div>
                     <span className="music-tile__label">{title}</span>
                     {showArtist && <span className="album-autor">{artist}</span>}

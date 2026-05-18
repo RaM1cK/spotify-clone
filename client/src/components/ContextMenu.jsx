@@ -4,6 +4,7 @@ import './ContextMenuStyle.css';
 import {useFriends, useSession, useSocket} from "../AppContext";
 import AddFriendModal from "./AddFriendModal";
 import {ChevronRight, User, LogOut, Pencil, Plus, Ellipsis} from "lucide-react";
+import {Image} from "react-bootstrap";
 
 function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROUTES_PAGES }) {
     const overlayRef = useRef(null);
@@ -12,9 +13,8 @@ function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROU
 
     const navigate = useNavigate();
 
-    const username  = session.nickname;
-    const email     = session.email;
-    const avatarUrl = `/api/files/${session.avatar}`;
+    const username = session.nickname;
+    const email = session.email;
 
     const handleOverlayClick = (e) => {
         if (e.target === overlayRef.current) onClose();
@@ -47,8 +47,8 @@ function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROU
                 <div className="pm-section">
                     <div className="pm-user-row">
                         <div className="pm-avatar-lg">
-                            {avatarUrl
-                                ? <img src={avatarUrl} alt="avatar" className="avatar-img" />
+                            {session.avatar
+                                ? <Image src={`/api/files/${session.avatar}`} alt="avatar" className="avatar-img" />
                                 : <User size={30} />
                             }
                         </div>
@@ -64,10 +64,6 @@ function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROU
                             <ChevronRight size={20}/>
                         </div>
                     </div>
-                    <button className="pm-pill-btn">
-                        <Pencil size={14} />
-                        Редактировать
-                    </button>
                 </div>
 
                 <div className="pm-divider" />
@@ -146,7 +142,6 @@ export default function ContextMenu({ PAGES, menuOpen, setMenuOpen, onLogout, RO
     const panelRef = useRef(null);
 
     const username  = session?.nickname;
-    const avatarUrl = session.avatar ? `/api/files/${session?.avatar}` : null;
 
     const handleOpenProfile = () => {
         setProfileOpen(true);
@@ -177,8 +172,8 @@ export default function ContextMenu({ PAGES, menuOpen, setMenuOpen, onLogout, RO
                 >
                     <div className="user-info">
                         <div className="user-avatar">
-                            {avatarUrl
-                                ? <img src={avatarUrl} alt="avatar" className="avatar-img" />
+                            {session.avatar
+                                ? <img src={`/api/files/${session.avatar}`} alt="avatar" className="avatar-img" />
                                 : <User size={22} />
                             }
                         </div>

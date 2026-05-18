@@ -4,7 +4,7 @@ import {
     useFriends,
     useIncomingRequests,
     useOutgoingRequests,
-    useSession
+    useSession, useSetSession
 } from '../../AppContext';
 import {useNavigate, useLocation, Routes, Route, useParams} from "react-router-dom";
 import './MyProfile.css';
@@ -104,7 +104,6 @@ export function UserProfile() {
         <div>{error}</div>
     )
 
-
     if (user) {
         return (
             <div>
@@ -115,8 +114,21 @@ export function UserProfile() {
     }
 }
 
-function EditModal({isOpen, onClose, title}) {
+export function EditModal({isOpen, onClose, title}) {
     const session = useSession();
+    const setSession = useSetSession();
+    const emailRef = useRef(null);
+    const nicknameRef = useRef(null);
+    const avatarRef = useRef(null);
+    const [file, setFile] = useState(null);
+    const [fileURL, setFileURL] = useState(null);
+    const [error, setError] = useState("");
+    const [shake, setShake] = useState(false);
+
+    const triggerShake = () => {
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
+    };
 
     useEffect(() => {
         if (isOpen) document.body.style.overflow = 'hidden'
@@ -130,14 +142,74 @@ function EditModal({isOpen, onClose, title}) {
         return () => document.removeEventListener('keydown', onKey)
     }, [onClose])
 
-    const handleAvatarClick = () =>{
+    const handleAvatarClick = (e) => {
+        const file = e.target.files[0]
+        if (!file) return;
+
+        setFile(file)
+        setFileURL(URL.createObjectURL(file))
+        setError("")
+    }
+
+    const isValidEmail = (email) => {
+        const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        return regex.test(email);
+    }
+
+    const handleSend = () => {
+        const nickname = nicknameRef.current.value.trim();
+        const email = emailRef.current.value.trim();
+
+        if (!nickname && !email && !file) {
+            setError("Нет изменений");
+            triggerShake();
+            return;
+        }
+
+        if (email && !isValidEmail(email)) {
+            setError("Невалидный email");
+            triggerShake();
+            return;
+        }
+
+        const fd = new FormData();
+
+        if (nickname) fd.append('nickname', nickname);
+        if (email) fd.append('email', email);
+        if (file) fd.append('avatar', file);
+
+        axios.post(`/api/users/edit`, fd)
+            .then(({data}) => {
+                setSession(prev => ({
+                    ...prev,
+                    ...(data.nickname && { nickname: data.nickname }),
+                    ...(data.email && { email: data.email }),
+                    ...(data.avatar && { avatar: data.avatar }),
+                }));
+                setError("");
+            })
+            .catch(err => {
+                if (err.response) {
+                    const status = err.response.status;
+                    if (status === 409) {
+                        setError("Пользователь уже существует");
+                    } else {
+                        setError("Ошибка обновления");
+                    }
+                } else if (err.request) {
+                    setError("Нет ответа от сервера");
+                } else {
+                    setError("Ошибка отправки");
+                }
+                triggerShake();
+            })
     }
 
     if (!isOpen) return null
     return (
         <div className="edit-modal-overlay"
             onClick={(e) => e.target === e.currentTarget && onClose(e)}>
-            <div className="edit-modal-content"
+            <div className={`edit-modal-content${shake ? " shake" : ""}`}
                  role="dialog"
                  aria-modal={true}
                  aria-labelledby="modal-title"
@@ -148,28 +220,37 @@ function EditModal({isOpen, onClose, title}) {
                 </div>
 
                 <div className="edit-modal-avatar-line">
-                    <div className="edit-modal-avatar" onClick={handleAvatarClick}>
-                        {session.avatar
-                            ? <img src={`/api/files/${session.avatar}`} alt="avatar" />
+                    <div className="edit-modal-avatar" onClick={() => avatarRef.current?.click()}>
+                        {session.avatar || fileURL
+                            ? <img src={fileURL ? fileURL : `/api/files/${session.avatar}`} alt="avatar" />
                             : <User size={52} />
                         }
                         <div className="edit-modal-avatar-overlay">
                             <FolderPlus size={32} />
                         </div>
                     </div>
+                    <input
+                        ref={avatarRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarClick}
+                        hidden
+                    />
                 </div>
 
                 <div className="edit-modal-nickname">
                     <div className="edit-modal-name">Имя</div>
-                    <input className="edit-modal-nickname-input" placeholder={session.nickname} />
+                    <input ref={nicknameRef} className="edit-modal-nickname-input" placeholder={session.nickname} onChange={() => setError("")} />
                 </div>
 
                 <div className="edit-modal-nickname">
                     <div className="edit-modal-name">E-mail</div>
-                    <input className="edit-modal-nickname-input" placeholder={session.email} />
+                    <input ref={emailRef} className="edit-modal-nickname-input" placeholder={session.email} onChange={() => setError("")} />
                 </div>
 
-                <div className="edit-modal-save">
+                {error && <div className="edit-modal-error">{error}</div>}
+
+                <div className="edit-modal-save" onClick={handleSend}>
                     <div className="edit-modal-save-button">Сохранить</div>
                 </div>
             </div>
@@ -179,7 +260,6 @@ function EditModal({isOpen, onClose, title}) {
 }
 
 
-/* ── Main Component ── */
 function MyUserProfile() {
     const session = useSession();
     const [requestsTab, setRequestsTab] = useState('incoming'); // null | 'incoming' | 'outgoing'
@@ -191,7 +271,6 @@ function MyUserProfile() {
 
     const nickname  = session.nickname;
     const email     = session.email;
-    const avatarUrl = session.avatar ? `/api/files/${session?.avatar}` : null
     const AVATAR_SIZE = 180; // px — фиксированная ширина аватарки
     const GAP = 16;         // px — gap между карточками
     const friendsRowRef = useRef(null);
@@ -222,8 +301,8 @@ function MyUserProfile() {
             <div className="mp-header">
                 <div className="mp-header-left">
                     <div className="mp-avatar">
-                        {avatarUrl
-                            ? <img src={avatarUrl} alt="avatar" />
+                        {session.avatar
+                            ? <img src={`/api/files/${session.avatar}`} alt="avatar" />
                             : <User size={52} />
                         }
                     </div>
@@ -311,7 +390,7 @@ function MyUserProfile() {
 
         </div>
 
-            <EditModal isOpen={isOpen} onClose={() => setOpen(false)} title="Редактировать профиль"></EditModal>
+            <EditModal isOpen={isOpen} onClose={() => setOpen(false)} title="Редактировать профиль"/>
         </>
     );
 }
