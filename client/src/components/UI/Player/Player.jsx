@@ -63,7 +63,7 @@ const Player = ({track, setTrack}) => {
             if (track) {
                 const data = new Blob(
                     [JSON.stringify({
-                        token: track.token,
+                        token: player.token,
                         position: positionRef.current
                     })],
                     { type: "application/json" }

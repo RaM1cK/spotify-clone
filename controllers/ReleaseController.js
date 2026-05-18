@@ -1,7 +1,6 @@
 import {Release} from "../models/Release.ts";
 import {
     getFavoriteTrackIdsSet,
-    getTracksBySecretFromCache,
     trackAttributes
 } from "./TrackController.js";
 import {Track} from "../models/Track.ts";
@@ -70,7 +69,7 @@ const getRelease = async (req, res) => {
 
     const favTracks = await getFavoriteTrackIdsSet(req.user.id)
     const favReleases = await getFavoriteReleaseIdsSet(req.user.id)
-    trackList = getTracksBySecretFromCache(req, res, trackList.map(t => ({...t, hasInFavorite: favTracks.has(t.id)})))
+    trackList = trackList.map(t => ({...t, hasInFavorite: favTracks.has(t.id)}))
 
     res.status(200).send({
         ...release,

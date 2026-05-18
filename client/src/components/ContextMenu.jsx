@@ -13,8 +13,8 @@ function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROU
 
     const navigate = useNavigate();
 
-    const username  = session.nickname;
-    const email     = session.email;
+    const username = session.nickname;
+    const email = session.email;
 
     const handleOverlayClick = (e) => {
         if (e.target === overlayRef.current) onClose();
@@ -64,10 +64,6 @@ function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROU
                             <ChevronRight size={20}/>
                         </div>
                     </div>
-                    <button className="pm-pill-btn">
-                        <Pencil size={14} />
-                        Редактировать
-                    </button>
                 </div>
 
                 <div className="pm-divider" />

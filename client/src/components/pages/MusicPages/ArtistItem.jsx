@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import "./ArtistItem.css"
-import {ChevronLeft, ChevronRight, CircleUserRound, Heart, Pause, Play} from "lucide-react";
+import {ChevronLeft, ChevronRight, CircleUserRound, Heart, ListMusic, Pause, Play} from "lucide-react";
 import {Routes, Route, useNavigate, useParams} from "react-router-dom";
 import AlbumMenu from "./AlbumMenu";
 import TrackList from "../../UI/TrackList/TrackList";
@@ -89,7 +89,10 @@ const ArtistMain = ({ artist, isFavorite, toFavorite, setCurrentTrack }) => {
                                 onClick={() => navigate(`/music/albums/${id}`)}
                             >
                                 <div className="album-imagediv">
-                                    <img src={`/api/files/${cover}`} alt="" />
+                                    {cover
+                                        ? <img src={`/api/files/${cover}`} alt="" />
+                                        : <ListMusic size={48} color="#b4b2a9" />
+                                    }
                                 </div>
                                 <span className="music-tile__label">{title}</span>
                                 <span className="date-issingle">{date}</span>

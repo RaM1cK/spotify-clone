@@ -9,18 +9,27 @@ import "./AlbumMenu.css";
 import "./PlaylistMenu.css";
 import "./SearchPage.css";
 
+let searchCache = null;
+
 const SearchPage = ({ setCurrentTrack }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [artists, setArtists] = useState([]);
-    const [tracks, setTracks] = useState([]);
-    const [albums, setAlbums] = useState([]);
+    const [artists, setArtists] = useState(searchCache?.artists || []);
+    const [tracks, setTracks] = useState(searchCache?.tracks || []);
+    const [albums, setAlbums] = useState(searchCache?.albums || []);
 
     const setData = (data) => {
+        searchCache = {
+            artists: data.artists,
+            tracks: data.tracks,
+            albums: data.releases,
+        };
         setArtists(data.artists)
         setTracks(data.tracks);
         setAlbums(data.releases);
     }
+
+    const hasSearched = searchCache !== null;
 
     return (
         <div className="search-page">
@@ -65,8 +74,16 @@ const SearchPage = ({ setCurrentTrack }) => {
                     <div className="search-empty__ring" />
                     <Search className="search-empty__icon" size={40} />
                 </div>
-                <h3 className="search-empty__title">Ничего не найдено</h3>
-                <p className="search-empty__hint">Попробуй изменить запрос<br/>или поискать что-то другое</p>
+                {hasSearched
+                    ? <>
+                        <h3 className="search-empty__title">Ничего не найдено</h3>
+                        <p className="search-empty__hint">Попробуй изменить запрос<br/>или поискать что-то другое</p>
+                    </>
+                    : <>
+                        <h3 className="search-empty__title">Начните поиск</h3>
+                        <p className="search-empty__hint">Введите название трека,<br/>альбома или артиста</p>
+                    </>
+                }
             </div>
             }
         </div>

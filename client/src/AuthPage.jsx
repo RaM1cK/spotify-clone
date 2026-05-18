@@ -4,6 +4,11 @@ import axios from "axios";
 import {useSocket} from "./AppContext";
 import { Eye, EyeOff } from "lucide-react";
 
+export const isValidEmail = (email) => {
+    const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return regex.test(email);
+}
+
 export default function AuthPage({ onAuth, setSession }) {
     const socket = useSocket();
 
@@ -84,11 +89,6 @@ export default function AuthPage({ onAuth, setSession }) {
         setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
         setError("");
     };
-
-    const isValidEmail = (email) => {
-        const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        return regex.test(email);
-    }
 
     const handleSubmit = () => {
         const {nickname, email, password, confirm } = form;

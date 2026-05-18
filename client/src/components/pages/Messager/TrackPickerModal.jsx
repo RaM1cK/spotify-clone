@@ -1,7 +1,8 @@
 import React, {useState, useEffect, useRef} from "react";
-import {X, ChevronLeft, Send, Heart, LayoutList, CircleUserRound, Disc3, ListMusic} from "lucide-react";
+import {X, ChevronLeft, ChevronRight, Heart, LayoutList, CircleUserRound, Disc3, ListMusic} from "lucide-react";
 import axios from "axios";
 import SearchBar from "../../SearchBar";
+import "../MusicPages/ArtistItem.css";
 import "./TrackPickerModal.css";
 
 const COLLECTION_TABS = [
@@ -22,6 +23,7 @@ const TrackPickerModal = ({onClose, onSend}) => {
     const [activeTab, setActiveTab] = useState("collection");
     const [collectionView, setCollectionView] = useState(null);
     const [subView, setSubView] = useState(null);
+    const [parentSubView, setParentSubView] = useState(null);
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
     const overlayRef = useRef(null);
@@ -42,11 +44,13 @@ const TrackPickerModal = ({onClose, onSend}) => {
         if (!collectionView) {
             setData(null);
             setSubView(null);
+            setParentSubView(null);
             return;
         }
 
         setLoading(true);
         setSubView(null);
+        setParentSubView(null);
 
         let url;
         switch (collectionView) {
@@ -92,9 +96,14 @@ const TrackPickerModal = ({onClose, onSend}) => {
     };
 
     const handleSelectPlaylist = (playlist) => {
+        onSend?.({type: "playlist", data: playlist});
+        onClose();
+    };
+
+    const handleSelectPlaylistDetail = (playlist) => {
         setLoading(true);
-        axios.get(`/api/playlists/${playlist.id}/tracks`)
-            .then(r => showTracks(r.data, playlist.name))
+        axios.get(`/api/playlists/${playlist.id}`)
+            .then(r => showTracks(r.data.tracks, r.data.name))
             .catch(() => setSubView({type: "empty"}))
             .finally(() => setLoading(false));
     };
@@ -107,8 +116,20 @@ const TrackPickerModal = ({onClose, onSend}) => {
             .finally(() => setLoading(false));
     };
 
+    const goBackFromSubView = () => {
+        if (parentSubView) {
+            setSubView(parentSubView);
+            setParentSubView(null);
+        } else {
+            setSubView(null);
+        }
+    };
+
     const goBack = () => {
-        if (subView) {
+        if (parentSubView) {
+            setSubView(parentSubView);
+            setParentSubView(null);
+        } else if (subView) {
             setSubView(null);
         } else if (collectionView) {
             setCollectionView(null);
@@ -134,24 +155,29 @@ const TrackPickerModal = ({onClose, onSend}) => {
     );
 
     const renderTrackRow = (track) => (
-        <div key={track.id} className="tpm-track-row">
-            <div className="tpm-track-row__info" onClick={() => handleSelectTrack(track)}>
+        <div key={track.id} className="tpm-track-row" onClick={() => handleSelectTrack(track)}>
+            <div className="tpm-track-row__info">
                 <img src={`/api/files/${track.cover}`} alt="" className="tpm-track-row__cover"/>
                 <div className="tpm-track-row__text">
                     <span className="tpm-track-row__title">{track.title}</span>
                     <span className="tpm-track-row__artist">{track.artist}</span>
                 </div>
             </div>
-            <button className="tpm-send-btn" onClick={() => handleSelectTrack(track)} title="Отправить">
-                <Send size={16}/>
-            </button>
         </div>
     );
+
+    const handleSelectArtistDetail = (artist) => {
+        setLoading(true);
+        axios.get(`/api/artists/${artist.id}`)
+            .then(r => setSubView({type: "artist", data: r.data, title: r.data.name}))
+            .catch(() => setSubView({type: "empty"}))
+            .finally(() => setLoading(false));
+    };
 
     const renderArtists = () => (
         <div className="tpm-scroll-container">
             {data.map(artist => (
-                <button key={artist.id} className="tpm-card-item" onClick={() => handleSelectArtist(artist)}>
+                <div key={artist.id} className="tpm-card-item" onClick={() => handleSelectArtist(artist)}>
                     {artist.avatar
                         ? <img src={`/api/files/${artist.avatar}`} alt=""
                                className="tpm-card-item__image tpm-card-item__image--rounded"/>
@@ -160,13 +186,13 @@ const TrackPickerModal = ({onClose, onSend}) => {
                     }
                     <span className="tpm-card-item__label">{artist.name}</span>
                     <span className="tpm-card-item__sub">{artist.trackCount} треков</span>
-                    <button className="tpm-card-send" onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectArtist(artist);
-                    }} title="Отправить">
-                        <Send size={14}/>
+                    <button className="tpm-card-send"
+                            style={{position: 'static', opacity: 1, background: 'rgba(255,255,255,0.1)'}}
+                            onClick={(e) => { e.stopPropagation(); handleSelectArtistDetail(artist); }}
+                            title="Открыть">
+                        <ChevronLeft size={14} style={{transform: 'rotate(180deg)'}}/>
                     </button>
-                </button>
+                </div>
             ))}
         </div>
     );
@@ -174,7 +200,7 @@ const TrackPickerModal = ({onClose, onSend}) => {
     const renderAlbums = () => (
         <div className="tpm-scroll-container">
             {data.map(album => (
-                <button key={album.id} className="tpm-card-item">
+                <div key={album.id} className="tpm-card-item" onClick={() => handleSelectAlbum(album)}>
                     <div className="tpm-card-item__image tpm-card-item__image--square"
                          style={{background: 'transparent'}}>
                         <img src={`/api/files/${album.cover}`} alt={album.title}
@@ -182,18 +208,13 @@ const TrackPickerModal = ({onClose, onSend}) => {
                     </div>
                     <span className="tpm-card-item__label">{album.title}</span>
                     {album.artist && <span className="tpm-card-item__sub">{album.artist}</span>}
-                    <div style={{display: 'flex', gap: 4, marginTop: 4}}>
-                        <button className="tpm-card-send" style={{position: 'static', opacity: 1}}
-                                onClick={() => handleSelectAlbum(album)} title="Отправить">
-                            <Send size={14}/>
-                        </button>
-                        <button className="tpm-card-send"
-                                style={{position: 'static', opacity: 1, background: 'rgba(255,255,255,0.1)'}}
-                                onClick={() => handleSelectAlbumDetail(album)} title="Открыть">
-                            <ChevronLeft size={14} style={{transform: 'rotate(180deg)'}}/>
-                        </button>
-                    </div>
-                </button>
+                    <button className="tpm-card-send"
+                            style={{position: 'static', opacity: 1, background: 'rgba(255,255,255,0.1)'}}
+                            onClick={(e) => { e.stopPropagation(); handleSelectAlbumDetail(album); }}
+                            title="Открыть">
+                        <ChevronLeft size={14} style={{transform: 'rotate(180deg)'}}/>
+                    </button>
+                </div>
             ))}
         </div>
     );
@@ -201,19 +222,139 @@ const TrackPickerModal = ({onClose, onSend}) => {
     const renderPlaylists = () => (
         <div className="tpm-scroll-container">
             {data.map(playlist => (
-                <button key={playlist.id} className="tpm-card-item" onClick={() => handleSelectPlaylist(playlist)}>
+                <div key={playlist.id} className="tpm-card-item" onClick={() => handleSelectPlaylist(playlist)}>
                     <div className="tpm-card-item__image tpm-card-item__image--square"
                          style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
                         {playlist.cover
-                            ? <img src={playlist.cover} alt=""
+                            ? <img src={`/api/files/${playlist.cover}`} alt=""
                                    style={{width: '100%', height: '100%', borderRadius: '4px', objectFit: 'cover'}}/>
                             : <ListMusic size={48} color="#b4b2a9"/>
                         }
                     </div>
                     <span className="tpm-card-item__label">{playlist.name}</span>
                     <span className="tpm-card-item__sub">{playlist.trackCount} треков</span>
-                </button>
+                    <button className="tpm-card-send"
+                            style={{position: 'static', opacity: 1, background: 'rgba(255,255,255,0.1)'}}
+                            onClick={(e) => { e.stopPropagation(); handleSelectPlaylistDetail(playlist); }}
+                            title="Открыть">
+                        <ChevronLeft size={14} style={{transform: 'rotate(180deg)'}}/>
+                    </button>
+                </div>
             ))}
+        </div>
+    );
+
+    const declensionArtist = (n) => {
+        if (n % 10 === 1 && n % 100 !== 11) return "трек";
+        if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return "трека";
+        return "треков";
+    };
+
+    const handleViewAllAlbums = (artist) => {
+        setParentSubView(subView);
+        setLoading(true);
+        axios.get(`/api/artists/${artist.id}/releases`)
+            .then(r => setSubView({type: "artistAlbums", data: r.data, title: artist.name}))
+            .catch(() => setSubView({type: "empty"}))
+            .finally(() => setLoading(false));
+    };
+
+    const handleViewAllTracks = (artist) => {
+        setParentSubView(subView);
+        setLoading(true);
+        axios.get(`/api/artists/${artist.id}/tracks`)
+            .then(r => setSubView({type: "artistTracks", data: r.data, title: artist.name}))
+            .catch(() => setSubView({type: "empty"}))
+            .finally(() => setLoading(false));
+    };
+
+    const renderAllAlbums = (albums) => (
+        <div className="tpm-scroll-container">
+            {albums.map(album => (
+                <div key={album.id} className="tpm-card-item" onClick={() => handleSelectAlbum(album)}>
+                    <div className="tpm-card-item__image tpm-card-item__image--square"
+                         style={{background: 'transparent'}}>
+                        <img src={`/api/files/${album.cover}`} alt={album.title}
+                             style={{width: '100%', height: '100%', borderRadius: '4px', objectFit: 'cover'}}/>
+                    </div>
+                    <span className="tpm-card-item__label">{album.title}</span>
+                    {album.artist && <span className="tpm-card-item__sub">{album.artist}</span>}
+                    <button className="tpm-card-send"
+                            style={{position: 'static', opacity: 1, background: 'rgba(255,255,255,0.1)'}}
+                            onClick={(e) => { e.stopPropagation(); handleSelectAlbumDetail(album); }}
+                            title="Открыть">
+                        <ChevronLeft size={14} style={{transform: 'rotate(180deg)'}}/>
+                    </button>
+                </div>
+            ))}
+        </div>
+    );
+
+    const renderArtistDetail = (artist) => (
+        <div className="artist-item">
+            <div className="artist-header">
+                <div className="artist-header__image">
+                    {artist.avatar
+                        ? <img src={`/api/files/${artist.avatar}`} alt={artist.name} />
+                        : <CircleUserRound size={64} color="#b4b2a9" />
+                    }
+                </div>
+                <div className="artist-header__info">
+                    <h1 className="artist-header__name">{artist.name}</h1>
+                    <div className="artist-header__bottom">
+                        <div className="artist-header__meta">
+                            <span className="artist-header__type">Артист</span>
+                            <span className="artist-header__count">
+                                {artist.trackCount} {declensionArtist(artist.trackCount)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {artist.releases?.length > 0 && (
+                <div className="artist-albums-section">
+                    <button
+                        className="artist-albums-header"
+                        onClick={() => handleViewAllAlbums(artist)}
+                    >
+                        <span>Альбомы</span>
+                        <ChevronRight size={18} color="#a3a3a3" />
+                    </button>
+                    <div className="tpm-scroll-container">
+                        {artist.releases.map(album => (
+                            <div key={album.id} className="tpm-card-item" onClick={() => handleSelectAlbum(album)}>
+                                <div className="tpm-card-item__image tpm-card-item__image--square"
+                                     style={{background: 'transparent'}}>
+                                    <img src={`/api/files/${album.cover}`} alt={album.title}
+                                         style={{width: '100%', height: '100%', borderRadius: '4px', objectFit: 'cover'}}/>
+                                </div>
+                                <span className="tpm-card-item__label">{album.title}</span>
+                                {album.artist && <span className="tpm-card-item__sub">{album.artist}</span>}
+                                <button className="tpm-card-send"
+                                        style={{position: 'static', opacity: 1, background: 'rgba(255,255,255,0.1)'}}
+                                        onClick={(e) => { e.stopPropagation(); setParentSubView(subView); handleSelectAlbumDetail(album); }}
+                                        title="Открыть">
+                                    <ChevronLeft size={14} style={{transform: 'rotate(180deg)'}}/>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {artist.tracks?.length > 0 && (
+                <div className="artist-albums-section">
+                    <button
+                        className="artist-albums-header"
+                        onClick={() => handleViewAllTracks(artist)}
+                    >
+                        <span>Треки</span>
+                        <ChevronRight size={18} color="#a3a3a3" />
+                    </button>
+                    {artist.tracks.map(track => renderTrackRow(track))}
+                </div>
+            )}
         </div>
     );
 
@@ -221,11 +362,26 @@ const TrackPickerModal = ({onClose, onSend}) => {
         if (subView?.type === "tracks") {
             return (
                 <>
-                    {subView.title && (
-                        <div className="tpm-sub-header">
-                            <span className="tpm-sub-header__title">{subView.title}</span>
-                        </div>
+                    {subView.data.length === 0 ? (
+                        <div className="tpm-empty">Нет треков</div>
+                    ) : (
+                        subView.data.map(renderTrackRow)
                     )}
+                </>
+            );
+        }
+
+        if (subView?.type === "artist") {
+            return renderArtistDetail(subView.data);
+        }
+
+        if (subView?.type === "artistAlbums") {
+            return renderAllAlbums(subView.data);
+        }
+
+        if (subView?.type === "artistTracks") {
+            return (
+                <>
                     {subView.data.length === 0 ? (
                         <div className="tpm-empty">Нет треков</div>
                     ) : (
@@ -254,7 +410,6 @@ const TrackPickerModal = ({onClose, onSend}) => {
         }
     };
 
-    /* ── Search ── */
     const SearchSection = () => {
         const [searchTerm, setSearchTerm] = useState("");
         const [isLoading, setIsLoading] = useState(false);
@@ -272,22 +427,72 @@ const TrackPickerModal = ({onClose, onSend}) => {
 
         return (
             <div className="tpm-search-content">
-                <SearchBar
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                    isLoading={isLoading}
-                    setIsLoading={setIsLoading}
-                    setData={setData}
-                />
+                {subView?.type === "tracks" ? (
+                    <>
+                        <div className="tpm-sub-header">
+                            <button className="tpm-back-btn" onClick={goBackFromSubView}>
+                                <ChevronLeft size={18}/>
+                            </button>
+                            <span className="tpm-sub-header__title">{subView.title}</span>
+                        </div>
+                        {loading ? (
+                            <div className="tpm-loading">Загрузка...</div>
+                        ) : (
+                            subView.data.map(renderTrackRow)
+                        )}
+                    </>
+                ) : subView?.type === "artist" ? (
+                    <>
+                        <div className="tpm-sub-header">
+                            <button className="tpm-back-btn" onClick={goBackFromSubView}>
+                                <ChevronLeft size={18}/>
+                            </button>
+                            <span className="tpm-sub-header__title">{subView.title}</span>
+                        </div>
+                        {renderArtistDetail(subView.data)}
+                    </>
+                ) : subView?.type === "artistAlbums" ? (
+                    <>
+                        <div className="tpm-sub-header">
+                            <button className="tpm-back-btn" onClick={goBackFromSubView}>
+                                <ChevronLeft size={18}/>
+                            </button>
+                            <span className="tpm-sub-header__title">{subView.title}</span>
+                        </div>
+                        {renderAllAlbums(subView.data)}
+                    </>
+                ) : subView?.type === "artistTracks" ? (
+                    <>
+                        <div className="tpm-sub-header">
+                            <button className="tpm-back-btn" onClick={goBackFromSubView}>
+                                <ChevronLeft size={18}/>
+                            </button>
+                            <span className="tpm-sub-header__title">{subView.title}</span>
+                        </div>
+                        {subView.data.length === 0 ? (
+                            <div className="tpm-empty">Нет треков</div>
+                        ) : (
+                            subView.data.map(renderTrackRow)
+                        )}
+                    </>
+                ) : (
+                    <SearchBar
+                        searchTerm={searchTerm}
+                        setSearchTerm={setSearchTerm}
+                        isLoading={isLoading}
+                        setIsLoading={setIsLoading}
+                        setData={setData}
+                    />
+                )}
 
-                {hasResults ? (
+                {!subView && hasResults ? (
                     <>
                         {searchArtists.length > 0 && (
                             <div className="tpm-section">
                                 <h3 className="tpm-section__title">Артисты</h3>
                                 <div className="tpm-scroll-container">
                                     {searchArtists.map(artist => (
-                                        <button key={artist.id} className="tpm-card-item"
+                                        <div key={artist.id} className="tpm-card-item"
                                                 onClick={() => handleSelectArtist(artist)}>
                                             {artist.avatar
                                                 ? <img src={`/api/files/${artist.avatar}`} alt=""
@@ -297,13 +502,13 @@ const TrackPickerModal = ({onClose, onSend}) => {
                                             }
                                             <span className="tpm-card-item__label">{artist.name}</span>
                                             <span className="tpm-card-item__sub">{artist.trackCount} треков</span>
-                                            <button className="tpm-card-send" onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleSelectArtist(artist);
-                                            }} title="Отправить">
-                                                <Send size={14}/>
+                                            <button className="tpm-card-send"
+                                                    style={{position: 'static', opacity: 1, background: 'rgba(255,255,255,0.1)'}}
+                                                    onClick={(e) => { e.stopPropagation(); handleSelectArtistDetail(artist); }}
+                                                    title="Открыть">
+                                                <ChevronLeft size={14} style={{transform: 'rotate(180deg)'}}/>
                                             </button>
-                                        </button>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
@@ -321,7 +526,8 @@ const TrackPickerModal = ({onClose, onSend}) => {
                                 <h3 className="tpm-section__title">Альбомы</h3>
                                 <div className="tpm-scroll-container">
                                     {searchAlbums.map(album => (
-                                        <button key={album.id} className="tpm-card-item">
+                                        <div key={album.id} className="tpm-card-item"
+                                             onClick={() => handleSelectAlbum(album)}>
                                             <div className="tpm-card-item__image tpm-card-item__image--square"
                                                  style={{background: 'transparent'}}>
                                                 <img src={`/api/files/${album.cover}`} alt={album.title} style={{
@@ -333,21 +539,14 @@ const TrackPickerModal = ({onClose, onSend}) => {
                                             </div>
                                             <span className="tpm-card-item__label">{album.title}</span>
                                             {album.artist && <span className="tpm-card-item__sub">{album.artist}</span>}
-                                            <div style={{display: 'flex', gap: 4, marginTop: 4}}>
-                                                <button className="tpm-card-send"
-                                                        style={{position: 'static', opacity: 1}}
-                                                        onClick={() => handleSelectAlbum(album)} title="Отправить">
-                                                    <Send size={14}/>
-                                                </button>
-                                                <button className="tpm-card-send" style={{
-                                                    position: 'static',
-                                                    opacity: 1,
-                                                    background: 'rgba(255,255,255,0.1)'
-                                                }} onClick={() => handleSelectAlbumDetail(album)} title="Открыть">
-                                                    <ChevronLeft size={14} style={{transform: 'rotate(180deg)'}}/>
-                                                </button>
-                                            </div>
-                                        </button>
+                                            <button className="tpm-card-send" style={{
+                                                position: 'static',
+                                                opacity: 1,
+                                                background: 'rgba(255,255,255,0.1)'
+                                            }} onClick={(e) => { e.stopPropagation(); handleSelectAlbumDetail(album); }} title="Открыть">
+                                                <ChevronLeft size={14} style={{transform: 'rotate(180deg)'}}/>
+                                            </button>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
