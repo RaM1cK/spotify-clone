@@ -12,16 +12,19 @@ const TrackMenu = React.forwardRef(({ track, style, openUp, onClose }, ref) => {
              className={`track-item__menu${openUp ? " track-item__menu--up" : ""}`}
              style={{ position: "fixed", ...style }}>
             <button className="track-item__menu-item"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/music/artists/${track.artistId}`);
-                        onClose();
-                    }}>
+                    // onClick={(e) => {
+                    //     e.stopPropagation();
+                    //     navigate(`/music/artists/${track.artistId}`);
+                    //     onClose();
+                    // }}
+            >
                 <User size={16}/> Перейти к исполнителю
             </button>
             <button className="track-item__menu-item"
                     onClick={(e) => {
                         e.stopPropagation();
+                        console.log(track);
+
                         const path = `/music/albums/${track.releaseId}`;
                         if (path !== location.pathname) navigate(path);
                         onClose();

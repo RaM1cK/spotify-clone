@@ -244,7 +244,10 @@ const normalizedSearch = async (req, res) => {
             SET pg_trgm.similarity_threshold = ${similarity_threshold};
             SET pg_trgm.word_similarity_threshold = ${word_similarity_threshold};
 
-            SELECT *,
+            SELECT 
+                id,
+                name,
+                avatar,
                 GREATEST(
                     similarity(:query, ${column}),
                     word_similarity(:query, ${column})
@@ -253,7 +256,7 @@ const normalizedSearch = async (req, res) => {
                     SELECT COUNT(*)
                     FROM "ArtistTrack" at
                     WHERE at."artistId" = a."id"
-                ) as track_count
+                ) as "trackCount"
             FROM artists a
             WHERE :query % ${column} OR :query <% ${column} OR ${column} ILIKE '%' || :query || '%'
             ORDER BY score DESC
@@ -265,17 +268,52 @@ const normalizedSearch = async (req, res) => {
         return rows[0]
     }
 
-    const searchTable = async (table, column, limit = 0) => {
+    const searchTracks = async (column, limit = 0) => {
         const rows = await sequelize.query(`
             SET pg_trgm.similarity_threshold = ${similarity_threshold};
             SET pg_trgm.word_similarity_threshold = ${word_similarity_threshold};
 
-            SELECT *,
+            SELECT 
+                id,
+                title,
+                artist,
+                duration,
+                cover,
+                parental_warning as "parentalWarning",
+                release_id as "releaseId",
                 GREATEST(
                     similarity(:query, ${column}),
                     word_similarity(:query, ${column})
                 ) AS score
-            FROM ${table}
+            FROM tracks
+            WHERE :query % ${column} OR :query <% ${column} OR ${column} ILIKE '%' || :query || '%'
+            ORDER BY score DESC
+            ${limit > 0 ? `LIMIT ${limit}` : ''}
+        `, {
+            replacements: { query: normalizedQuery }
+        })
+
+        return rows[0]
+    }
+
+    const searchReleases = async (column, limit = 0) => {
+        const rows = await sequelize.query(`
+            SET pg_trgm.similarity_threshold = ${similarity_threshold};
+            SET pg_trgm.word_similarity_threshold = ${word_similarity_threshold};
+
+            SELECT 
+                id,
+                type,
+                title,
+                artist,
+                cover,
+                parental_warning as "parentalWarning",
+                EXTRACT(YEAR FROM date) as date,
+                GREATEST(
+                    similarity(:query, ${column}),
+                    word_similarity(:query, ${column})
+                ) AS score
+            FROM releases
             WHERE :query % ${column} OR :query <% ${column} OR ${column} ILIKE '%' || :query || '%'
             ORDER BY score DESC
             ${limit > 0 ? `LIMIT ${limit}` : ''}
@@ -288,8 +326,8 @@ const normalizedSearch = async (req, res) => {
 
     const [artists, tracks, releases] = await Promise.all([
         searchArtists('name_normalized', 20),
-        searchTable('tracks', 'title_normalized', 50),
-        searchTable('releases', 'title_normalized', 20),
+        searchTracks('title_normalized', 50),
+        searchReleases('title_normalized', 20)
     ])
 
     const favArtists = await getFavoriteArtistIdsSet(req.user.id)
@@ -299,16 +337,18 @@ const normalizedSearch = async (req, res) => {
     const grouped = {
         artists: artists.map(artist => ({
             ...artist,
-            hasInFavorite: favArtists.has(artist.id),
-            trackCount: artist.track_count
+            score: undefined,
+            hasInFavorite: favArtists.has(artist.id)
         })),
         tracks: tracks
             .map(track => ({
                 ...track,
+                score: undefined,
                 hasInFavorite: favTracks.has(track.id)
             })),
         releases: releases.map(release => ({
             ...release,
+            score: undefined,
             hasInFavorite: favReleases.has(release.id)
         })),
     }
