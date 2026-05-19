@@ -79,7 +79,11 @@ function ProfileModal({ session, onLogout, onClose, onAddFriend, anchorRect, ROU
                     ) : (
                         <div className="pm-friends-grid">
                             {friends.slice(0, friends.length > 6 ? 5 : 6).map(f => (
-                                <div className="pm-friend-item" key={f.id}>
+                                <div className="pm-friend-item" key={f.id} onClick={() => {
+                                    navigate(`/profile/${f.id}`)
+                                    onClose()
+                                    setMenuOpen(false)
+                                }}>
                                     <div className="pm-friend-avatar">
                                         {f.avatar
                                             ? <img src={`/api/files/${f.avatar}`} alt={f.nickname} className="avatar-img" />

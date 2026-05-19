@@ -38,7 +38,7 @@ const getSum = (Tracks) => {
 
 
 
-const Liked = ({setCurrentTrack, RollBack}) => {
+const Liked = ({setCurrentTrack, RollBack, Context}) => {
     const player = React.useRef(Player.getInstance()).current;
     const [Tracks, setTracks] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
@@ -48,7 +48,7 @@ const Liked = ({setCurrentTrack, RollBack}) => {
     useEffect(() => {
         axios.get('/api/users/me/favoriteTracks')
             .then(res =>  setTracks(res.data))
-            .catch(() =>  setError('Ошибка загрузки'))
+            .catch(() =>  setError('Ошибка загрузки треков'))
             .finally(() => setLoading(false));
     }, []);
 
@@ -88,7 +88,7 @@ const Liked = ({setCurrentTrack, RollBack}) => {
                     <img src={myLikeIcon} className="logo" alt="logo" />
                     <div className="liked-header-info">
                         <p>Плейлист</p>
-                        <h2>Избранное</h2>
+                        <h2>{Context ? `Любимые треки ${Context}` : "Избранное"}</h2>
                         <div className="liked-count-time">
                             <div>{Tracks.length} {getWordForm(Tracks.length)}</div>
                             <span>·</span>

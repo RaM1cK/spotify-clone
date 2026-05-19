@@ -530,6 +530,7 @@
     color: #fff;
     padding: 8px 16px;
     border-radius: 12px;
+    cursor : pointer;
 }
 
 /* ══ Error & Shake (как в AuthPage) ══ */
@@ -550,4 +551,224 @@
     font-size: 13px;
     color: #dc2626;
     margin: 0 1rem;
+}
+
+/* ══ UserProfile action row ══ */
+.mp-action-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: auto;
+}
+
+/* Кнопка "Написать" — стиль как у mp-edit-btn */
+.mp-message-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    width: fit-content;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    color: #c9c9c9;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.mp-message-btn:hover {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: rgba(99, 102, 241, 0.4);
+    color: #e0e0ff;
+}
+
+/* Кнопка дружбы — базовая (добавить / отменить) */
+.mp-friend-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    width: fit-content;
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    border-radius: 999px;
+    color: #e0e0ff;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.mp-friend-btn:hover {
+    background: rgba(99, 102, 241, 0.30);
+    border-color: rgba(99, 102, 241, 0.6);
+}
+
+/* Уже друзья */
+.mp-friend-btn--active {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.5);
+    color: #a5b4fc;
+    cursor: default;
+}
+
+/* Отменить заявку */
+.mp-friend-btn--outgoing {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #6b7280;
+}
+
+.mp-friend-btn--outgoing:hover {
+    background: rgba(248, 113, 113, 0.12);
+    border-color: rgba(248, 113, 113, 0.3);
+    color: #f87171;
+}
+
+/* Заявка получена */
+.mp-friend-btn--incoming {
+    background: rgba(52, 211, 153, 0.1);
+    border-color: rgba(52, 211, 153, 0.25);
+    color: #6ee7b7;
+    cursor: default;
+}
+
+/* Блок принять/отклонить */
+.mp-incoming-actions {
+    display: flex;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mp-incoming-btn {
+    padding: 8px 16px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.mp-incoming-btn--accept {
+    background: rgba(52, 211, 153, 0.15);
+    color: #34d399;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mp-incoming-btn--accept:hover {
+    background: rgba(52, 211, 153, 0.28);
+}
+
+.mp-incoming-btn--reject {
+    background: rgba(255, 255, 255, 0.05);
+    color: #6b7280;
+}
+
+.mp-incoming-btn--reject:hover {
+    background: rgba(248, 113, 113, 0.15);
+    color: #f87171;
+}
+
+/* Кнопка удаления друга */
+.mp-remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+    color: #4b5563;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.mp-remove-btn:hover {
+    background: rgba(248, 113, 113, 0.15);
+    border-color: rgba(248, 113, 113, 0.3);
+    color: #f87171;
+}
+
+/* ══ Confirm modal ══ */
+.mp-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.15s ease;
+}
+
+.mp-confirm-card {
+    background: #1e1e1e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 24px 28px;
+    max-width: 360px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    animation: slideUp 0.2s ease;
+}
+
+.mp-confirm-text {
+    font-size: 15px;
+    color: #d4d4d4;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.mp-confirm-text strong {
+    color: #f0f0f0;
+}
+
+.mp-confirm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.mp-confirm-btn {
+    padding: 8px 20px;
+    border-radius: 999px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s ease;
+}
+
+.mp-confirm-btn--yes {
+    background: rgba(248, 113, 113, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.mp-confirm-btn--yes:hover {
+    background: rgba(248, 113, 113, 0.35);
+}
+
+.mp-confirm-btn--no {
+    background: rgba(255, 255, 255, 0.06);
+    color: #9ca3af;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mp-confirm-btn--no:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #d4d4d4;
 }
