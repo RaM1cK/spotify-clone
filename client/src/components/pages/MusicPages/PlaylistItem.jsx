@@ -37,7 +37,7 @@ const getSum = (Tracks) => {
 };
 
 
-const PlaylistItem = ({Tracks, setCurrentTrack, creatorId,title, type, isFavorite, toFavorite, AutName, year, image, RollBack}) => {
+const PlaylistItem = ({Tracks, setCurrentTrack, creatorId, title, type, isFavorite, toFavorite, AutName, year, image, RollBack}) => {
     const [imgError, setImgError] = useState(false);
     const session = useSession();
     const player = useRef(pl.getInstance()).current
