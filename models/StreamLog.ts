@@ -1,8 +1,9 @@
 import {
+    CreationOptional,
     DataTypes,
     InferAttributes,
     InferCreationAttributes,
-    Model
+    Model, sql
 } from "@sequelize/core";
 import type {
     NonAttribute
@@ -10,7 +11,7 @@ import type {
 import {
     Attribute,
     AutoIncrement,
-    BelongsTo,
+    BelongsTo, Default,
     NotNull,
     PrimaryKey,
     Table
@@ -19,10 +20,10 @@ import {Track} from "./Track.ts";
 import {User} from "./User.ts";
 
 @Table({ underscored: true })
-export class StreamLog extends Model<InferAttributes<StreamLog>, InferCreationAttributes<StreamLog>>{
-    @Attribute(DataTypes.BIGINT)
+export class StreamLog extends Model<CreationOptional<StreamLog>, InferCreationAttributes<StreamLog>>{
+    @Attribute(DataTypes.UUID)
     @PrimaryKey
-    @AutoIncrement
+    @Default(sql.uuidV4)
     declare id: number
 
     @Attribute(DataTypes.BIGINT)
@@ -50,8 +51,4 @@ export class StreamLog extends Model<InferAttributes<StreamLog>, InferCreationAt
         }
     })
     declare user?: NonAttribute<User>;
-
-    @Attribute(DataTypes.FLOAT)
-    @NotNull
-    declare playedSeconds: number;
 }

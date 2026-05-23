@@ -156,14 +156,14 @@ export class Player implements Subject {
         this._heartbeatInterval = setInterval(() => {
             if (!(this._state instanceof PlayingState)) return;
             const pos = this.howl?.seek();
-            if (pos && this._lastToken && pos > 5) {
+            if (pos !== undefined && this._lastToken) {
                 fetch('/api/tracks/heartbeat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: this._lastToken, position: Math.floor(pos) })
                 }).catch(() => {});
             }
-        }, 15000);
+        }, 5000);
     }
 
     private stopHeartbeat() {

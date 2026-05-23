@@ -65,6 +65,8 @@ export const trackCountQuery = (alias) => literal(`(
     where "${alias}Track"."${alias.toLowerCase()}Id" = "${alias}"."id"
 )`)
 
+const MIN_STREAM_DURATION_SECONDS = 30
+
 export const requestTrackToken = async (req, res) => {
     const { trackId } = req.body;
     if (!trackId) return res.status(400).json({});
@@ -85,7 +87,7 @@ export const requestTrackToken = async (req, res) => {
     const sessionId = crypto.randomUUID();
 
     redisClient
-        .set(`streamSession:${sessionId}`, JSON.stringify({ ...rest, uri, fingerprint }), { EX: 1800 })
+        .set(`streamSession:${sessionId}`, JSON.stringify({ ...rest, uri, fingerprint }), { EX: Math.max(track.duration, MIN_STREAM_DURATION_SECONDS) })
         .catch(err => console.log(err));
 
     res.json({ token: sessionId });
@@ -114,7 +116,7 @@ export const getTrackFile = async (req, res)=> {
     if (!sessionData) return res.status(403).json({});
 
     const track = JSON.parse(sessionData);
-    redisClient.expire(`streamSession:${token}`, 1800).catch(() => {});
+    redisClient.expire(`streamSession:${token}`, track.duration).catch(() => {});
 
     const filePath = path.join(__dirname, 'music', track.uri);
 
@@ -157,33 +159,76 @@ export const getTrackFile = async (req, res)=> {
 }
 
 export const reportPlay = async (req, res) => {
-    const { token, position } = req.body;
+    const { token } = req.body;
     const userId = req.user.id;
 
-    const raw = await redisClient.get(`streamSession:${token}`);
+    const raw =
+        await redisClient.get(`streamSession:${token}`);
+
     if (!raw) return res.status(403).json({ counted: false });
 
     const session = JSON.parse(raw);
+    if (session.counted) return res.json({ counted: true });
 
-    const delta = position - (session.lastPosition || 0);
-    if (delta <= 0) return res.json({ counted: false });
+    const now = Date.now();
+    const elapsed = (now - (session.lastTimestamp || now)) / 1000;
 
-    session.accumulated = (session.accumulated || 0) + delta;
-    session.lastPosition = position;
+    if (elapsed > 0 && elapsed < 10)
+        session.accumulated = Math.min((session.accumulated || 0) + elapsed, session.duration);
 
-    if (!session.alreadyCounted && (session.accumulated >= 30 || session.accumulated / session.duration >= 0.7)) {
-        session.alreadyCounted = true;
+    const thresholdReached =
+        session.accumulated >= 30 ||
+        (session.duration > 0 && session.accumulated / session.duration >= 0.7);
 
-        await StreamLog.create({
-            trackId: session.id,
-            userId,
-            playedSeconds: session.accumulated,
-        });
+
+    const AVG_TRACK_DURATION = 200
+    const hourLimit = Math.ceil(3600 / AVG_TRACK_DURATION)
+
+    if (thresholdReached) {
+        const cooldownKey = `streamCooldown:${userId}:${session.id}`;
+        const rateLimitKey = `streamRateLimit:${userId}`;
+
+        const [
+            cooldown,
+            rateLimit
+        ] = await Promise.all([
+            redisClient.get(cooldownKey),
+            redisClient.get(rateLimitKey),
+        ]);
+
+        const blocked = !!cooldown || Number(rateLimit ?? 0) >= hourLimit;
+
+        if (!blocked) {
+            const lockKey = `streamLock:${userId}:${session.id}`;
+            const acquired = await redisClient.set(lockKey, '1', { NX: true, EX: 10 });
+
+            if (acquired) {
+                await StreamLog.create({
+                    id: token,
+                    trackId: session.id,
+                    userId,
+                });
+
+                await Promise.all([
+                    redisClient.set(cooldownKey, '1', { EX: Math.ceil(session.duration) }),
+                    redisClient.multi()
+                        .incr(rateLimitKey)
+                        .expire(rateLimitKey, 60 * 60)
+                        .exec(),
+                ]);
+            }
+        }
+
+        session.counted = true;
     }
 
-    await redisClient.set(`streamSession:${token}`, JSON.stringify(session), { EX: 1800 });
+    await redisClient.set(
+        `streamSession:${token}`,
+        JSON.stringify(session),
+        { EX: Math.ceil(session.duration) }
+    );
 
-    res.json({ counted: true });
+    res.json({ counted: thresholdReached });
 };
 
 // export const getTrackArtists = async (req, res) => {
