@@ -181,24 +181,11 @@ export const reportPlay = async (req, res) => {
         (session.duration > 0 && session.accumulated / session.duration >= 0.7);
 
 
-    const AVG_TRACK_DURATION = 200
-    const hourLimit = Math.ceil(3600 / AVG_TRACK_DURATION)
-
     if (thresholdReached) {
         const cooldownKey = `streamCooldown:${userId}:${session.id}`;
-        const rateLimitKey = `streamRateLimit:${userId}`;
+        const cooldown = await redisClient.get(cooldownKey);
 
-        const [
-            cooldown,
-            rateLimit
-        ] = await Promise.all([
-            redisClient.get(cooldownKey),
-            redisClient.get(rateLimitKey),
-        ]);
-
-        const blocked = !!cooldown || Number(rateLimit ?? 0) >= hourLimit;
-
-        if (!blocked) {
+        if (!cooldown) {
             const lockKey = `streamLock:${userId}:${session.id}`;
             const acquired = await redisClient.set(lockKey, '1', { NX: true, EX: 10 });
 
@@ -209,13 +196,7 @@ export const reportPlay = async (req, res) => {
                     userId,
                 });
 
-                await Promise.all([
-                    redisClient.set(cooldownKey, '1', { EX: Math.ceil(session.duration) }),
-                    redisClient.multi()
-                        .incr(rateLimitKey)
-                        .expire(rateLimitKey, 60 * 60)
-                        .exec(),
-                ]);
+                await redisClient.set(cooldownKey, '1', { EX: Math.ceil(session.duration) });
             }
         }
 
