@@ -25,6 +25,7 @@ import {Playlist} from "./Playlist.ts";
 import {Friendship} from "./Friendship.ts";
 import {Chat} from "./Chat.ts";
 import {Message} from "./Message.ts";
+import {StreamLog} from "./StreamLog.ts";
 // import {Playlist} from "./Playlist.ts";
 
 @Table({
@@ -107,6 +108,8 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
     declare getChats: BelongsToManyGetAssociationsMixin<Chat>
 
     declare messages?: NonAttribute<Message[]>
+
+    declare streamLogs?: NonAttribute<StreamLog[]>
 
     // @Attribute(DataTypes.UUID)
     // @NotNull

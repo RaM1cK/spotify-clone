@@ -1,20 +1,27 @@
-import React, {useEffect, useLayoutEffect, useRef, useState} from "react";
+import React, {useEffect, useLayoutEffect, useRef, useState, useMemo} from "react";
 import {Heart, MoreVertical, Pause, Play} from "lucide-react";
 import {Player} from "../../../classes/Player.ts";
 import "./trackitem.css";
 import {TrackUI} from "../../../classes/observers/TrackUI.ts";
-import axios from "axios";
 import TrackMenu from "./TrackMenu.jsx";
+import {useFavoriteTracks, useFavoriteActions} from "../../../AppContext";
 
-function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange }) {
+function TrackItem({ number, track, tracks, setCurrentTrack }) {
     const [isPlaying, setIsPlaying] = React.useState(false);
     const [isCurrent, setIsCurrent] = React.useState(false);
-    const [isFavorite, setIsFavorite] = React.useState(track.hasInFavorite);
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuPos, setMenuPos] = useState({ top: 0, left: 0, openUp: false });
     const buttonRef = useRef(null);
     const menuRef = useRef(null);
     const player = React.useRef(Player.getInstance()).current;
+    const favoriteTracks = useFavoriteTracks();
+    const { toggleFavoriteTrack } = useFavoriteActions();
+    const isFavorite = useMemo(() =>
+        favoriteTracks !== null
+            ? favoriteTracks.some(t => t.id === track.id)
+            : track.hasInFavorite,
+        [favoriteTracks, track.id, track.hasInFavorite]
+    );
 
     const formatTime = (seconds) => {
         if (!seconds) return "0:00";
@@ -123,17 +130,12 @@ function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange })
     };
 
     const toFavorite = () => {
-        const request = () => isFavorite
-            ? axios.delete(`/api/users/removeFavoriteTrack/${track.id}`)
-            : axios.post(`/api/users/addFavoriteTrack/${track.id}`)
-
-        request()
-            .then(() => {
-                const newValue = !isFavorite
-                setIsFavorite(newValue)
-                onFavoriteChange?.(track.id, newValue);
-            })
-            .catch(err => console.error(err));
+        const newValue = !isFavorite;
+        if (player.track && player.track.id === track.id) {
+            player.track.hasInFavorite = newValue;
+            player.notify();
+        }
+        toggleFavoriteTrack(track);
     }
 
         return (

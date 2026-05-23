@@ -2,8 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useFriends, useOutgoingRequests, useIncomingRequests, useFriendRequestActions } from "../AppContext";
 import axios from 'axios';
 import { Search, User, Plus, X, Check } from "lucide-react";
+import {useNavigate} from "react-router-dom";
 
 export default function AddFriendModal({ onClose }) {
+    const navigate = useNavigate();
     const overlayRef = useRef(null);
     const inputRef = useRef(null);
     const [query, setQuery] = useState('');
@@ -112,10 +114,16 @@ export default function AddFriendModal({ onClose }) {
                             }
 
                             return (
-                                <div className="afm-user-row" key={user.id}>
+                                <div className="afm-user-row"
+                                     key={user.id}
+                                     onClick={() => {
+                                         navigate(`/profile/${user.id}`)
+                                         onClose()
+                                     }}
+                                >
                                     <div className="afm-user-avatar">
                                         {user.avatar
-                                            ? <img src={user.avatar} alt={user.nickname} className="avatar-img" />
+                                            ? <img src={`/api/files/${user.avatar}`} alt={user.nickname} className="avatar-img" />
                                             : <User size={18} />
                                         }
                                     </div>

@@ -207,7 +207,10 @@ export default function ContextMenu({ PAGES, menuOpen, setMenuOpen, onLogout, RO
             )}
 
             {addFriendOpen && (
-                <AddFriendModal onClose={() => setAddFriendOpen(false)} />
+                <AddFriendModal onClose={() => {
+                    setAddFriendOpen(false)
+                    setMenuOpen(false);
+                }} />
             )}
         </ContextMenuProvider>
     );

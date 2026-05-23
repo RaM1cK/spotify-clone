@@ -1,12 +1,12 @@
-import React, {useEffect} from 'react';
+import React from 'react';
 import myLikeIcon from '../../../images/MYLIKEDICON.png';
 import TrackList from "../../UI/TrackList/TrackList";
 import './Liked.css';
 import {MoreHorizontal, Pause, Play, ChevronLeft} from "lucide-react";
 import {Player} from "../../../classes/Player.ts";
 import usePlayerState from '../../../hooks/usePlayerState';
-import axios from "axios";
 import {LoadingPage} from "../LoadingPage";
+import {useFavoriteTracks} from "../../../AppContext";
 
 const getWordForm = (count) => {
     const lastTwo = count % 100;
@@ -36,30 +36,13 @@ const getSum = (Tracks) => {
     return `${m} мин ${s} сек`;
 };
 
-
-
 const Liked = ({setCurrentTrack, RollBack, Context}) => {
     const player = React.useRef(Player.getInstance()).current;
-    const [Tracks, setTracks] = React.useState([]);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState(null);
-    const isPlaying = usePlayerState(player, Tracks);
-
-    useEffect(() => {
-        axios.get('/api/users/me/favoriteTracks')
-            .then(res =>  setTracks(res.data))
-            .catch(() =>  setError('Ошибка загрузки треков'))
-            .finally(() => setLoading(false));
-    }, []);
-
-    const onFavoriteChange = (trackId, isFavorite) => {
-        if (!isFavorite) {
-            setTracks(tracks => tracks.filter(track => track.id !== trackId));
-        }
-    }
+    const Tracks = useFavoriteTracks();
+    const loading = Tracks === null;
+    const isPlaying = usePlayerState(player, Tracks ?? []);
 
     if (loading) return <LoadingPage/>;
-    if (error) return <div>{error}</div>
 
     if (Tracks) {
         const handlePlay = () => {
@@ -110,7 +93,7 @@ const Liked = ({setCurrentTrack, RollBack, Context}) => {
                     </div>
                 </div>
 
-                <TrackList tracks={Tracks} setCurrentTrack={setCurrentTrack} onFavoriteChange={onFavoriteChange}/>
+                <TrackList tracks={Tracks} setCurrentTrack={setCurrentTrack} />
             </div>
         );
     }

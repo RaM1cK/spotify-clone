@@ -1,11 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Button } from "react-bootstrap";
-import {Pause, Play, SkipForward, SkipBack, Repeat, Repeat1, LoaderCircle, Shuffle} from "lucide-react";
+import {Pause, Play, SkipForward, SkipBack, Repeat, Repeat1, LoaderCircle, Shuffle, Volume2} from "lucide-react";
 import "./Player.css"
 import {Player as pl} from "../../../classes/Player.ts";
 import RangeTrack from "./rangeTrack";
 import {PlayerUI} from "../../../classes/observers/PlayerUI.ts";
 import axios from "axios";
+import FullPlayer from "./FullPlayer";
+import {useFavoriteTracks} from "../../../AppContext";
 
 const Player = ({track, setTrack}) => {
     const intervalRef = useRef(null);
@@ -25,6 +27,16 @@ const Player = ({track, setTrack}) => {
     const [position, setPosition] = useState(0);
     const positionRef = useRef(0);
     const [duration, setDuration] = useState(0);
+    const [volume, setVolume] = useState(1);
+    const [showVolume, setShowVolume] = useState(false);
+    const [fullPlayerOpen, setFullPlayerOpen] = useState(false);
+    const volumeRef = useRef(null);
+    const favoriteTracks = useFavoriteTracks();
+    const currentTrackId = track?.id;
+    const isFavorite = useMemo(
+        () => favoriteTracks?.some(t => t.id === currentTrackId),
+        [favoriteTracks, currentTrackId]
+    );
 
     useEffect(() => {
         positionRef.current = position;
@@ -80,6 +92,17 @@ const Player = ({track, setTrack}) => {
         };
     }, [track]);
 
+    useEffect(() => {
+        if (!showVolume) return;
+        const handleClickOutside = (e) => {
+            if (volumeRef.current && !volumeRef.current.contains(e.target)) {
+                setShowVolume(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [showVolume]);
+
     const handleRepeat = () => {
         const tempState = chainLoopStates[loopState]
 
@@ -88,6 +111,7 @@ const Player = ({track, setTrack}) => {
     }
 
     return (
+        <>
             <div
                 id={"playerView"}
                 className="rounded-3 d-flex flex-column"
@@ -97,7 +121,7 @@ const Player = ({track, setTrack}) => {
                     visibility: track ? "visible" : "hidden",
                     height: track ? "auto" : 0,
                     width: '100%',
-                    overflowX: "hidden",
+                    overflowX: "clip",
                     overflowY: "visible"
             }}
             >
@@ -161,12 +185,18 @@ const Player = ({track, setTrack}) => {
                         />
                     </Button>
 
-                    <div className="d-flex flex-column" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                    <div
+                        className="d-flex flex-column"
+                        style={{ flex: 1, minWidth: 0, overflow: 'hidden', cursor: 'pointer' }}
+                        onClick={() => {
+                            setFullPlayerOpen(true)
+                            setShowVolume(false)
+                        }}
+                    >
                         <div className="d-flex flex-column justify-content-between" style={{ minWidth: 0 }}>
                             <span className="track-item__title">{track ? track.title : ""}</span>
                             <span className="track-item__artist ">{track ? track.artist : ""}</span>
                         </div>
-                        
                     </div>
 
                     <Button
@@ -215,8 +245,54 @@ const Player = ({track, setTrack}) => {
                             />
                         }
                     </Button>
+                    <div ref={volumeRef} style={{ position: 'relative', display: 'inline-flex' }}>
+                        <Button
+                            className="volume-btn"
+                            style={{
+                                backgroundColor: 'transparent',
+                                border: "none",
+                                marginBottom: '4px'
+                            }}
+                            onClick={() => setShowVolume(!showVolume)}
+                        >
+                            <Volume2 size={20} color="white" />
+                        </Button>
+                        {showVolume && (
+                            <input
+                                type="range"
+                                className="volume-slider"
+                                min={0}
+                                max={1}
+                                step={0.01}
+                                value={volume}
+                                onInput={e => {
+                                    const v = parseFloat(e.target.value);
+                                    setVolume(v);
+                                    player.setVolume(v);
+                                }}
+                                style={{
+                                    background: `linear-gradient(to top, #a855f7 0%, #a855f7 ${volume * 100}%, #555 ${volume * 100}%, #555 100%)`
+                                }}
+                            />
+                        )}
+                    </div>
                 </div>
             </div>
+
+            {fullPlayerOpen && track && (
+                <FullPlayer
+                    track={track}
+                    onClose={() => setFullPlayerOpen(false)}
+                    volume={volume}
+                    setVolume={setVolume}
+                    loopState={loopState}
+                    setLoopState={setLoopState}
+                    isShuffle={isShuffle}
+                    setIsShuffle={setIsShuffle}
+                    isFavorite={isFavorite}
+                />
+            )}
+        </>
     );
 };
 

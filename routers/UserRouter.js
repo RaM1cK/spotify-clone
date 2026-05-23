@@ -10,6 +10,7 @@ import {User} from "../models/User.ts";
 import {redisClient} from "../models/index.js";
 
 import multer from "multer";
+import {getFavoriteTrackIdsSet} from "../controllers/TrackController.js";
 
 dotenv.config();
 
@@ -35,7 +36,13 @@ userRouter.get('/me', async (req, res) => {
     const {iat, ...rest} = req.user
     let currentTrack = undefined;
 
-    if (userCurrentTrack) currentTrack = JSON.parse(userCurrentTrack);
+    if (userCurrentTrack) {
+        currentTrack = JSON.parse(userCurrentTrack)
+
+        const favTracks = await getFavoriteTrackIdsSet(req.user.id)
+
+        currentTrack = { ...currentTrack, hasInFavorite: favTracks.has(currentTrack.id) };
+    }
 
     if (!userFriendships) {
         const friendships = await Friendship.findAll({
