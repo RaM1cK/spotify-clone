@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import TrackList from "../../UI/TrackList/TrackList";
 import  "./PlaylistItem.css"
 import {Player as pl, Player} from "../../../classes/Player.ts";
@@ -6,6 +6,7 @@ import usePlayerState from "../../../hooks/usePlayerState";
 import {ChevronLeft, Heart, ListMusic, MoreHorizontal, Pause, Play} from "lucide-react";
 import axios from "axios";
 import {useSession} from "../../../AppContext";
+import {useLocation, useNavigate, useParams} from "react-router-dom";
 
 
 const getWordForm = (count) => {
@@ -37,7 +38,33 @@ const getSum = (Tracks) => {
 };
 
 
-const PlaylistItem = ({Tracks, setCurrentTrack, creatorId, title, type, isFavorite, toFavorite, AutName, year, image, RollBack}) => {
+const PlaylistItem = ({ setCurrentTrack: setCurrentTrackProp, Tracks: externalTracks, creatorId: externalCreatorId, title: externalTitle, type: externalType, isFavorite: externalIsFavorite, toFavorite: externalToFavorite, AutName: externalAutName, year: externalYear, image: externalImage, RollBack: externalRollBack }) => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { id } = useParams();
+    const state = location.state || {};
+
+    const [internalTracks, setInternalTracks] = useState([]);
+
+    useEffect(() => {
+        if (!state.tracks && !externalTracks && id) {
+            axios.get(`/api/users/${id}/favoriteTracks`)
+                .then(res => setInternalTracks(res.data));
+        }
+    }, [id]);
+
+    const Tracks        = externalTracks      ?? state.tracks      ?? internalTracks;
+    const title         = externalTitle       ?? state.title       ?? '';
+    const AutName       = externalAutName     ?? state.AutName     ?? '';
+    const image         = externalImage       ?? state.image       ?? null;
+    const type          = externalType        ?? state.type        ?? '';
+    const year          = externalYear        ?? state.year        ?? '';
+    const creatorId     = externalCreatorId   ?? state.creatorId   ?? null;
+    const isFavorite    = externalIsFavorite  ?? state.isFavorite  ?? false;
+    const toFavorite    = externalToFavorite  ?? state.toFavorite  ?? (() => {});
+    const setCurrentTrack = setCurrentTrackProp ?? (() => {});
+    const RollBack      = externalRollBack    ?? (() => navigate(-1));
+
     const [imgError, setImgError] = useState(false);
     const session = useSession();
     const player = useRef(pl.getInstance()).current

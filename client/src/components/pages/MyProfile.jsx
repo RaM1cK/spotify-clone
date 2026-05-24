@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, {useState, useRef, useEffect, useMemo} from 'react';
 import {
     useFriendRequestActions,
     useFriends,
@@ -13,6 +13,7 @@ import {LoadingPage} from "./LoadingPage";
 import { User, Pencil, ChevronRight, Ellipsis, Check, X, FolderPlus, UserPlus, MessageCirclePlus, Trash2 } from "lucide-react";
 import {Player} from "../../classes/Player.ts";
 import usePlayerState from "../../hooks/usePlayerState";
+import TrackList from "../UI/TrackList/TrackList";
 
 /* ── Friend Card ── */
 function FriendCard({ friend }) {
@@ -125,6 +126,8 @@ export function UserProfile({setCurrentTrack}) {
             .finally(() => setLoading(false));
     }, []);
 
+    const viewLikedTracks = useMemo(() => Tracks.slice(0, 5), [Tracks]);
+
     const onFavoriteChange = (trackId, isFavorite) => {
         if (!isFavorite) {
             setTracks(tracks => tracks.filter(track => track.id !== trackId));
@@ -139,6 +142,7 @@ export function UserProfile({setCurrentTrack}) {
     const isFriend   = friendIds.has(user.id);
     const isOutgoing = outgoingIds.has(user.id);
     const isIncoming = incomingIds.has(user.id);
+
 
     const handleFriendAction = () => {
         if (isOutgoing) {
@@ -164,6 +168,8 @@ export function UserProfile({setCurrentTrack}) {
 
     const handleRemoveFriend = () => {
     };
+
+
 
     return (
         <div className="mp-root">
@@ -252,6 +258,28 @@ export function UserProfile({setCurrentTrack}) {
                     </div>
                 </div>
             )}
+            <div className="mp-liked-block">
+                <button
+                    className="artist-albums-header mp-liked-header"
+                    onClick={() => navigate(`/profile/${id}/liked`, { state: {
+                            tracks: Tracks,
+                            title: `Любимые треки ${user.nickname}`,
+                            AutName: user.nickname,
+                            image: user.avatar ? `/api/files/${user.avatar}` : null,
+                        }})}
+                >
+                    <span>Любимые треки</span>
+                    <ChevronRight size={18} color="#a3a3a3" />
+                </button>
+                {Tracks.length === 0 && (<div className="user-no-liked">Пользователь пока не добавил ни одного трека</div> )}
+                <TrackList
+                    tracks={viewLikedTracks}
+                    setCurrentTrack={setCurrentTrack}
+                    UsingContext={null}
+                />
+
+            </div>
+
         </div>
     );
 }
@@ -406,15 +434,16 @@ function MyUserProfile() {
     const session = useSession();
     const [requestsTab, setRequestsTab] = useState('incoming'); // null | 'incoming' | 'outgoing'
     const friends = useFriends()
-    const incomingRequests = useIncomingRequests();
+    const incomingRequests = useIncomingRequests()
     const outgoingRequests = useOutgoingRequests()
+    const navigate = useNavigate()
 
     const [isOpen, setOpen] = useState(false);
 
     const nickname  = session.nickname;
     const email     = session.email;
-    const AVATAR_SIZE = 180; // px — фиксированная ширина аватарки
-    const GAP = 16;         // px — gap между карточками
+    const AVATAR_SIZE = 180;
+    const GAP = 16;
     const friendsRowRef = useRef(null);
     const [maxVisible, setMaxVisible] = useState(6);
 
@@ -523,7 +552,10 @@ function MyUserProfile() {
                                 </p>
                             ) : (
                                 activeRequests.map((req, i) => (
-                                    <RequestCard key={i} req={req} type={requestsTab} />
+                                    <div onClick={() => navigate(`/profile/${req.id}`)}>
+                                        <RequestCard key={i} req={req} type={requestsTab}/>
+                                    </div>
+
                                 ))
                             )}
                         </div>
