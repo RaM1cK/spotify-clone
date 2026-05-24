@@ -1,9 +1,11 @@
-import React, {useRef} from 'react';
+import React, {useRef, useState} from 'react';
 import TrackList from "../../UI/TrackList/TrackList";
-import "./PlaylistItem.css"
+import  "./PlaylistItem.css"
 import {Player as pl, Player} from "../../../classes/Player.ts";
 import usePlayerState from "../../../hooks/usePlayerState";
-import {ChevronLeft, MoreHorizontal, Pause, Play} from "lucide-react";
+import {ChevronLeft, Heart, ListMusic, MoreHorizontal, Pause, Play} from "lucide-react";
+import axios from "axios";
+import {useSession} from "../../../AppContext";
 
 
 const getWordForm = (count) => {
@@ -35,7 +37,9 @@ const getSum = (Tracks) => {
 };
 
 
-const PlaylistItem = ({Tracks, setCurrentTrack, title, type, AutName, year, image, RollBack}) => {
+const PlaylistItem = ({Tracks, setCurrentTrack, creatorId, title, type, isFavorite, toFavorite, AutName, year, image, RollBack}) => {
+    const [imgError, setImgError] = useState(false);
+    const session = useSession();
     const player = useRef(pl.getInstance()).current
     const isPlaying = usePlayerState(player, Tracks);
 
@@ -62,7 +66,13 @@ const PlaylistItem = ({Tracks, setCurrentTrack, title, type, AutName, year, imag
                 <ChevronLeft size={20} />
             </button>
             <div className="liked-header">
-                <img src={image} className="playlist-logo" alt="logo" />
+                <div className="playlist-logo-wrapper">
+                    {image && !imgError ? (
+                        <img src={image} className="playlist-logo" alt="logo" onError={() => setImgError(true)} />
+                    ) : (
+                        <ListMusic size={64} color="#b4b2a9" />
+                    )}
+                </div>
                 <div className="liked-header-info">
                     <p>{type}</p>
                     <h1>{title}</h1>
@@ -89,6 +99,14 @@ const PlaylistItem = ({Tracks, setCurrentTrack, title, type, AutName, year, imag
                             {isPlaying? <Pause size={18}/> : <Play size={18}/>}
                             <span>Слушать</span>
                         </button>
+                        {session.id !== creatorId &&
+                            <button
+                                className="liked-props-btn"
+                                onClick={toFavorite}
+                            >
+                                <Heart size={18} fill={isFavorite ? 'white' : 'none'}/>
+                            </button>
+                        }
                         <button className="liked-props-btn">
                             <MoreHorizontal size={18}/>
                         </button>

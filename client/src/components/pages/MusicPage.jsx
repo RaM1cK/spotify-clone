@@ -1,12 +1,12 @@
-import React from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { LayoutList, CircleUserRound, Disc3, Heart } from "lucide-react";
-import TrackList from "../UI/TrackList/TrackList";
+import React, {useRef} from "react";
+import {Navigate, Route, Routes, useNavigate} from "react-router-dom";
+import {CircleUserRound, Disc3, Heart, LayoutList} from "lucide-react";
 import Liked from "./MusicPages/Liked";
 import PlaylistMenu from "./MusicPages/PlaylistMenu";
 import AlbumMenu from "./MusicPages/AlbumMenu";
 import ArtistMenu from "./MusicPages/ArtistMenu";
 import "./MusicPage.css";
+import axios from "axios";
 
 const MENU_ITEMS = [
     { id: "liked",     path: "/music/liked",       label: "Избранное",   sub: "Вам понравилось", Icon: Heart,           color: "info" },
@@ -17,10 +17,6 @@ const MENU_ITEMS = [
 
 const MusicHome = () => {
     const navigate = useNavigate();
-
-    const handleSearch = (searchQuery) => {
-        console.log('Search in MusicHome:', searchQuery);
-    };
 
     return (
         <div className="MusicPage">

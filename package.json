@@ -32,11 +32,13 @@
     "http": "^0.0.1-security",
     "https": "^1.0.0",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
     "music-metadata": "^11.12.3",
     "nodemailer": "^8.0.5",
     "react-router-dom": "^7.14.2",
     "redis": "^5.12.1",
     "resend": "^6.12.3",
+    "sharp": "^0.34.5",
     "socket.io": "^4.8.3",
     "ssh2-sftp-client": "^12.1.1",
     "transliteration": "^2.6.1"

@@ -11,6 +11,7 @@ import {Friendship} from "./Friendship.ts";
 import {Message} from "./Message.ts";
 import {Chat} from "./Chat.ts";
 import {createClient} from "redis";
+import {StreamLog} from "./StreamLog.ts";
 
 dotenv.config();
 
@@ -30,7 +31,8 @@ export const sequelize = new Sequelize({
         Track,
         Playlist,
         Release,
-        Artist
+        Artist,
+        StreamLog
     ]
 })
 

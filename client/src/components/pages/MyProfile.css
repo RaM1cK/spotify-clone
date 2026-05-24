@@ -1,7 +1,7 @@
 .mp-root {
     padding: 32px 36px;
     padding: clamp(16px, 4vw, 32px) clamp(14px, 4vw, 36px);
-    padding-top: max(16px, calc(env(safe-area-inset-top, 0px) + 12px));
+    padding-top: max(40px, calc(env(safe-area-inset-top, 0px) + 30px));
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -29,16 +29,16 @@
 
 .mp-header-left {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 20px;
+    height: 100%;
 }
 
 .mp-avatar {
-    width: 80px;
-    height: 80px;
+    width: 180px;
+    height: 180px;
     border-radius: 50%;
     background: rgba(99, 102, 241, 0.25);
-    border: 2px solid rgba(99, 102, 241, 0.45);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -50,31 +50,34 @@
 .mp-avatar img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
     border-radius: 50%;
 }
 
 .mp-identity {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    padding: 12px;
+    gap: 12px;
+    height: 100%;
 }
 
 .mp-nickname {
-    font-size: clamp(20px, 5vw, 26px);
+    font-size: clamp(26px, 5vw, 32px);
     font-weight: 700;
     color: #f0f0f0;
     line-height: 1;
 }
 
 .mp-email {
-    font-size: 15px;
+    font-size: 20px;
     color: #6b7280;
 }
 
 .mp-edit-btn {
     display: flex;
-    align-items: center;
+    width: fit-content;
+    justify-content: center;
+    margin-top: auto;
     gap: 8px;
     padding: 10px 22px;
     background: rgba(255, 255, 255, 0.06);
@@ -146,8 +149,8 @@
 }
 
 .mp-friend-avatar {
-    width: 200px;
-    height: 200px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.07);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -349,4 +352,423 @@
 .mp-req-btn--cancel:hover {
     background: rgba(248, 113, 113, 0.12);
     color: #f87171;
+}
+
+.edit-modal-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.edit-modal-overlay {
+    animation: fadeIn 0.15s ease;
+}
+
+.edit-modal-content {
+    background: #1a1a1a;
+    border-radius: 12px;
+    border: 1px solid #888;
+    padding: 1.5rem;
+    max-width: px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+/* Анимация появления модалки */
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.modal {
+    animation: slideUp 0.2s ease;
+}
+
+/* Шапка */
+.edit-modal-header {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.edit-modal-title {
+    font-size: 24px;
+    color: #f5f5f5;
+    font-weight: 500;
+    margin: 0;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+    padding: 8px;
+    line-height: 1;
+    border-radius: 6px;
+    font-size: 24px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+
+
+.edit-modal-avatar-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    width: 100%;
+    height: 200px;
+}
+
+.edit-modal-avatar {
+    position: relative;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.edit-modal-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.edit-modal-avatar-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0);
+    transition: background 0.2s, color 0.2s;
+}
+
+.edit-modal-avatar:hover .edit-modal-avatar-overlay {
+    background: rgba(0, 0, 0, 0.5);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.edit-modal-avatar {
+    height: 100%;
+    border-radius: 50%;
+}
+
+.edit-modal-avatar img {
+    height: 100%;
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+
+}
+
+.edit-modal-avatar-load-button{
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    width: fit-content;
+    padding: 8px 16px;
+    color: #c9c9c9;
+    display: flex;
+    gap: 8px;
+}
+
+.edit-modal-name{
+    color: #c9c9c9;
+    font-size: 18px;
+}
+
+
+.edit-modal-nickname{
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 8px
+}
+
+.edit-modal-nickname-input {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #737373;
+    font-size: 18px;
+    border-radius: 4px;
+}
+
+.edit-modal-nickname-input:focus{
+    outline: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: none;
+}
+
+.edit-modal-save{
+    display: flex;
+    justify-content: flex-end;
+    padding: 1rem;
+}
+
+.edit-modal-save-button{
+    background: #6366f1;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 12px;
+    cursor : pointer;
+}
+
+/* ══ Error & Shake (как в AuthPage) ══ */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+}
+
+.edit-modal-content.shake {
+    animation: shake 0.5s ease;
+}
+
+.edit-modal-error {
+    padding: 10px 14px;
+    background: #2a2a2a;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #dc2626;
+    margin: 0 1rem;
+}
+
+/* ══ UserProfile action row ══ */
+.mp-action-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: auto;
+}
+
+/* Кнопка "Написать" — стиль как у mp-edit-btn */
+.mp-message-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    width: fit-content;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    color: #c9c9c9;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.mp-message-btn:hover {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: rgba(99, 102, 241, 0.4);
+    color: #e0e0ff;
+}
+
+/* Кнопка дружбы — базовая (добавить / отменить) */
+.mp-friend-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    width: fit-content;
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    border-radius: 999px;
+    color: #e0e0ff;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.mp-friend-btn:hover {
+    background: rgba(99, 102, 241, 0.30);
+    border-color: rgba(99, 102, 241, 0.6);
+}
+
+/* Уже друзья */
+.mp-friend-btn--active {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.5);
+    color: #a5b4fc;
+    cursor: default;
+}
+
+/* Отменить заявку */
+.mp-friend-btn--outgoing {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #6b7280;
+}
+
+.mp-friend-btn--outgoing:hover {
+    background: rgba(248, 113, 113, 0.12);
+    border-color: rgba(248, 113, 113, 0.3);
+    color: #f87171;
+}
+
+/* Заявка получена */
+.mp-friend-btn--incoming {
+    background: rgba(52, 211, 153, 0.1);
+    border-color: rgba(52, 211, 153, 0.25);
+    color: #6ee7b7;
+    cursor: default;
+}
+
+/* Блок принять/отклонить */
+.mp-incoming-actions {
+    display: flex;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mp-incoming-btn {
+    padding: 8px 16px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.mp-incoming-btn--accept {
+    background: rgba(52, 211, 153, 0.15);
+    color: #34d399;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mp-incoming-btn--accept:hover {
+    background: rgba(52, 211, 153, 0.28);
+}
+
+.mp-incoming-btn--reject {
+    background: rgba(255, 255, 255, 0.05);
+    color: #6b7280;
+}
+
+.mp-incoming-btn--reject:hover {
+    background: rgba(248, 113, 113, 0.15);
+    color: #f87171;
+}
+
+/* Кнопка удаления друга */
+.mp-remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+    color: #4b5563;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.mp-remove-btn:hover {
+    background: rgba(248, 113, 113, 0.15);
+    border-color: rgba(248, 113, 113, 0.3);
+    color: #f87171;
+}
+
+/* ══ Confirm modal ══ */
+.mp-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.15s ease;
+}
+
+.mp-confirm-card {
+    background: #1e1e1e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 24px 28px;
+    max-width: 360px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    animation: slideUp 0.2s ease;
+}
+
+.mp-confirm-text {
+    font-size: 15px;
+    color: #d4d4d4;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.mp-confirm-text strong {
+    color: #f0f0f0;
+}
+
+.mp-confirm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.mp-confirm-btn {
+    padding: 8px 20px;
+    border-radius: 999px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s ease;
+}
+
+.mp-confirm-btn--yes {
+    background: rgba(248, 113, 113, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.mp-confirm-btn--yes:hover {
+    background: rgba(248, 113, 113, 0.35);
+}
+
+.mp-confirm-btn--no {
+    background: rgba(255, 255, 255, 0.06);
+    color: #9ca3af;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mp-confirm-btn--no:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #d4d4d4;
 }

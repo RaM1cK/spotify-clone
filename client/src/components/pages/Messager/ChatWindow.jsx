@@ -1,18 +1,63 @@
-import React, {useRef, useState, useEffect} from "react";
-import { Music, ChevronLeft } from "lucide-react";
-import TrackMessage from "./TrackMessage";
+import React, {useRef, useState, useEffect, useLayoutEffect} from "react";
+import { Music, ChevronLeft, Reply, Pencil, Trash2, X, Play, ExternalLink, MoreVertical } from "lucide-react";
+import {useNavigate} from "react-router-dom";
 import {useSession} from "../../../AppContext";
+import TrackPickerModal from "./TrackPickerModal";
+import TrackMenu from "../../UI/Track/TrackMenu.jsx";
+import "../../UI/Track/trackitem.css";
+import axios from "axios";
+import {Player} from "../../../classes/Player.ts";
+
+const TrackType = Object.freeze({
+    TRACK: 1,
+    ALBUM: 2,
+    ARTIST: 3,
+    PLAYLIST: 4
+});
+const TYPE_LABELS = {
+    [TrackType.TRACK]: 'трек',
+    [TrackType.ALBUM]: 'альбом',
+    [TrackType.ARTIST]: 'артист',
+    [TrackType.PLAYLIST]: 'плейлист'
+};
 
 const ChatWindow = ({ activeChat, input, setInput, handleSend,
-                        showMobileBack, onMobileBack, replyTo, setReplyTo
+                        showMobileBack, onMobileBack, replyTo, setReplyTo,
+                        onSendTrack, getMessagePreview
 }) => {
     const [showTrackPicker, setShowTrackPicker] = useState(false);
     const [contextMenu, setContextMenu] = useState(null);
     const [usersMap, setUsersMap] = useState(new Map());
+    const [trackMenuId, setTrackMenuId] = useState(null);
+    const [trackMenuPos, setTrackMenuPos] = useState({top: 0, left: 0});
     const session = useSession();
+    const navigate = useNavigate();
     const textareaRef = useRef(null);
     const menuRef = useRef(null);
+    const trackMenuRef = useRef(null);
     const messagesBodyRef = useRef(null);
+    const player = useRef(Player.getInstance()).current;
+
+    const formatDateSeparator = (dateStr) => {
+        const date = new Date(dateStr);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const isSameDay = (d1, d2) =>
+            d1.getFullYear() === d2.getFullYear() &&
+            d1.getMonth() === d2.getMonth() &&
+            d1.getDate() === d2.getDate();
+
+        if (isSameDay(date, today)) return "Сегодня";
+        if (isSameDay(date, yesterday)) return "Вчера";
+
+        return date.toLocaleDateString(navigator.language, {
+            day: 'numeric',
+            month: 'long',
+            year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
+        });
+    };
 
     useEffect(() => {
         if (!contextMenu) return;
@@ -27,6 +72,26 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
             document.removeEventListener('mousedown', handleClick);
         };
     }, [contextMenu]);
+
+    useEffect(() => {
+        if (!trackMenuId) return;
+
+        const handleClick = (e) => {
+            if (trackMenuRef.current && !trackMenuRef.current.contains(e.target))
+                setTrackMenuId(null);
+        };
+
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, [trackMenuId]);
+
+    useEffect(() => {
+        if (!trackMenuId) return;
+        const mainEl = document.querySelector('.app-content');
+        const onScroll = () => setTrackMenuId(null);
+        mainEl?.addEventListener('scroll', onScroll, { passive: true });
+        return () => mainEl?.removeEventListener('scroll', onScroll);
+    }, [trackMenuId]);
 
     const handleContextMenu = (e, msg) => {
         e.preventDefault();
@@ -58,6 +123,115 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
         }
     }, [activeChat])
 
+    const openTrackMenu = (msgId, btnRect) => {
+        const menuWidth = 200;
+        const spaceBelow = window.innerHeight - btnRect.bottom;
+        const openUp = spaceBelow < 200;
+        setTrackMenuPos({
+            top: openUp ? btnRect.top - 4 : btnRect.bottom + 4,
+            left: btnRect.right - menuWidth,
+            openUp
+        });
+        setTrackMenuId(msgId);
+    };
+
+    useLayoutEffect(() => {
+        if (!trackMenuId || !trackMenuRef.current) return;
+
+        const menu = trackMenuRef.current;
+        const menuRect = menu.getBoundingClientRect();
+        const pad = 8;
+
+        let top = menuRect.top;
+        let left = menuRect.left;
+        let openUp = trackMenuPos.openUp;
+
+        if (menuRect.bottom > window.innerHeight - pad) {
+            openUp = true;
+            top = window.innerHeight - menuRect.height - pad;
+        }
+        if (top < pad) top = pad;
+
+        if (menuRect.right > window.innerWidth - pad) {
+            left = window.innerWidth - menuRect.width - pad;
+        }
+        if (left < pad) left = pad;
+
+        if (top !== menuRect.top || left !== menuRect.left || openUp !== trackMenuPos.openUp) {
+            setTrackMenuPos({ top, left, openUp });
+        }
+    }, [trackMenuId]);
+
+    const renderMediaCard = (msg) => {
+        const d = JSON.parse(msg.data);
+
+        const handlePlay = async (e) => {
+            e.stopPropagation();
+
+            let reqPath = null
+
+            switch (msg.dataType) {
+                case TrackType.ALBUM: reqPath = `/api/releases/${d.id}`; break;
+                case TrackType.ARTIST: reqPath = `/api/artists/${d.id}`; break;
+                case TrackType.PLAYLIST: reqPath = `/api/playlists/${d.id}`; break;
+            }
+
+            if (!reqPath) {
+                player.setTrack(d, [d]);
+                return;
+            }
+
+            const res = await axios.get(reqPath)
+
+            player.setTrack(res.data.tracks[0], res.data.tracks);
+        };
+
+        const handleOpen = (e) => {
+            e.stopPropagation();
+            switch (msg.dataType) {
+                case TrackType.ALBUM: navigate(`/music/albums/${d.id}`); break;
+                case TrackType.ARTIST: navigate(`/music/artists/${d.id}`); break;
+                case TrackType.PLAYLIST: navigate(`/music/playlists/${d.id}`); break;
+            }
+        };
+
+        const coverSrc = d.cover ? `/api/files/${d.cover}` : d.avatar ? `/api/files/${d.avatar}` : null;
+
+        return (
+            <div className="messages-media-card">
+                <div className="messages-media-card__main">
+                    {coverSrc ? (
+                        <img className="messages-media-card__cover" src={coverSrc} alt={d.title || d.name} />
+                    ) : (
+                        <div className="messages-media-card__cover messages-media-card__cover--empty">
+                            <Music size={20} />
+                        </div>
+                    )}
+                    <div className="messages-media-card__info">
+                        <span className="messages-media-card__title">{d.title || d.name}</span>
+                        {d.artist && <span className="messages-media-card__sub">{d.artist}</span>}
+                        <span className="messages-media-card__type">{TYPE_LABELS[msg.dataType] || 'медиа'}</span>
+                    </div>
+                </div>
+                <div className="messages-media-card__actions">
+                    <button className="messages-media-card__btn messages-media-card__btn--play" onClick={handlePlay}>
+                        <Play size={14} /> Прослушать
+                    </button>
+                    {msg.dataType === TrackType.TRACK ? (
+                        <button className="messages-media-card__btn messages-media-card__btn--more"
+                                onClick={(e) => { e.stopPropagation(); openTrackMenu(msg.id, e.currentTarget.getBoundingClientRect()); }}>
+                            <MoreVertical size={16} />
+                        </button>
+                    ) : (
+                        <button className="messages-media-card__btn messages-media-card__btn--open" onClick={handleOpen}>
+                            <ExternalLink size={14} /> Открыть
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     if (!activeChat) {
         return (
             <div className="messages-chat">
@@ -67,6 +241,9 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
             </div>
         );
     }
+
+    const activeTrackMsg = trackMenuId ? activeChat.messages.find(m => m.id === trackMenuId) : null;
+    const activeTrackData = activeTrackMsg ? JSON.parse(activeTrackMsg.data) : null;
 
     return (
         <div className="messages-chat">
@@ -86,37 +263,53 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
             </div>
 
             <div className="messages-body" ref={messagesBodyRef} onContextMenu={(e) => e.preventDefault()}>
-                {activeChat.messages.map((msg) => (
-                    <div
-                        key={msg.id}
-                        id={`msg-${msg.id}`}
-                        className={`messages-bubble ${msg.senderId === session.id ? "me" : "them"}${replyTo?.id === msg.id ? " messages-bubble--reply-target" : ""}`}
-                        onContextMenu={(e) => handleContextMenu(e, msg)}
-                    >
-                        {msg.quotedMessage && (
-                            <div className="messages-bubble__quoted" onClick={() => {
-                                const el = document.getElementById(`msg-${msg.quotedMessage.id}`);
-                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }}>
-                                <div className="messages-bubble__quoted-line" />
-                                <div className="messages-bubble__quoted-content">
-                                    <span className="messages-bubble__quoted-user">
-                                        {msg.quotedMessage.senderId === session.id ? 'Вы' : (usersMap.get(msg.quotedMessage.senderId)?.nickname)}
+                {(() => {
+                    let prevDate = null;
+                    return activeChat.messages.map((msg) => {
+                        const msgDate = new Date(msg.createdAt).toDateString();
+                        const showDate = msgDate !== prevDate;
+                        prevDate = msgDate;
+                        return (
+                            <React.Fragment key={msg.id}>
+                                {showDate && (
+                                    <div className="messages-date-separator">
+                                        <span>{formatDateSeparator(msg.createdAt)}</span>
+                                    </div>
+                                )}
+                                <div
+                                    id={`msg-${msg.id}`}
+                                    className={`messages-bubble ${msg.senderId === session.id ? "me" : "them"}${replyTo?.id === msg.id ? " messages-bubble--reply-target" : ""}`}
+                                    onContextMenu={(e) => handleContextMenu(e, msg)}
+                                >
+                                    {msg.quotedMessage && (
+                                        <div className="messages-bubble__quoted" onClick={() => {
+                                            const el = document.getElementById(`msg-${msg.quotedMessage.id}`);
+                                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }}>
+                                            <div className="messages-bubble__quoted-line" />
+                                            <div className="messages-bubble__quoted-content">
+                                                <span className="messages-bubble__quoted-user">
+                                                    {msg.quotedMessage.senderId === session.id ? 'Вы' : (usersMap.get(msg.quotedMessage.senderId)?.nickname)}
+                                                </span>
+                                                <span className="messages-bubble__quoted-text">{getMessagePreview(msg.quotedMessage)}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {msg.dataType > 0 ? renderMediaCard(msg) : (
+                                        <span className="messages-bubble__text">{msg.data}</span>
+                                    )}
+                                    <span className="messages-bubble__time">{
+                                        new Date(msg.createdAt)
+                                            .toLocaleTimeString(navigator.language, {
+                                                hour: "2-digit",
+                                                minute: "2-digit"
+                                            })}
                                     </span>
-                                    <span className="messages-bubble__quoted-text">{msg.quotedMessage.data}</span>
                                 </div>
-                            </div>
-                        )}
-                        <span className="messages-bubble__text">{msg.data}</span>
-                        <span className="messages-bubble__time">{
-                            new Date(msg.createdAt)
-                                .toLocaleTimeString(navigator.language, {
-                                    hour: "2-digit",
-                                    minute: "2-digit"
-                                })}
-                        </span>
-                    </div>
-                ))}
+                            </React.Fragment>
+                        );
+                    });
+                })()}
             </div>
 
             {contextMenu && (
@@ -129,34 +322,33 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
                         setReplyTo(contextMenu.message);
                         setContextMenu(null);
                     }}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                             strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                        </svg>
+                        <Reply size={16} />
                         Ответить
                     </div>
                     {contextMenu.isMine && (
                         <>
                             <div className="messages-context-menu__item">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                                     strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                </svg>
+                                <Pencil size={16} />
                                 Редактировать
                             </div>
                             <div className="messages-context-menu__divider" />
                             <div className="messages-context-menu__item messages-context-menu__item--danger">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                                     strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
-                                    <polyline points="3 6 5 6 21 6" />
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                </svg>
+                                <Trash2 size={16} />
                                 Удалить
                             </div>
                         </>
                     )}
                 </div>
+            )}
+
+            {trackMenuId && activeTrackData && (
+                <TrackMenu
+                    ref={trackMenuRef}
+                    track={activeTrackData}
+                    style={{ top: trackMenuPos.top, left: trackMenuPos.left, zIndex: 10001 }}
+                    openUp={trackMenuPos.openUp}
+                    onClose={() => setTrackMenuId(null)}
+                />
             )}
 
             {replyTo && (
@@ -165,14 +357,10 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
                         <div className="messages-reply-indicator__line" />
                         <div className="messages-reply-indicator__info">
                             <span className="messages-reply-indicator__user">{replyTo.senderId === session.id ? 'Вы' : usersMap.get(replyTo.senderId).nickname}</span>
-                            <span className="messages-reply-indicator__text">{replyTo.data}</span>
+                            <span className="messages-reply-indicator__text">{getMessagePreview(replyTo)}</span>
                         </div>
                         <button className="messages-reply-indicator__close" type="button" onClick={() => setReplyTo(null)}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                                 strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
+                            <X size={16} />
                         </button>
                     </div>
                 </div>
@@ -181,10 +369,17 @@ const ChatWindow = ({ activeChat, input, setInput, handleSend,
             <div className="messages-input-row">
                 <button
                     className="messages-attach-btn"
-                    onClick={() => setShowTrackPicker((v) => !v)}
+                    onClick={() => setShowTrackPicker(v => !v)}
                 >
                     <Music size={18} />
                 </button>
+
+                {showTrackPicker && (
+                    <TrackPickerModal
+                        onClose={() => setShowTrackPicker(false)}
+                        onSend={onSendTrack}
+                    />
+                )}
 
                 <textarea
                     ref={textareaRef}

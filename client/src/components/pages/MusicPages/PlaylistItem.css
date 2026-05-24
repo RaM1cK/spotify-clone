@@ -17,6 +17,7 @@
 }
 
 .playlist-logo {
+    position: relative;
     width: auto;
     max-height: min(260px, 42vw);
     min-width: 60px;
@@ -24,6 +25,35 @@
     aspect-ratio: 1 / 1;
     object-fit: cover;
     flex-shrink: 0;
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+
+.playlist-logo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+    border-radius: inherit;
+}
+
+.playlist-logo-wrapper {
+    width: min(260px, 42vw);
+    min-width: 60px;
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    background: #1a1a1a;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
 
 .liked-header-info {

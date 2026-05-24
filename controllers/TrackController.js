@@ -3,11 +3,12 @@ import {__dirname} from "../server.js";
 import * as fs from "node:fs";
 import dotenv from "dotenv";
 import {Track} from "../models/Track.ts";
-import jwt from "jsonwebtoken";
 import * as crypto from "node:crypto";
 import {literal} from "@sequelize/core";
-import {redisClient} from "../models/index.js";
-import {getUser} from "./UserController.js";
+import {redisClient, sequelize} from "../models/index.js";
+import {User} from "../models/User.ts";
+import {getUserFavoriteArtistList, getUserFavoriteTrackList} from "./UserController.js";
+import {StreamLog} from "../models/StreamLog.ts";
 
 dotenv.config();
 
@@ -17,17 +18,46 @@ export const trackAttributes = [
     'artist',
     'duration',
     'cover',
+    'parentalWarning',
     'uri',
     'releaseId',
 ]
 
-export const hasInFavoriteQuery = (userId, alias = 'tracks') => literal(`(
-    select exists (
-        select 1
-        from "FavoriteTracks" ft
-        where ft."trackId" = "${alias}"."id" and ft."userId" = '${userId}'
-    )
-)`)
+export const hasInFavoriteQuery = (userId, alias = 'tracks') => {
+    const favoriteAlias = {
+        tracks: 'FavoriteTracks',
+        Track: 'FavoriteTracks',
+        Playlist: 'FavoritePlaylists',
+        artists: 'FavoriteArtists',
+        releases: 'FavoriteReleases',
+        playlists: 'FavoritePlaylists',
+    }
+
+    const aliasToOneString = {
+        tracks: 'track',
+        Track: 'track',
+        Playlist: 'playlist',
+        artists: 'artist',
+        releases: 'release',
+        playlists: 'playlist'
+    }
+
+    const query = `(
+        select exists (
+            select 1
+            from "${favoriteAlias[alias]}" fs
+            where fs."${aliasToOneString[alias]}Id" = "${alias}"."id" and fs."userId" = '${userId}'
+        )
+    )`
+
+    return literal(query)
+}
+
+export const getFavoriteTrackIdsSet = async (userId) => {
+    const favoriteTracks = await getUserFavoriteTrackList(userId)
+
+    return new Set(favoriteTracks.map(t => t.id))
+}
 
 export const trackCountQuery = (alias) => literal(`(
     select count(*) 
@@ -35,95 +65,46 @@ export const trackCountQuery = (alias) => literal(`(
     where "${alias}Track"."${alias.toLowerCase()}Id" = "${alias}"."id"
 )`)
 
-// export const getTrack = async (req, res)=> {
-//     const id = req.params['trackId'];
-//
-//     const track = await Track.findByPk(id,{
-//         attributes: {
-//             exclude: ['isrc', 'createdAt', 'updatedAt', 'releaseId']
-//         },
-//     })
-//
-//     if (!track) {
-//         return res.status(404).json({})
-//     }
-//
-//     return res.json(track);
-// }
+const MIN_STREAM_DURATION_SECONDS = 30
 
-export const getTracksBySecret = (req, res, tracks) => {
+export const requestTrackToken = async (req, res) => {
+    const { trackId } = req.body;
+    if (!trackId) return res.status(400).json({});
+
+    const track = await Track.findByPk(trackId, {
+        attributes: trackAttributes
+    });
+
+    if (!track) return res.status(404).json({});
+
     const fingerprint = crypto
         .createHash('sha256')
         .update(req.ip + req.headers['user-agent'] + req.user.id)
         .digest('hex')
 
-    return tracks.map(track => {
-        const {
-            uri,
-            hasInFavorite,
-            userFavoriteTrack,
-            artistTrack,
-            PlaylistTrack,
-            ...rest
-        } = track.toJSON()
+    const { uri, ...rest } = track.toJSON();
 
-        redisClient
-            .set(`track:${track.id}`, JSON.stringify({...rest, uri}), { EX: 3600})
-            .catch(err => console.log(err));
+    const sessionId = crypto.randomUUID();
 
-        return {
-            ...rest,
-            hasInFavorite,
-            token: jwt.sign(
-            {
-                ...rest,
-                uri,
-                fingerprint
-            }, process.env.SECRET_KEY)
-        }
-    })
-}
+    redisClient
+        .set(`streamSession:${sessionId}`, JSON.stringify({ ...rest, uri, fingerprint }), { EX: Math.max(track.duration, MIN_STREAM_DURATION_SECONDS) })
+        .catch(err => console.log(err));
 
-export const getTracksBySecretFromCache = (req, res, tracks) => {
-    const fingerprint = crypto
-        .createHash('sha256')
-        .update(req.ip + req.headers['user-agent'] + req.user.id)
-        .digest('hex')
-
-    return tracks.map(track => {
-        const {
-            uri,
-            ...rest
-        } = track
-
-        return {
-            ...rest,
-            token: jwt.sign(
-                {
-                    ...rest,
-                    uri,
-                    fingerprint
-                }, process.env.SECRET_KEY)
-        }
-    })
+    res.json({ token: sessionId });
 }
 
 export const saveLastPosition = async (req, res) => {
     const token = req.body.token;
     const position = req.body.position
 
-    let track;
-    try {
-        track = jwt.verify(token, process.env.SECRET_KEY)
-    } catch (err) {
-        return res.status(403).json({})
-    }
+    const sessionData = await redisClient.get(`streamSession:${token}`);
+    if (!sessionData) return res.status(403).json({});
 
-    const {iat, hasInFavorite, fingerprint, ...restTrack} = track;
+    const { uri, fingerprint, ...restTrack } = JSON.parse(sessionData);
 
     redisClient
         .set(`currentTrack:${req.user.id}`, JSON.stringify({...restTrack, start: position}))
-        .catch(err => res.status(500).json(err));
+        .catch(err => console.log(err));
 
     res.status(200).json({})
 }
@@ -131,12 +112,11 @@ export const saveLastPosition = async (req, res) => {
 export const getTrackFile = async (req, res)=> {
     const token = req.query.token;
 
-    let track;
-    try {
-        track = jwt.verify(token, process.env.SECRET_KEY)
-    } catch (err) {
-        return res.status(403).json({})
-    }
+    const sessionData = await redisClient.get(`streamSession:${token}`);
+    if (!sessionData) return res.status(403).json({});
+
+    const track = JSON.parse(sessionData);
+    redisClient.expire(`streamSession:${token}`, track.duration).catch(() => {});
 
     const filePath = path.join(__dirname, 'music', track.uri);
 
@@ -146,7 +126,7 @@ export const getTrackFile = async (req, res)=> {
 
     const range = req.headers.range;
 
-    const chunk = 3 * 1024 * 1024;
+    const chunk = 1024 * 1024;
 
     const parts = range.replace(/bytes=/, "").split("-");
 
@@ -178,5 +158,65 @@ export const getTrackFile = async (req, res)=> {
     fileStream.pipe(res);
 }
 
-export default {getTrackFile, saveLastPosition}
+export const reportPlay = async (req, res) => {
+    const { token } = req.body;
+    const userId = req.user.id;
+
+    const raw =
+        await redisClient.get(`streamSession:${token}`);
+
+    if (!raw) return res.status(403).json({ counted: false });
+
+    const session = JSON.parse(raw);
+    if (session.counted) return res.json({ counted: true });
+
+    const now = Date.now();
+    const elapsed = (now - (session.lastTimestamp || now)) / 1000;
+
+    if (elapsed > 0 && elapsed < 10)
+        session.accumulated = Math.min((session.accumulated || 0) + elapsed, session.duration);
+
+    const thresholdReached =
+        session.accumulated >= 30 ||
+        (session.duration > 0 && session.accumulated / session.duration >= 0.7);
+
+
+    if (thresholdReached) {
+        const cooldownKey = `streamCooldown:${userId}:${session.id}`;
+        const cooldown = await redisClient.get(cooldownKey);
+
+        if (!cooldown) {
+            const lockKey = `streamLock:${userId}:${session.id}`;
+            const acquired = await redisClient.set(lockKey, '1', { NX: true, EX: 10 });
+
+            if (acquired) {
+                await StreamLog.create({
+                    id: token,
+                    trackId: session.id,
+                    userId,
+                });
+
+                await redisClient.set(cooldownKey, '1', { EX: Math.ceil(session.duration) });
+            }
+        }
+
+        session.counted = true;
+    }
+
+    await redisClient.set(
+        `streamSession:${token}`,
+        JSON.stringify(session),
+        { EX: Math.ceil(session.duration) }
+    );
+
+    res.json({ counted: thresholdReached });
+};
+
+// export const getTrackArtists = async (req, res) => {
+//     const trackId = req.params.trackId;
+//
+//     const artists = await
+// }
+
+export default {getTrackFile, saveLastPosition, requestTrackToken, reportPlay}
 

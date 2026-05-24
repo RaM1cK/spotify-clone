@@ -6,13 +6,8 @@
     margin-bottom: 24px;
 }
 
-.music-back{
-    padding: 30px;
-}
-
 .artist-item{
     padding: 32px;
-    overflow-y: auto;
 }
 
 
@@ -52,6 +47,7 @@
     display: flex;
     align-items: center;
     gap: 16px;
+    flex-wrap: wrap;
 }
 
 .artist-header__meta {
@@ -105,7 +101,6 @@
     width: fit-content;
     height: fit-content;
     border-radius: 24px;
-    transform: translateY(20%);
     background-color: transparent;
     color: #fff;
     font-size: 15px;
@@ -115,4 +110,36 @@
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.liked-props-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2px solid #f5f5f5;
+    background: transparent;
+    color: #f5f5f5;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+@media (max-width: 600px) {
+    .artist-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 24px;
+    }
+    .artist-header__info {
+        align-items: center;
+    }
+    .artist-header__bottom {
+        justify-content: center;
+    }
+    .artist-item {
+        padding: 16px;
+    }
 }

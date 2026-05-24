@@ -14,7 +14,7 @@ import {Chat} from "./Chat.ts";
 @Table({
     underscored: true,
 })
-export class Message extends Model<InferAttributes<Model>, InferCreationAttributes<Model>> {
+export class Message extends Model<InferAttributes<Message>, InferCreationAttributes<Message>> {
     @Attribute(DataTypes.UUID)
     @PrimaryKey
     @Default(sql.uuidV4)
@@ -30,7 +30,7 @@ export class Message extends Model<InferAttributes<Model>, InferCreationAttribut
             type: 'hasMany'
         }
     })
-    declare sender?: NonAttribute<Chat>;
+    declare sender?: NonAttribute<User>;
 
     @Attribute(DataTypes.UUID)
     declare chatId: string;

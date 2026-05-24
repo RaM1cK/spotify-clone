@@ -1,57 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useFriends, useOutgoingRequests, useIncomingRequests, useFriendRequestActions } from "../AppContext";
 import axios from 'axios';
-
-function SearchIcon({ size = 18 }) {
-    return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-             strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-    );
-}
-
-function UserIcon({ size = 22 }) {
-    return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
-             strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-        </svg>
-    );
-}
-
-function AddIcon({ size = 14 }) {
-    return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-             strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-    );
-}
-
-function CloseIcon({ size = 18 }) {
-    return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-             strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-    );
-}
-
-function CheckIcon({ size = 14 }) {
-    return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-             strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
-            <polyline points="20 6 9 17 4 12" />
-        </svg>
-    );
-}
+import { Search, User, Plus, X, Check } from "lucide-react";
+import {useNavigate} from "react-router-dom";
 
 export default function AddFriendModal({ onClose }) {
+    const navigate = useNavigate();
     const overlayRef = useRef(null);
     const inputRef = useRef(null);
     const [query, setQuery] = useState('');
@@ -116,12 +70,12 @@ export default function AddFriendModal({ onClose }) {
                 <div className="afm-header">
                     <h2 className="afm-title">Добавить друга</h2>
                     <button className="afm-close-btn" onClick={onClose}>
-                        <CloseIcon />
+                        <X size={18} />
                     </button>
                 </div>
 
                 <div className="afm-search-wrap">
-                    <SearchIcon />
+                    <Search size={18} />
                     <input
                         ref={inputRef}
                         className="afm-search-input"
@@ -148,23 +102,29 @@ export default function AddFriendModal({ onClose }) {
                             let btnAction = () => handleAction(user);
 
                             if (isFriend) {
-                                btnContent = <><CheckIcon /> Друзья</>;
+                                btnContent = <><Check size={14} /> Друзья</>;
                                 btnDisabled = true;
                             } else if (isIncoming) {
-                                btnContent = <><CheckIcon /> Запрос получен</>;
+                                btnContent = <><Check size={14} /> Запрос получен</>;
                                 btnDisabled = true;
                             } else if (isOutgoing) {
                                 btnContent = <>Отменить</>;
                             } else {
-                                btnContent = <><AddIcon /> Добавить</>;
+                                btnContent = <><Plus size={14} /> Добавить</>;
                             }
 
                             return (
-                                <div className="afm-user-row" key={user.id}>
+                                <div className="afm-user-row"
+                                     key={user.id}
+                                     onClick={() => {
+                                         navigate(`/profile/${user.id}`)
+                                         onClose()
+                                     }}
+                                >
                                     <div className="afm-user-avatar">
                                         {user.avatar
-                                            ? <img src={user.avatar} alt={user.nickname} className="avatar-img" />
-                                            : <UserIcon size={18} />
+                                            ? <img src={`/api/files/${user.avatar}`} alt={user.nickname} className="avatar-img" />
+                                            : <User size={18} />
                                         }
                                     </div>
                                     <span className="afm-user-name">{user.nickname}</span>

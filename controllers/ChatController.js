@@ -57,8 +57,22 @@ const socket = (io) => {
                     return;
                 }
 
+                let res
+
+                if (msg.dataType > 0) {
+                    const {hasInFavorite, ...msgData} = JSON.parse(msg.data)
+
+                    res = {
+                        ...msg,
+                        data: JSON.stringify(msgData),
+                    }
+                } else {
+                    res = msg
+                }
+
                 const message = await sequelize.transaction(async t => {
-                    const message = await Message.create(msg, { transaction: t})
+
+                    const message = await Message.create(res, { transaction: t})
 
                     // if (message.quotedId) await message.setQuotedMessage(message.quotedId, {transaction: t})
 

@@ -62,7 +62,7 @@ const RangeTrack = ({duration, playing, intervalRef, position, setPosition}) => 
                 onKeyDown={(e) => e.preventDefault()}
                 style={{
                     width: '100%',
-                    height: 4,
+                    height: 3,
                     appearance: 'none',
                     color: "black",
                     background: `linear-gradient(to right, #a855f7 0%, #a855f7 ${

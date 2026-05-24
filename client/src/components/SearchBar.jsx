@@ -1,26 +1,30 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Search, X, Loader } from "lucide-react";
 import "./SearchBar.css";
+import axios from "axios";
 
-const SearchBar = ({ onSearch = () => {} }) => {
-    const [searchTerm, setSearchTerm] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
+const SearchBar = ({searchTerm, setSearchTerm, isLoading, setIsLoading, setData}) => {
     const debounceTimer = useRef(null);
+
+    const handleSearch = (searchQuery) =>
+        axios.get(`/api/users/search?query=${searchQuery}`)
+            .then(res => setData(res.data))
+            .catch(err => console.log(err))
+            .finally(() => setIsLoading(false));
 
     const handleChange = (e) => {
         const value = e.target.value;
-        setSearchTerm(value);
+
         setIsLoading(true);
+        setSearchTerm(value);
 
         if (debounceTimer.current) {
             clearTimeout(debounceTimer.current);
         }
 
         debounceTimer.current = setTimeout(() => {
-            if (typeof onSearch === 'function') {
-                onSearch(value);
-            }
-            setIsLoading(false);
+            if (value) handleSearch(value)
+            else setIsLoading(false);
         }, 500);
     };
 
@@ -29,9 +33,6 @@ const SearchBar = ({ onSearch = () => {} }) => {
         setIsLoading(false);
         if (debounceTimer.current) {
             clearTimeout(debounceTimer.current);
-        }
-        if (typeof onSearch === 'function') {
-            onSearch("");
         }
     };
 
@@ -49,7 +50,7 @@ const SearchBar = ({ onSearch = () => {} }) => {
                 <Search className="search-icon" size={20} />
                 <input
                     type="text"
-                    placeholder="Search by track name or artist..."
+                    placeholder="Название трека, альбома, артиста..."
                     value={searchTerm}
                     onChange={handleChange}
                     className="search-input"

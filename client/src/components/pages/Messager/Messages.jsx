@@ -6,63 +6,23 @@ import axios from "axios";
 import {useSession, useSocket} from "../../../AppContext";
 import {LoadingPage} from "../LoadingPage";
 
-const MOCK_CHATS = [
-    {
-        id: 1,
-        name: "Алексей Петров",
-        avatar: "АП",
-        lastMessage: "Окей, увидимся завтра",
-        time: "14:32",
-        unread: 0,
-        messages: [
-            { id: 1, from: "them", text: "Привет! Как дела?", time: "14:20" },
-            { id: 2, from: "me", text: "Всё хорошо, спасибо! А у тебя?", time: "14:21" },
-            { id: 3, from: "them", text: "Тоже норм. Слушай, ты завтра свободен?", time: "14:25" },
-            { id: 4, from: "me", text: "Да, с утра точно свободен", time: "14:28" },
-            { id: 5, from: "them", text: "Окей, увидимся завтра", time: "14:32" },
-        ],
-    },
-    {
-        id: 2,
-        name: "Мария Иванова",
-        avatar: "МИ",
-        lastMessage: "Скинь плейлист!",
-        time: "12:10",
-        unread: 2,
-        messages: [
-            { id: 1, from: "them", text: "Что слушаешь сейчас?", time: "12:05" },
-            { id: 2, from: "me", text: "Morgenshtern, новый альбом", time: "12:07" },
-            { id: 3, from: "them", text: "Скинь плейлист!", time: "12:10" },
-        ],
-    },
-    {
-        id: 3,
-        name: "Дмитрий Смирнов",
-        avatar: "ДС",
-        lastMessage: "Ок",
-        time: "вчера",
-        unread: 0,
-        messages: [
-            { id: 1, from: "me", text: "Дим, ты слышал новый трек Jane Remover?", time: "вчера" },
-            { id: 2, from: "them", text: "Ок", time: "вчера" },
-        ],
-    },
-    {
-        id: 4,
-        name: "Анна Козлова",
-        avatar: "АК",
-        lastMessage: "Супер звук 🔥",
-        time: "пн",
-        unread: 0,
-        messages: [
-            { id: 1, from: "them", text: "Рекомендуй что-нибудь послушать", time: "пн" },
-            { id: 2, from: "me", text: "Слушай Gazan — очень крутой", time: "пн" },
-            { id: 3, from: "them", text: "Супер звук 🔥", time: "пн" },
-        ],
-    },
-];
+const getMessagePreview = (msg) => {
+    if (!msg.dataType || msg.dataType === 0) return msg.data || '';
+    try {
+        const d = JSON.parse(msg.data);
+        switch (msg.dataType) {
+            case 1: return `${d.title} - ${d.artist}`;
+            case 2: return `${d.title}`;
+            case 3: return `${d.name}`;
+            case 4: return `${d.name}`;
+            default: return msg.data;
+        }
+    } catch {
+        return msg.data || ''
+    }
+};
 
-const Messages = ({trackList, ALBUM_ITEMS}) => {
+const Messages = ({trackList, ALBUM_ITEMS, setCurrentTrack}) => {
     const socket = useSocket();
     const session = useSession();
 
@@ -90,7 +50,7 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
             chat.id !== newMessage.chatId ? chat : {
                 ...chat,
                 messages: [...chat.messages, newMessage],
-                lastMessage: newMessage.data,
+                lastMessage: getMessagePreview(newMessage),
                 createdAt: newMessage.createdAt
             }
         )
@@ -98,14 +58,14 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
     const activeChatSetter = (prev, newMessage) => ({
         ...prev,
         messages: [...prev.messages, newMessage],
-        lastMessage: newMessage.data,
+        lastMessage: getMessagePreview(newMessage),
     })
 
     const setLastMessage = (prev, newMessage) =>
         prev.map(chat =>
             chat?.id !== newMessage?.chatId ? chat : {
                 ...chat,
-                lastMessage: newMessage.data,
+                lastMessage: getMessagePreview(newMessage),
             }
         )
 
@@ -182,6 +142,28 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
 
     };
 
+    const handleSendMedia = (media) => {
+        if (!activeChat) return;
+
+        const dataTypeMap = {track: 1, album: 2, artist: 3, playlist: 4};
+
+        const newMessage = {
+            senderId: session.id,
+            chatId: activeChat.id,
+            data: JSON.stringify(media.data),
+            dataType: dataTypeMap[media.type] || 0,
+            quotedId: replyTo?.id,
+            createdAt: new Date()
+        };
+
+        setReplyTo(null);
+
+        socket.emit('send-message', {
+            room: activeChat.id,
+            msg: newMessage
+        });
+    };
+
     if (loading) return <LoadingPage/>;
     if (error) return <div>{error}</div>;
 
@@ -223,6 +205,11 @@ const Messages = ({trackList, ALBUM_ITEMS}) => {
                     handleSend={handleSend}
                     showMobileBack={mobileChatOpen}
                     onMobileBack={() => setMobileChatOpen(false)}
+                    onSendTrack={(media) => {
+                        handleSendMedia(media);
+                    }}
+                    setCurrentTrack={setCurrentTrack}
+                    getMessagePreview={getMessagePreview}
                 />
             </div>
         );
