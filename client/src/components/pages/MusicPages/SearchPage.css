@@ -1,0 +1,170 @@
+.search-page {
+    padding: 0;
+}
+
+.search-results {
+    padding: 0 clamp(14px, 3vw, 32px) clamp(16px, 4vw, 32px);
+}
+
+.search-section {
+    margin-top: clamp(20px, 4vw, 28px);
+}
+
+.search-section__title {
+    font-size: clamp(16px, 3.5vw, 20px);
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 clamp(10px, 2vw, 16px) 0;
+}
+
+.scroll-container {
+    display: flex;
+    gap: clamp(8px, 1.5vw, 12px);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.scroll-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+
+.scroll-card {
+    all: unset;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(6px, 1.2vw, 10px);
+    width: clamp(120px, 28vw, 170px);
+    padding: clamp(10px, 2vw, 16px);
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 8px;
+    transition: background 0.15s, transform 0.15s;
+    scroll-snap-align: start;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.scroll-card:hover {
+    transform: scale(0.95);
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.scroll-card:active {
+    transform: scale(0.98);
+}
+
+.scroll-card > * {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.scroll-card > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+.search-section .track-list {
+    padding: 0;
+}
+
+.search-page .artist-avatar,
+.search-page .album-imagediv {
+    width: 100%;
+    max-width: clamp(70px, 22vw, 120px);
+}
+
+.search-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(48px, 10vw, 80px) 24px;
+    text-align: center;
+    user-select: none;
+}
+
+.search-empty__orbit {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.search-empty__ring {
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.search-empty__ring::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    border: 1px dashed rgba(99, 102, 241, 0.3);
+    animation: spin 8s linear infinite;
+}
+
+.search-empty__icon {
+    width: 40px;
+    height: 40px;
+    color: rgba(255, 255, 255, 0.6);
+    animation: pulse 2.5s ease-in-out infinite;
+}
+
+.search-empty__title {
+    font-size: clamp(18px, 4vw, 22px);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0 0 8px;
+}
+
+.search-empty__hint {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.3);
+    margin: 0;
+    line-height: 1.6;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.08); }
+}
+
+@media (max-width: 480px) {
+    .scroll-card {
+        width: clamp(100px, 40vw, 130px);
+        padding: clamp(8px, 1.5vw, 12px);
+    }
+}
+
+@media (min-width: 1200px) {
+    .scroll-card {
+        width: clamp(160px, 16vw, 200px);
+    }
+}

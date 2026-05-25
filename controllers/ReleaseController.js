@@ -1,12 +1,11 @@
 import {Release} from "../models/Release.ts";
 import {
     getFavoriteTrackIdsSet,
-    getTracksBySecret,
-    getTracksBySecretFromCache,
     trackAttributes
 } from "./TrackController.js";
 import {Track} from "../models/Track.ts";
-import {redisClient, sequelize} from "../models/index.js";
+import {redisClient} from "../models/index.js";
+import {getUserFavoriteReleaseList} from "./UserController.js";
 
 export const releaseAttributes = [
     'id',
@@ -18,17 +17,10 @@ export const releaseAttributes = [
     'date'
 ]
 
-export const getFavoriteReleaseIdsSet = async (userId, cache = undefined) => {
-    const cached =
-        cache ?? await redisClient.get(`favoriteReleases:${userId}`)
+export const getFavoriteReleaseIdsSet = async (userId) => {
+    const favoriteReleases = await getUserFavoriteReleaseList(userId)
 
-    if (cached) return new Set(JSON.parse(cached).map(r => r.id))
-
-    const [rows] = await sequelize.query(
-        `SELECT "releaseId" AS id FROM "FavoriteReleases" WHERE "userId" = $1`,
-        { bind: [userId] }
-    )
-    return new Set(rows.map(r => r.id))
+    return new Set(favoriteReleases.map(t => t.id))
 }
 
 const getRelease = async (req, res) => {
@@ -41,24 +33,7 @@ const getRelease = async (req, res) => {
 
     if (cachedRelease) {
         release = JSON.parse(cachedRelease);
-        const parsedReleaseTracks = release.tracks;
-
-        if (parsedReleaseTracks) trackList = parsedReleaseTracks;
-        else {
-            const [tracks] = await sequelize.query(
-                `SELECT * from tracks WHERE "releaseId" = $1
-                     ORDER BY createdAt ASC`,
-                { bind: [releaseId] }
-                )
-
-            if (!tracks) return res.status(404).send({})
-
-            trackList = tracks
-
-            redisClient
-                .set(`release:${releaseId}`, JSON.stringify({...release, tracks}), { EX: 3600 })
-                .catch(err => console.log(err))
-        }
+        trackList = release.tracks;
     } else {
         const releaseModel = await Release.findOne({
             where: { id: releaseId },
@@ -81,7 +56,8 @@ const getRelease = async (req, res) => {
         trackList = tracks.map(t => t.dataValues)
 
         const result = {
-            ...releaseModel.dataValues,
+            ...rest,
+            tracks: trackList,
             date: new Date(releaseModel.date).getFullYear()
         }
 
@@ -92,10 +68,12 @@ const getRelease = async (req, res) => {
     }
 
     const favTracks = await getFavoriteTrackIdsSet(req.user.id)
-    trackList = getTracksBySecretFromCache(req, res, trackList.map(t => ({...t, hasInFavorite: favTracks.has(t.id)})))
+    const favReleases = await getFavoriteReleaseIdsSet(req.user.id)
+    trackList = trackList.map(t => ({...t, hasInFavorite: favTracks.has(t.id)}))
 
     res.status(200).send({
         ...release,
+        hasInFavorite: favReleases.has(releaseId),
         tracks: trackList
     })
 }

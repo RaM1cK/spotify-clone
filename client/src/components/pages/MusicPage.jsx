@@ -6,7 +6,6 @@ import PlaylistMenu from "./MusicPages/PlaylistMenu";
 import AlbumMenu from "./MusicPages/AlbumMenu";
 import ArtistMenu from "./MusicPages/ArtistMenu";
 import "./MusicPage.css";
-import SearchBar from "../SearchBar";
 import axios from "axios";
 
 const MENU_ITEMS = [

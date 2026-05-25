@@ -19,6 +19,7 @@ import {
 import {Composition} from "./Composition.ts";
 import {Release} from "./Release.ts";
 import {Artist} from "./Artist.ts";
+import {StreamLog} from "./StreamLog.ts";
 
 @Table({
     underscored: true,
@@ -78,5 +79,7 @@ export class Track extends Model<InferAttributes<Track>, InferCreationAttributes
 
     declare addComposition: BelongsToManyAddAssociationMixin<Composition, Composition['id']>
     declare addCompositions: BelongsToManyAddAssociationsMixin<Composition, Composition['id']>
+
+    declare streamLogs?: NonAttribute<StreamLog[]>
 }
 

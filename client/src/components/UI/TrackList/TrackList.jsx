@@ -4,19 +4,28 @@ import "./TrackList.css"
 import {useParams} from "react-router-dom";
 import axios from "axios";
 import {ChevronLeft} from "lucide-react";
+import {LoadingPage} from "../../pages/LoadingPage";
 
-function TrackList({tracks: propTracks, setCurrentTrack, UsingContext, RollBack, onFavoriteChange}) {
+function TrackList({tracks: propTracks, setCurrentTrack, UsingContext, RollBack}) {
     const { artistId} = useParams();
     const [localTracks, setLocalTracks] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         if (!propTracks)
             axios.get(`/api/artists/${artistId}/tracks`)
                 .then(res => setLocalTracks(res.data))
-                .catch(() => console.error('Ошибка загрузки треков'));
+                .catch(() => setError('Ошибка загрузки треков'))
+                .finally(() => setLoading(false));
+        else
+            setLoading(false);
     }, []);
 
-    const tracks = localTracks ?? propTracks
+    const tracks = propTracks ?? localTracks;
+
+    if (loading) return <LoadingPage/>
+    if (error) return <div>{error}</div>
 
     if (tracks)
         return (
@@ -36,7 +45,6 @@ function TrackList({tracks: propTracks, setCurrentTrack, UsingContext, RollBack,
                             track={track}
                             tracks={tracks}
                             setCurrentTrack = {setCurrentTrack}
-                            onFavoriteChange = {onFavoriteChange}
                         />
                     ))}
                 </div>

@@ -10,7 +10,8 @@ import {Release} from "./models/Release.ts";
 import {Artist} from "./models/Artist.ts";
 import {Attribute, NotNull} from "@sequelize/core/decorators-legacy";
 import {DataTypes} from "@sequelize/core";
-import {normalizeString} from "./searchUtils.js";
+import stringNormalization from "./helpers/stringNormalization.js";
+const { normalizeString } = stringNormalization;
 
 let xml = fs.readFileSync("music/123456789012/metadata.xml", 'utf8');
 

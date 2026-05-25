@@ -23,6 +23,25 @@ export class Player implements Subject {
     private _lastPosition: number = 0;
     private _lastPositionOnLoading: number = -1;
 
+    private _pendingTrackId: number | null = null;
+    private _lastToken: string | null = null;
+    private _heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+    private _volume: number = 1;
+    private _streamDuration = 0;
+
+    public get token(): string | null {
+        return this._lastToken;
+    }
+
+    public get volume(): number {
+        return this._volume;
+    }
+
+    public setVolume(v: number) {
+        this._volume = Math.max(0, Math.min(1, v));
+        this.howl?.volume(this._volume);
+    }
+
     public get currentIndex(): number {
         return this._currentIndex;
     }
@@ -40,6 +59,7 @@ export class Player implements Subject {
     }
 
     public destroy(){
+        this.stopHeartbeat()
         this.howl?.unload()
     }
 
@@ -131,67 +151,125 @@ export class Player implements Subject {
         }
     }
 
-    private handleError(track: any) {
-        const position = this.howl?.seek()
-
-        setTimeout(() => {
-            this.setHowl(track, position, true)
-        }, 2000)
+    private startHeartbeat() {
+        this.stopHeartbeat();
+        this._heartbeatInterval = setInterval(() => {
+            if (!(this._state instanceof PlayingState)) return;
+            const pos = this.howl?.seek();
+            if (pos !== undefined && this._lastToken) {
+                fetch('/api/tracks/heartbeat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: this._lastToken, position: Math.floor(pos) })
+                }).catch(() => {});
+            }
+        }, 5000);
     }
 
-    private setHowl(track: any, startFrom: number = 0, autoplay: boolean = true) {
-        this.howl?.unload()
+    private stopHeartbeat() {
+        if (this._heartbeatInterval) {
+            clearInterval(this._heartbeatInterval);
+            this._heartbeatInterval = null;
+        }
+    }
+
+    private async handleError(track: any) {
+        this.stopHeartbeat();
+        const position = this.howl?.seek() || this._lastPosition
+        await this.setHowl(track, position, true)
+    }
+
+    private async setHowl(track: any, startFrom: number = 0, autoplay: boolean = true) {
         this._lastPositionOnLoading = -1
         this.stopBufferWatch()
         this.state = new LoadingState()
         this.notify()
 
-        const params = new URLSearchParams({
-            token: track.token,
-            duration: track.duration
-        })
+        this._pendingTrackId = track.id;
 
-        this.howl = new Howl({
-            src: [`/api/tracks?${params.toString()}`],
-            format: ['mp3', 'flac'],
-            volume: 1,
-            loop: false,
-            html5: true,
-            onload: () => {
-                console.log('loaded')
+        try {
+            const res = await fetch('/api/tracks/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ trackId: track.id })
+            });
+            const data = await res.json();
 
-                if (startFrom > 0) this.howl!.seek(startFrom)
-                else if (this._lastPositionOnLoading !== -1) this.howl!.seek(this._lastPositionOnLoading)
+            if (this._pendingTrackId !== track.id) return;
 
-                if (autoplay) this.play()
-                else {
-                    this.pause()
+            this._lastToken = data.token;
+            this.startHeartbeat();
+
+            this.howl?.unload()
+
+            const params = new URLSearchParams({
+                token: data.token,
+                duration: track.duration
+            })
+
+            this.howl = new Howl({
+                src: [`/api/tracks?${params.toString()}`],
+                format: ['mp3'],
+                volume: this._volume,
+                loop: false,
+                html5: true,
+                onload: () => {
+                    console.log('loaded')
+
+                    if (startFrom > 0) this.howl!.seek(startFrom)
+                    else if (this._lastPositionOnLoading !== -1) this.howl!.seek(this._lastPositionOnLoading)
+
+                    if (autoplay) this.play()
+                    else {
+                        this.pause()
+                    }
+
+                    this.updateMediaSession(track)
+                    this.startBufferWatch()
+                },
+                onplay: () => {
+                    this.updateMediaSessionState('playing')
+                    this.state = new PlayingState();
+                    this.notify()
+                    this.startHeartbeat()
+                },
+                onpause: () => this.updateMediaSessionState('paused'),
+                onend: () => {
+                    this.updateMediaSessionState('none')
+                    this.stopHeartbeat()
+                    if (this._lastToken) {
+                        const endPos = this._lastPosition || this.howl?.seek() || 0;
+                        fetch('/api/tracks/heartbeat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token: this._lastToken, position: Math.floor(endPos) })
+                        }).catch(() => {});
+                    }
+                    this._strategy.onTrackEnd()
+                },
+                onloaderror: (e) => {
+                    this.stopHeartbeat()
+                    console.log('Load error')
+                    console.error(e)
+                    this.handleError(track)
+                },
+                onplayerror: (e) => {
+                    this.stopHeartbeat()
+                    console.log('Play error')
+                    console.error(e)
+                    this.handleError(track)
                 }
-
-                this.updateMediaSession(track)
-                this.startBufferWatch()
-            },
-            onplay: () => {
-                this.updateMediaSessionState('playing')
-                this.state = new PlayingState();
+            })
+        } catch (err) {
+            console.error('Failed to fetch track token', err);
+            if (this._pendingTrackId === track.id) {
+                this.state = new LoadingState()
                 this.notify()
-            },
-            onpause: () => this.updateMediaSessionState('paused'),
-            onend: () => {
-                this.updateMediaSessionState('none')
-                this._strategy.onTrackEnd()
-            },
-            onloaderror: (e) => {
-                console.log('Load error')
-                console.error(e)
-                this.handleError(track)
-            },
-            onplayerror: (e) => {
-                console.log('Play error')
-                console.error(e)
-                this.handleError(track)
+                setTimeout(() => {
+                    this.setHowl(track, startFrom, autoplay)
+                }, 3000)
             }
-        })
+        }
     }
 
     public seek(num?: number) {
@@ -260,11 +338,13 @@ export class Player implements Subject {
     }
 
     public pause() {
+        this.stopHeartbeat()
         this.state.pause()
         this.notify()
     }
 
     public stop() {
+        this.stopHeartbeat()
         this.state.stop()
         this.notify()
     }
@@ -275,6 +355,8 @@ export class Player implements Subject {
     }
 
     public setTrack(track: any, queue: any[], autoplay: boolean = true) {
+        this.stop()
+
         this._strategy.execute(track, queue);
         this.setHowl(track, track.start ? track.start : 0, autoplay);
     }

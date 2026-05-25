@@ -3,29 +3,28 @@ import { Search, X, Loader } from "lucide-react";
 import "./SearchBar.css";
 import axios from "axios";
 
-const SearchBar = () => {
-    const [searchTerm, setSearchTerm] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
+const SearchBar = ({searchTerm, setSearchTerm, isLoading, setIsLoading, setData}) => {
     const debounceTimer = useRef(null);
 
     const handleSearch = (searchQuery) =>
         axios.get(`/api/users/search?query=${searchQuery}`)
-            .then(res => console.log(res.data))
-            .catch(err => console.log(err));
+            .then(res => setData(res.data))
+            .catch(err => console.log(err))
+            .finally(() => setIsLoading(false));
 
     const handleChange = (e) => {
         const value = e.target.value;
 
-        setSearchTerm(value);
         setIsLoading(true);
+        setSearchTerm(value);
 
         if (debounceTimer.current) {
             clearTimeout(debounceTimer.current);
         }
 
         debounceTimer.current = setTimeout(() => {
-            if (value) handleSearch(value);
-            setIsLoading(false);
+            if (value) handleSearch(value)
+            else setIsLoading(false);
         }, 500);
     };
 
