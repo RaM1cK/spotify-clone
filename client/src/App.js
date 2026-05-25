@@ -20,6 +20,7 @@ import {
     useSession,
     useSetSession,
 } from "./AppContext";
+import playlistItem from "./components/pages/MusicPages/PlaylistItem";
 
 const PAGES = [
     { id: "testTrack",   path: "/music/*",  navPath: "/music",    component: MusicPage,  label: "Коллекция" },
@@ -30,8 +31,9 @@ const PAGES = [
 
 const ROUTES_PAGES = [
     ...PAGES,
-    { id: "myProfile",   path: "/me",          component: MyProfile   },
-    { id: "userProfile", path: "/profile/:id", component: UserProfile },
+    { id: "myProfile",   path: "/me",                   component: MyProfile   },
+    { id: "userProfile", path: "/profile/:id",          component: UserProfile },
+    { id: "userLiked",   path: "/profile/:id/liked",    component: playlistItem },
 ];
 
 function AppLayout({ menuOpen, setMenuOpen, onLogout }) {
