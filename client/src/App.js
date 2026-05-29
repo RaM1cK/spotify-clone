@@ -21,10 +21,12 @@ import {
     useSetSession,
 } from "./AppContext";
 import playlistItem from "./components/pages/MusicPages/PlaylistItem";
+import ChartsPage from "./components/pages/MusicPages/ChartsPage";
 
 const PAGES = [
     { id: "testTrack",   path: "/music/*",  navPath: "/music",    component: MusicPage,  label: "Коллекция" },
     { id: "search",      path: "/search",   navPath: "/search",   component: SearchPage, label: "Поиск" },
+    { id: "charts",      path: "/charts",   navPath: "/charts",   component: ChartsPage, label: "Популярно" },
     { id: "messagePage", path: "/messages", navPath: "/messages", component: Messages,   label: "Сообщения" },
     { id: "testPage",    path: "/gazan",    navPath: "/gazan",    component: testpage,   label: "Газан" },
 ];

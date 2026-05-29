@@ -1,0 +1,87 @@
+.charts-root {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #e2e2e2;
+    box-sizing: border-box;
+}
+
+/* ══ Hero ══ */
+.charts-hero {
+    position: relative;
+    padding: clamp(28px, 5vw, 44px) clamp(14px, 4vw, 36px) clamp(24px, 4vw, 36px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(168,85,247,0.10) 60%, transparent 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+}
+
+.charts-hero__glow {
+    position: absolute;
+    top: -60px;
+    left: -40px;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(99,102,241,0.22) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.charts-hero__content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 1;
+}
+
+.charts-hero__label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #a5b4fc;
+}
+
+.charts-hero__title {
+    font-size: clamp(32px, 6vw, 48px);
+    font-weight: 800;
+    color: #f0f0f0;
+    margin: 0;
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+
+.charts-hero__sub {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.charts-hero__icon {
+    color: rgba(99, 102, 241, 0.2);
+    flex-shrink: 0;
+    z-index: 1;
+    display: block;
+}
+
+/* ══ Body ══ */
+.charts-body {
+    padding: clamp(16px, 3vw, 28px) clamp(14px, 4vw, 36px);
+    flex: 1;
+}
+
+.charts-error,
+.charts-empty {
+    font-size: 14px;
+    color: #4b5563;
+    margin: 0;
+    padding-top: 8px;
+}

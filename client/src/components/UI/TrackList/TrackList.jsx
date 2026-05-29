@@ -6,7 +6,7 @@ import axios from "axios";
 import {ChevronLeft} from "lucide-react";
 import {LoadingPage} from "../../pages/LoadingPage";
 
-function TrackList({tracks: propTracks, setCurrentTrack, UsingContext, RollBack, onFavoriteChange}) {
+function TrackList({tracks: propTracks, setCurrentTrack, UsingContext, RollBack, onFavoriteChange, differences}) {
     const { artistId} = useParams();
     const [localTracks, setLocalTracks] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -46,6 +46,7 @@ function TrackList({tracks: propTracks, setCurrentTrack, UsingContext, RollBack,
                             tracks={tracks}
                             setCurrentTrack = {setCurrentTrack}
                             onFavoriteChange = {onFavoriteChange}
+                            difference={differences?.[index]}
                         />
                     ))}
                 </div>

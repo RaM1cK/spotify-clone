@@ -83,7 +83,6 @@
 }
 
 .track-item__left {
-    flex: 1;
     min-width: 0;
     display: flex;
     align-items: center;
@@ -92,7 +91,6 @@
 
 .track-item__info {
     min-width: 0;
-    flex: 1;
 }
 
 .track-item__text {
@@ -216,3 +214,24 @@
         padding: 6px;
     }
 }
+
+.track-item__difference {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    min-width: 36px;
+    justify-content: flex-start;
+}
+
+.track-item__diff-icon--up    { color: #34d399; }
+.track-item__diff-icon--down  { color: #f87171; }
+.track-item__diff-icon--neutral { color: #6b7280; }
+
+.track-item__diff-value {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.track-item__diff-value--up   { color: #34d399; }
+.track-item__diff-value--down { color: #f87171; }

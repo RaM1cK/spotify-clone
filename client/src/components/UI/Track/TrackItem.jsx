@@ -1,12 +1,12 @@
 import React, {useEffect, useLayoutEffect, useRef, useState} from "react";
-import {Heart, MoreVertical, Pause, Play} from "lucide-react";
+import { Heart, MoreVertical, Pause, Play, ArrowUp, ArrowDown, Minus } from "lucide-react";
 import {Player} from "../../../classes/Player.ts";
 import "./trackitem.css";
 import {TrackUI} from "../../../classes/observers/TrackUI.ts";
 import axios from "axios";
 import TrackMenu from "./TrackMenu.jsx";
 
-function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange }) {
+function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange, difference }) {
     const [isPlaying, setIsPlaying] = React.useState(false);
     const [isCurrent, setIsCurrent] = React.useState(false);
     const [isFavorite, setIsFavorite] = React.useState(track.hasInFavorite);
@@ -146,6 +146,27 @@ function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange })
                     >
                         {number}
                     </div>
+
+                    {difference !== undefined && (
+                        <div className="track-item__difference">
+                            {difference === 0 ? (
+                                <>
+                                    <Minus size={24} className="track-item__diff-icon track-item__diff-icon--neutral" strokeWidth={2.5} />
+                                </>
+                            ) : difference > 0 ? (
+                                <>
+                                    <ArrowUp size={21} className="track-item__diff-icon track-item__diff-icon--up" />
+                                    <span className="track-item__diff-value track-item__diff-value--up">{difference}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <ArrowDown size={21} className="track-item__diff-icon track-item__diff-icon--down" />
+                                    <span className="track-item__diff-value track-item__diff-value--down">{Math.abs(difference)}</span>
+                                </>
+                            )}
+                        </div>
+                    )}
+
                     <div className="track-item__cover-wrapper">
                         <img
                             src={`/api/files/${track.cover}`}
@@ -160,6 +181,8 @@ function TrackItem({ number, track, tracks, setCurrentTrack, onFavoriteChange })
                         <span className="track-item__title">{track.title}</span>
                         <span className="track-item__artist">{track.artist}</span>
                     </div>
+
+
                 </div>
 
                 {/* Right section */}
