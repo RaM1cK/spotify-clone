@@ -27,6 +27,10 @@ export abstract class PlayerStrategy {
         this.player.currentIndex = queue.findIndex(t => t.id === track.id);
         this._queue = [...queue];
     };
+
+    public onChangeQueue() {
+        return this.queue;
+    };
 }
 
 export class SimplePlayerStrategy extends PlayerStrategy {
@@ -35,8 +39,8 @@ export class SimplePlayerStrategy extends PlayerStrategy {
 export class ShufflePlayerStrategy extends PlayerStrategy {
     private unshuffledQueue: Track[] = [];
 
-    public getUnshuffledQueue() {
-        return [...this.unshuffledQueue]
+    public onChangeQueue(): Track[] {
+        return [...this.unshuffledQueue];
     }
 
     public execute(track: Track, queue: Track[]) {
@@ -61,15 +65,31 @@ export class ShufflePlayerStrategy extends PlayerStrategy {
 }
 
 export abstract class StrategyLoopDecorator extends PlayerStrategy {
-    public wrapped: PlayerStrategy;
+    //@ts-ignore
+    private _wrapped: PlayerStrategy;
+
+    public set wrapped(value: PlayerStrategy) {
+        const track = this._wrapped.track;
+        const queue = this._wrapped.onChangeQueue();
+
+        this._wrapped = value;
+
+        this.execute(track, queue);
+    }
+
+    public get wrapped() {
+        return this._wrapped;
+    }
 
     public constructor(wrapped: PlayerStrategy) {
         super();
-        this.wrapped = wrapped;
+        this._wrapped = wrapped;
+        this._queue = wrapped.queue;
     }
 
     public execute(track: Track, queue: Track[]) {
-        this.wrapped.execute(track, queue);
+        this._wrapped.execute(track, queue);
+        super.execute(track, this._wrapped.queue);
     }
 }
 
