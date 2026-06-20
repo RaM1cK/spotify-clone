@@ -13,7 +13,7 @@ import {
 } from "./PlayerStrategy.ts";
 
 export class Player implements Subject {
-    private static uniqueInstance: Player = new Player();
+    private static uniqueInstance: Player | null = null;
     howl: Howl | undefined;
     private observers: Observer[] = [];
     private _state: PlayerState;
@@ -309,14 +309,18 @@ export class Player implements Subject {
     }
 
     public get track(): any {
-        return this._strategy.wrapped.track;
+        return this._strategy.track;
     }
 
     public get queue(): any[] {
-        return this._strategy.wrapped.queue;
+        return this._strategy.queue;
     }
 
     public static getInstance() {
+        if (!this.uniqueInstance) {
+            this.uniqueInstance = new Player();
+        }
+
         return this.uniqueInstance;
     }
 
@@ -362,12 +366,8 @@ export class Player implements Subject {
     }
 
     public setStrategy(strategy: string) {
-        const tempTrack = this.track
-        let tempQueue = this.queue
-
         switch (strategy) {
             case "simple":
-                if (this._strategy.wrapped instanceof ShufflePlayerStrategy) tempQueue = this._strategy.wrapped.getUnshuffledQueue()
                 this._strategy.wrapped = new SimplePlayerStrategy();
                 break;
             case "shuffle":
@@ -383,8 +383,6 @@ export class Player implements Subject {
                 this._strategy = new NoneLoopDecorator(this._strategy.wrapped);
                 break;
         }
-
-        this._strategy.execute(tempTrack, tempQueue);
     }
 
     public next(): void {
