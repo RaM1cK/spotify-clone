@@ -6,7 +6,10 @@ import {userAttributes} from "../controllers/UserController.js";
 const authMiddleware = async (req, res, next) => {
     const token = req.cookies.token;
 
-    if (!token) return res.status(401).send({ error: "Unauthorized" });
+    if (!token) {
+        res.clearCookie('token');
+        return res.status(401).send({ error: "Unauthorized" });
+    }
 
     try {
         const id = jwt.verify(token, process.env.SECRET_KEY).id;
