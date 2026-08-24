@@ -1,14 +1,13 @@
 import {User} from "../models/User.ts";
-import nodemailer from "nodemailer";
+import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
-import io from "../server.js"
 import {
     getFavoriteTrackIdsSet,
     trackAttributes,
     trackCountQuery
 } from "./TrackController.js";
-import {literal, Op, sql} from "@sequelize/core";
+import {literal, Op} from "@sequelize/core";
 import stringNormalization from "../helpers/stringNormalization.js";
 import {redisClient, sequelize} from "../models/index.js";
 import {Message} from "../models/Message.ts";
@@ -28,85 +27,111 @@ export const userAttributes = [
     'avatar'
 ]
 
-function sendVerificationLink(regData) {
-    const {email} = regData;
+// function sendVerificationLink(regData) {
+//     const {email} = regData;
+//
+//     const transporter = nodemailer.createTransport({
+//         host: process.env.MAIL_HOST,
+//         port: 465,
+//         secure: true,
+//         auth: {
+//             user: process.env.MAIL_FROM,
+//             pass: process.env.MAIL_PASSWORD
+//         }
+//     })
+//
+//     const tokenEmailVerify = jwt.sign(regData, process.env.SECRET_KEY, {
+//         expiresIn: '5m', //для тестов
+//     })
+//
+//     redisClient
+//         .set(`verification:${email}`, 1, { EX: 5 * 60})
+//         .catch(err => console.log(err))
+//
+//     console.log(`${process.env.IP_APP}/api/users/verify-email?token=${tokenEmailVerify}`)
+//
+//     transporter.sendMail({
+//         from: process.env.MAIL_FROM,
+//         to: email,
+//         subject: "Spotify Clone",
+//         html: `Для подтверждения email перейдите по <a href="${process.env.IP_APP}/api/users/verify-email?token=${tokenEmailVerify}">ссылке</a>`
+//     })
+//         .then(res => console.log(res))
+//         .catch(err => console.log(err))
+// }
 
-    const transporter = nodemailer.createTransport({
-        host: process.env.MAIL_HOST,
-        port: 465,
-        secure: true,
-        auth: {
-            user: process.env.MAIL_FROM,
-            pass: process.env.MAIL_PASSWORD
-        }
-    })
-
-    const tokenEmailVerify = jwt.sign(regData, process.env.SECRET_KEY, {
-        expiresIn: '5m', //для тестов
-    })
-
-    redisClient
-        .set(`verification:${email}`, 1, { EX: 5 * 60})
-        .catch(err => console.log(err))
-
-    console.log(`${process.env.IP_APP}/api/users/verify-email?token=${tokenEmailVerify}`)
-
-    transporter.sendMail({
-        from: process.env.MAIL_FROM,
-        to: email,
-        subject: "Spotify Clone",
-        html: `Для подтверждения email перейдите по <a href="${process.env.IP_APP}/api/users/verify-email?token=${tokenEmailVerify}">ссылке</a>`
-    })
-        .then(res => console.log(res))
-        .catch(err => console.log(err))
-}
-
-const verifyEmail = async (req, res) => {
-    try {
-        const token = jwt.verify(req.query.token, process.env.SECRET_KEY);
-
-        const verification =
-            await redisClient.get(`verification:${token.email}`)
-
-        if (!verification) return res.status(400).send({ error: "Ссылка не действительна"})
-
-        let user;
-        await sequelize.transaction(async t => {
-            user = await User.create(token, {transaction: t})
-        })
-
-        io.to(`user:${token.email}`).emit('success-verification')
-
-        redisClient
-            .del(`verification:${token.email}`)
-            .catch(err => console.log(err))
-
-        return res.status(200).send({})
-    } catch (error) {
-        return res.status(400).send({error: "Ссылка не действительна"});
-    }
-}
+// const verifyEmail = async (req, res) => {
+//     try {
+//         const token = jwt.verify(req.query.token, process.env.SECRET_KEY);
+//
+//         const verification =
+//             await redisClient.get(`verification:${token.email}`)
+//
+//         if (!verification) return res.status(400).send({ error: "Ссылка не действительна"})
+//
+//         let user;
+//         await sequelize.transaction(async t => {
+//             user = await User.create(token, {transaction: t})
+//         })
+//
+//         io.to(`user:${token.email}`).emit('success-verification')
+//
+//         redisClient
+//             .del(`verification:${token.email}`)
+//             .catch(err => console.log(err))
+//
+//         return res.status(200).send({})
+//     } catch (error) {
+//         return res.status(400).send({error: "Ссылка не действительна"});
+//     }
+// }
 
 const reg = async (req, res) => {
-    const regData = req.body;
+    const { email, nickname, password } = req.body;
 
-    const verification =
-        await redisClient.get(`verification:${regData.email}`)
+    const password_hash = await bcrypt.hash(password, 12);
 
-    if (verification) return res.status(409).send({ error: "Ссылка на email уже отправлена"})
+    // const verification =
+    //     await redisClient.get(`verification:${regData.email}`)
 
-    const user = await User.findOne({
+    // if (verification) return res.status(409).send({ error: "Ссылка на email уже отправлена"})
+
+    let user = await User.findOne({
             where: {
-                email: regData.email,
+                email,
             }
         }
     )
 
     if (user) return res.status(409).send({error: "User already exists"});
 
-    sendVerificationLink(regData);
+    user = await User.create({
+        email,
+        nickname,
+        password_hash,
+    })
 
-    res.status(201).send({})
+    const token = jwt.sign(
+        { id: user.id },
+        process.env.SECRET_KEY,
+        {
+            expiresIn: '7d',
+        }
+    )
+
+    res.cookie("token", token, {
+        httpOnly: true,
+        sameSite: "strict",
+        maxAge: 1000 * 60 * 60 * 24 * 7
+    })
+
+    // sendVerificationLink(regData);
+
+    res.status(200).send({
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname
+    })
 }
 
 const auth = async (req, res) => {
@@ -118,15 +143,20 @@ const auth = async (req, res) => {
         }
     })
 
+    const valid = await bcrypt.compare(authData.password, user.password_hash);
+
     if (!user) {
         return res.status(409).json({})
-    } else if (user.password_hash !== authData.password_hash) {
+    } else if (!valid) {
         return res.status(400).json({})
     }
 
     const token = jwt.sign(
         { id: user.id },
-        process.env.SECRET_KEY
+        process.env.SECRET_KEY,
+        {
+            expiresIn: '7d',
+        }
     )
 
     res.cookie("token", token, {
@@ -158,7 +188,10 @@ const edit = async (req, res) => {
 
             redisClient
                 .del(`user:${id}`)
-                .catch(err => console.log(err))
+                .catch(err => {
+                    console.log(err);
+                    t.rollback();
+                })
         })
     }
 
@@ -825,7 +858,7 @@ export default {
     auth,
     logout,
     edit,
-    verifyEmail,
+    // verifyEmail,
     normalizedSearch,
     getUsersByNickname,
     getReleases, addFavoriteRelease, removeFavoriteRelease,

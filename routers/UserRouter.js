@@ -2,7 +2,6 @@ import express from "express";
 import UserController, {userAttributes} from "../controllers/UserController.js";
 import authMiddleware from './authMiddleware.js';
 import userController from "../controllers/UserController.js";
-import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import {Friendship} from "../models/Friendship.ts";
 import {Op} from "@sequelize/core";
@@ -24,10 +23,9 @@ const upload = multer({
 
 const userRouter = express.Router();
 
-
 userRouter.post("/reg", UserController.reg);
 userRouter.post("/auth", UserController.auth);
-userRouter.get("/verify-email", UserController.verifyEmail)
+// userRouter.get("/verify-email", UserController.verifyEmail)
 userRouter.use(authMiddleware)
 userRouter.get('/me', async (req, res) => {
     const userFriendships = await redisClient.get(`friendships:${req.user.id}`);
@@ -101,7 +99,9 @@ userRouter.post('/logout', UserController.logout);
 userRouter.post("/get-users", UserController.getUsersByNickname);
 userRouter.get("/search", UserController.normalizedSearch);
 userRouter.get('/:userId', async (req, res) => {
-    const user = await User.findByPk(req.params.userId);
+    const user = await User.findByPk(req.params.userId, {
+        attributes: userAttributes
+    });
 
     res.status(200).send(user);
 })

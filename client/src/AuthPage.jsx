@@ -1,7 +1,6 @@
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import "./css/auth.css";
 import axios from "axios";
-import {useSocket} from "./AppContext";
 import { Eye, EyeOff } from "lucide-react";
 
 export const isValidEmail = (email) => {
@@ -9,38 +8,32 @@ export const isValidEmail = (email) => {
     return regex.test(email);
 }
 
-export default function AuthPage({ onAuth, setSession }) {
-    const socket = useSocket();
-
+export default function AuthPage({ onAuth }) {
     const [mode, setMode] = useState("login");
     const [form, setForm] = useState({nickname: "" , email: "", password: "", confirm: "" });
     const [error, setError] = useState("");
     const [shake, setShake] = useState(false);
     const [sending, setSending] = useState(false);
-    const [verification, setVerification] = useState(false);
+    // const [verification, setVerification] = useState(false);
 
-    useEffect(() => {
-        if (verification) {
-            socket.emit('join-room', `user:${verification.email}`)
-
-            socket.on('success-verification', () =>
-                axios.post(`/api/users/auth`, verification)
-                    .then(() => onAuth())
-                    .catch(err => console.log(err))
-            )
-        }
-
-    }, [verification])
+    // useEffect(() => {
+    //     if (verification) {
+    //         socket.emit('join-room', `user:${verification.email}`)
+    //
+    //         socket.on('success-verification', () =>
+    //             axios.post(`/api/users/auth`, verification)
+    //                 .then(() => onAuth())
+    //                 .catch(err => console.log(err))
+    //         )
+    //     }
+    //
+    // }, [verification])
 
     function register(regUserData) {
         setSending(true);
 
-        axios.post("/api/users/reg", regUserData).then(
-            () => {
-                alert("Ссылка для подтверждения отправлена на указанный email")
-                setVerification(regUserData);
-            }
-        ).catch(err => {
+        axios.post("/api/users/reg", regUserData)
+            .then(() => onAuth()).catch(err => {
             if (err.response) {
                 const status = err.response.status;
 
@@ -121,7 +114,7 @@ export default function AuthPage({ onAuth, setSession }) {
             // users[email] = { password };
             // saveUsers(users);
             register({
-                password_hash: password.trim(),
+                password: password.trim(),
                 nickname: nickname.trim(),
                 email: email.trim(),
             })
@@ -133,7 +126,7 @@ export default function AuthPage({ onAuth, setSession }) {
             //     return;
             // }
             authenticate({
-                password_hash: password.trim(),
+                password: password.trim(),
                 email: email.trim(),
             })
         }
