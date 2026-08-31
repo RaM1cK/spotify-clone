@@ -190,14 +190,14 @@ IP_APP=http://localhost:3000
 SERVER_PORT=8080
 CLIENT_PORT=3000
 
-DB_HOST=localhost
+DB_HOST=db
 DB_NAME=database
 DB_USER=root-db
 DB_PASSWORD=your_password
 
 SECRET_KEY=your_jwt_secret
 
-REDIS_URL=redis://localhost:6379
+REDIS_URL=redis://redis:6379
 ```
 
 ---
